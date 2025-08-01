@@ -15,7 +15,7 @@ class SubadminController extends AppController {
         // Verificación de rol aquí o en un middleware/router centralizado.
         // Si no tienes un router con middleware, puedes añadir una verificación simple:
         if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 2) { // 2 para sub-administrador
-            header('Location: /grupobrasil/public/index.php?route=login&error=acceso_denegado');
+            header('Location:./index.php?route=login&error=acceso_denegado');
             exit();
         }
     }

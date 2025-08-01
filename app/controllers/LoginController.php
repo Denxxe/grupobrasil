@@ -14,11 +14,11 @@ class LoginController {
         // Si ya hay una sesión activa, redirigir al dashboard adecuado
         if (isset($_SESSION['id_usuario'])) {
             if ($_SESSION['id_rol'] == 1) { // Administrador
-                header('Location: /grupobrasil/public/index.php?route=admin/dashboard');
+                header('Location:./index.php?route=admin/dashboard');
             } elseif ($_SESSION['id_rol'] == 2) { // Sub-administrador
-                header('Location: /grupobrasil/public/index.php?route=subadmin/dashboard');
+                header('Location:./index.php?route=subadmin/dashboard');
             } else { // Usuario Común
-                header('Location: /grupobrasil/public/index.php?route=user/dashboard');
+                header('Location:./index.php?route=user/dashboard');
             }
             exit();
         }
@@ -51,28 +51,28 @@ class LoginController {
                 // **** LÓGICA DE REDIRECCIÓN BASADA EN requires_setup ****
                 if ($user['requires_setup'] == 1) {
                     $_SESSION['temp_message'] = "¡Bienvenido por primera vez! Por favor, completa tu perfil y establece una nueva contraseña.";
-                    header('Location: /grupobrasil/public/index.php?route=user/setup_profile');
+                    header('Location:./index.php?route=user/setup_profile');
                     exit();
                 }
 
                 // Redirección normal según el rol si no necesita setup
                 if ($user['id_rol'] == 1) { // Administrador
-                    header('Location: /grupobrasil/public/index.php?route=admin/dashboard');
+                    header('Location:./index.php?route=admin/dashboard');
                 } elseif ($user['id_rol'] == 2) { // Sub-administrador
-                    header('Location: /grupobrasil/public/index.php?route=subadmin/dashboard');
+                    header('Location:./index.php?route=subadmin/dashboard');
                 } else { // Usuario Común
-                    header('Location: /grupobrasil/public/index.php?route=user/dashboard');
+                    header('Location:./index.php?route=user/dashboard');
                 }
                 exit();
 
             } else {
                 // Credenciales inválidas
-                header('Location: /grupobrasil/public/index.php?route=login&error=credenciales_invalidas');
+                header('Location:./index.php?route=login&error=credenciales_invalidas');
                 exit();
             }
         } else {
             // Si no es un POST, redirigir a la página de login
-            header('Location: /grupobrasil/public/index.php?route=login');
+            header('Location:./index.php?route=login');
             exit();
         }
     }
@@ -81,9 +81,9 @@ class LoginController {
         session_unset();
         session_destroy();
         if ($message) {
-            header('Location: /grupobrasil/public/index.php?route=login&error=' . urlencode($message));
+            header('Location:./index.php?route=login&error=' . urlencode($message));
         } else {
-            header('Location: /grupobrasil/public/index.php?route=login&success=sesion_cerrada');
+            header('Location:./index.php?route=login&success=sesion_cerrada');
         }
         exit();
     }

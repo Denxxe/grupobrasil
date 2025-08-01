@@ -7,7 +7,7 @@ if (!isset($user_data_to_display) || !isset($roles)) {
     error_log("Error: Datos de usuario o roles faltantes en edit_user.php");
     // Redirigimos de vuelta a la lista de usuarios con un mensaje de error.
     $_SESSION['error_message'] = 'Error al cargar los datos del usuario. Intente de nuevo.';
-    header('Location: /grupobrasil/public/index.php?route=admin/users');
+    header('Location:./index.php?route=admin/users');
     exit();
 }
 

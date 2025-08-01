@@ -16,12 +16,12 @@ class UserController extends AppController {
         // Esta verificación es redundante si AppController ya lo hace, pero puede quedarse
         // como una capa de seguridad extra específica del controlador si lo deseas.
         if (!isset($_SESSION['id_usuario'])) {
-            header('Location: /grupobrasil/public/index.php?route=login&error=sesion_requerida');
+            header('Location:./index.php?route=login&error=sesion_requerida');
             exit();
         }
         // Además, verifica el rol si es necesario
         if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 3) { // 3 para usuario común
-             header('Location: /grupobrasil/public/index.php?route=login&error=acceso_denegado');
+             header('Location:./index.php?route=login&error=acceso_denegado');
              exit();
         }
     }
@@ -36,14 +36,14 @@ class UserController extends AppController {
 
     public function setupProfile() {
         if (!isset($_SESSION['requires_setup']) || $_SESSION['requires_setup'] != 1) {
-            header('Location: /grupobrasil/public/index.php?route=user/dashboard');
+            header('Location:./index.php?route=user/dashboard');
             exit();
         }
 
         $user_data = $this->usuarioModel->obtenerUsuarioPorId($_SESSION['id_usuario']);
 
         if (!$user_data) {
-            header('Location: /grupobrasil/public/index.php?route=login/logout&error=datos_usuario_no_encontrados');
+            header('Location:./index.php?route=login/logout&error=datos_usuario_no_encontrados');
             exit();
         }
 
@@ -68,7 +68,7 @@ class UserController extends AppController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Asegurarse de que el usuario está logueado y necesita configurar su perfil
             if (!isset($_SESSION['id_usuario']) || !isset($_SESSION['requires_setup']) || $_SESSION['requires_setup'] != 1) {
-                header('Location: /grupobrasil/public/index.php?route=user/dashboard'); // Redirigir si no aplica
+                header('Location:./index.php?route=user/dashboard'); // Redirigir si no aplica
                 exit();
             }
 
@@ -146,24 +146,24 @@ class UserController extends AppController {
                     $_SESSION['requires_setup'] = 0; // Marcar como setup completado en sesión
 
                     $_SESSION['success_message'] = '¡Perfil completado y contraseña actualizada exitosamente!';
-                    header('Location: /grupobrasil/public/index.php?route=user/dashboard');
+                    header('Location:./index.php?route=user/dashboard');
                     exit();
                 } else {
                     $errors[] = 'Error al actualizar el perfil en la base de datos.';
                     $_SESSION['form_errors'] = $errors;
                     $_SESSION['old_form_data'] = $data;
-                    header('Location: /grupobrasil/public/index.php?route=user/setup_profile');
+                    header('Location:./index.php?route=user/setup_profile');
                     exit();
                 }
             } else {
                 $_SESSION['form_errors'] = $errors;
                 $_SESSION['old_form_data'] = $data;
-                header('Location: /grupobrasil/public/index.php?route=user/setup_profile');
+                header('Location:./index.php?route=user/setup_profile');
                 exit();
             }
 
         } else {
-            header('Location: /grupobrasil/public/index.php?route=user/setup_profile');
+            header('Location:./index.php?route=user/setup_profile');
             exit();
         }
     }
