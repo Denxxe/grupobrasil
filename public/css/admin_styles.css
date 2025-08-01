@@ -1,0 +1,120 @@
+/* grupobrasil/public/css/admin_styles.css */
+
+/* Estilos base para el cuerpo y la fuente */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f3f4f6; /* Un color de fondo gris claro de Tailwind (gray-100) */
+    overflow: hidden; /* Evita que el body se desplace, solo el contenido principal lo hará */
+    height: 100vh; /* Asegura que el body ocupe el 100% de la altura de la ventana */
+    display: flex; /* Usa flexbox para alinear la barra lateral y el contenido */
+}
+/* Definición de variables CSS para facilitar el manejo de anchos */
+:root {
+    --sidebar-width-expanded: 250px;
+    --sidebar-width-collapsed: 80px;
+}
+
+/* Estilos de la barra lateral: Fija y ocupa toda la altura */
+.sidebar {
+    position: fixed; /* Posiciona la barra lateral de forma fija */
+    top: 0;
+    left: 0;
+    height: 100vh; /* Ocupa el 100% de la altura de la ventana */
+    width: var(--sidebar-width-expanded); /* Ancho expandido por defecto */
+    transition: width 0.3s ease, margin-left 0.3s ease; /* Transición suave para ancho y movimiento */
+    z-index: 1000; /* Asegura que esté por encima de otros elementos */
+    overflow-y: auto; /* Permite que el contenido de la barra lateral se desplace si es muy largo */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra para resaltar */
+}
+
+/* Estilos del área de contenido principal */
+.content {
+    margin-left: var(--sidebar-width-expanded); /* Margen inicial para dejar espacio a la barra lateral */
+    transition: margin-left 0.3s ease; /* Transición suave para el margen del contenido */
+    flex-grow: 1; /* Permite que el contenido ocupe el espacio restante */
+    overflow-y: auto; /* Permite que solo el contenido principal se desplace verticalmente */
+    height: 100vh; /* Asegura que el área de contenido ocupe toda la altura visible */
+    display: flex; /* Permite que los elementos internos se organicen con flexbox */
+    flex-direction: column; /* Organiza los elementos internos en columna */
+}
+
+/* Estilos para el texto y los iconos dentro de la barra lateral */
+.sidebar-text {
+    transition: opacity 0.1s ease, width 0.1s ease; /* Transición rápida para el texto */
+    white-space: nowrap; /* Evita que el texto se rompa en líneas */
+    overflow: hidden; /* Oculta el texto que excede el ancho */
+}
+.sidebar-icon {
+    transition: margin-right 0.3s ease; /* Transición suave para el margen del icono */
+}
+
+/* Ejemplo en tu archivo CSS personalizado */
+.btn-vinotinto-600 {
+    background-color: #800020; /* Un color vinotinto oscuro, ajusta según tu paleta */
+    color: #ffffff; /* Color de texto blanco */
+    border-color: #800020; /* O un borde ligeramente más oscuro */
+}
+
+.btn-vinotinto-600:hover {
+    background-color: #6a001a; /* Un poco más oscuro al pasar el ratón */
+    border-color: #6a001a;
+}
+/* MEDIA QUERIES para responsividad (Móvil vs. Escritorio) */
+
+/* Estilos para pantallas pequeñas (móviles) */
+@media (max-width: 768px) {
+    .sidebar {
+        margin-left: calc(-1 * var(--sidebar-width-expanded)); /* Oculta la barra lateral por defecto */
+        /* position: fixed, height: 100vh, z-index: 1000 ya están definidos y aplican */
+    }
+    /* Muestra la barra lateral cuando tiene la clase 'show' */
+    .sidebar.show {
+        margin-left: 0;
+    }
+    .content {
+        margin-left: 0; /* El contenido no tiene margen en móviles */
+        /* height: 100vh; overflow-y: auto; display: flex; flex-direction: column; siguen aplicando */
+    }
+    /* Oculta los elementos relacionados con el colapso de escritorio en móviles */
+    #sidebarCollapseToggle {
+        display: none !important;
+    }
+    .lg\:hidden { /* Asegura que el header móvil esté visible */
+        display: flex !important;
+    }
+    .hidden.lg\:block { /* Asegura que el header de escritorio esté oculto */
+        display: none !important;
+    }
+}
+
+/* Estilos para pantallas grandes (escritorio) cuando la barra lateral está COLAPSADA */
+@media (min-width: 769px) {
+    /* Cuando el body tiene la clase 'sidebar-collapsed' */
+    body.sidebar-collapsed .sidebar {
+        width: var(--sidebar-width-collapsed); /* Ancho colapsado */
+    }
+    body.sidebar-collapsed .content {
+        margin-left: var(--sidebar-width-collapsed); /* Ajusta el margen del contenido */
+    }
+    /* Oculta el texto de los elementos de navegación */
+    body.sidebar-collapsed .sidebar .sidebar-text {
+        opacity: 0;
+        width: 0;
+    }
+    /* Elimina el margen derecho de los íconos */
+    body.sidebar-collapsed .sidebar .sidebar-icon {
+        margin-right: 0 !important;
+    }
+    /* Centra el contenido (ícono) dentro de los enlaces de la barra lateral */
+    body.sidebar-collapsed .sidebar nav ul li a,
+    body.sidebar-collapsed .sidebar > div > a { /* Para el enlace de cerrar sesión */
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    /* Asegura que el título del dashboard se oculte también */
+    body.sidebar-collapsed .sidebar h1 {
+        opacity: 0;
+        width: 0;
+    }
+}

@@ -1,0 +1,33 @@
+/* grupobrasil/public/css/admin.css */
+
+.role-section {
+    margin-top: 40px;
+    border-top: 2px solid #007bff;
+    padding-top: 20px;
+}
+.role-section h3 {
+    color: #007bff;
+}
+.filter-form-row {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+/* Estilos para el contenedor de toasts */
+.toast-container {
+    position: fixed;
+    bottom: 20px; /* Posición abajo */
+    left: 20px;  /* Posición a la izquierda */
+    z-index: 1080;
+}
+/* Estilos para hacer el toast un poco más grande */
+.toast {
+    min-width: 300px; /* Ancho mínimo */
+    max-width: 400px; /* Ancho máximo */
+    font-size: 1.1rem; /* Tamaño de fuente ligeramente más grande */
+}
+.toast .toast-body {
+    padding: 1rem; /* Relleno interno para el contenido */
+}
+
