@@ -16,7 +16,7 @@
         </div>
         <h3 class="text-xl font-semibold text-gray-800 mb-2">Añadir Nuevo Usuario</h3>
         <p class="text-gray-600 mb-4">Crea nuevas cuentas de usuario para el sistema.</p>
-        <a href="/grupobrasil/public/index.php?route=admin/users/create" class="inline-block bg-vinotinto-500 hover:bg-vinotinto-600 text-white px-4 py-2 rounded-md transition duration-300">Ir</a>
+        <a href="./index.php?route=admin/users/create" class="inline-block bg-vinotinto-500 hover:bg-vinotinto-600 text-white px-4 py-2 rounded-md transition duration-300">Ir</a>
     </div>
 
     <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition duration-300">

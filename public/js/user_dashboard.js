@@ -28,7 +28,7 @@ async function fetchApi(url, options = {}) {
 // Ejemplo de uso: obtener datos del perfil
 async function obtenerPerfilUsuario() {
     try {
-        const data = await fetchApi('/grupobrasil/public/index.php?route=user/profile/data');
+        const data = await fetchApi('./index.php?route=user/profile/data');
         // Aquí puedes actualizar el DOM con los datos recibidos
         console.log('Perfil:', data);
     } catch (e) {

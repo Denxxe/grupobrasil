@@ -3,7 +3,7 @@
 
 // Verificar si el usuario está autenticado y es un usuario común
 if (!isset($_SESSION['id_usuario']) || $_SESSION['id_rol'] != 3) {
-    header('Location: /grupobrasil/public/index.php?route=login&error=acceso_denegado');
+    header('Location: ./index.php?route=login&error=acceso_denegado');
     exit();
 }
 ?>
@@ -14,14 +14,14 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['id_rol'] != 3) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Usuario</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/grupobrasil/public/css/style.css">
+    <link rel="stylesheet" href="./css/style.css">
     </head>
 <body>
     <div class="container mt-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="text-center">Bienvenido al Dashboard de Usuario, <?php echo htmlspecialchars($_SESSION['nombre_completo'] ?? 'Usuario'); ?>!</h1>
             <div>
-                <a href="/grupobrasil/public/index.php?route=login/logout" class="btn btn-danger">Cerrar Sesión</a>
+                <a href="./index.php?route=login/logout" class="btn btn-danger">Cerrar Sesión</a>
             </div>
         </div>
 
@@ -37,7 +37,7 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['id_rol'] != 3) {
                     <div class="card-body">
                         <h5 class="card-title">Mi Perfil</h5>
                         <p class="card-text">Consulta y actualiza tus datos personales.</p>
-                        <a href="/grupobrasil/public/index.php?route=user/view_profile" class="btn btn-primary">Ver Perfil</a>
+                        <a href="./index.php?route=user/view_profile" class="btn btn-primary">Ver Perfil</a>
                     </div>
                 </div>
             </div>
@@ -46,7 +46,7 @@ if (!isset($_SESSION['id_usuario']) || $_SESSION['id_rol'] != 3) {
                     <div class="card-body">
                         <h5 class="card-title">Noticias de la Comunidad</h5>
                         <p class="card-text">Mantente al tanto de los avisos y eventos importantes.</p>
-                        <a href="/grupobrasil/public/index.php?route=noticias" class="btn btn-info">Ver Noticias</a>
+                        <a href="./index.php?route=noticias" class="btn btn-info">Ver Noticias</a>
                     </div>
                 </div>
             </div>

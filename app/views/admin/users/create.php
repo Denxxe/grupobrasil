@@ -4,8 +4,8 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>Crear Nuevo Miembro de la Comunidad</h2>
             <div>
-                <a href="/grupobrasil/public/index.php?route=admin/users" class="btn btn-secondary me-2">Volver a la Lista de Usuarios</a>
-                <a href="/grupobrasil/public/index.php?route=login/logout" class="btn btn-danger">Cerrar Sesión</a>
+                <a href="./index.php?route=admin/users" class="btn btn-secondary me-2">Volver a la Lista de Usuarios</a>
+                <a href="./index.php?route=login/logout" class="btn btn-danger">Cerrar Sesión</a>
             </div>
         </div>
 
@@ -24,7 +24,7 @@
             </div>
         <?php endif; ?>
 
-        <form action="/grupobrasil/public/index.php?route=admin/users/store" method="POST">
+        <form action="./index.php?route=admin/users/store" method="POST">
             <div class="row g-3 mb-3">
                 <div class="col-md-6">
                     <label for="ci_usuario" class="form-label">Cédula de Identidad:</label>

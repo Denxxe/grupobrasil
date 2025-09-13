@@ -119,7 +119,7 @@ class AppController {
      */
     protected function redirect($route, $params = []) {
         $queryString = http_build_query($params);
-        $url = '/grupobrasil/public/index.php?route=' . urlencode($route);
+        $url = './index.php?route=' . urlencode($route);
         if (!empty($queryString)) {
             $url .= '&' . $queryString;
         }

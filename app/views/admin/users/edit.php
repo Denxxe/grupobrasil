@@ -7,7 +7,7 @@ if (!isset($user_data_to_display) || !isset($roles)) {
     error_log("Error: Datos de usuario o roles faltantes en edit_user.php");
     // Redirigimos de vuelta a la lista de usuarios con un mensaje de error.
     $_SESSION['error_message'] = 'Error al cargar los datos del usuario. Intente de nuevo.';
-    header('Location: /grupobrasil/public/index.php?route=admin/users');
+    header('Location:./index.php?route=admin/users');
     exit();
 }
 
@@ -58,12 +58,12 @@ $form_validation_class = $error_message ? 'was-validated' : '';
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>Editar Usuario: <?php echo htmlspecialchars($user_data_to_display['nombre'] . ' ' . $user_data_to_display['apellido']); ?></h2>
             <div>
-                <a href="/grupobrasil/public/index.php?route=admin/users" class="btn btn-secondary me-2">Volver a Gestión de Usuarios</a>
-                <a href="/grupobrasil/public/index.php?route=login/logout" class="btn btn-danger">Cerrar Sesión</a>
+                <a href="./index.php?route=admin/users" class="btn btn-secondary me-2">Volver a Gestión de Usuarios</a>
+                <a href="./index.php?route=login/logout" class="btn btn-danger">Cerrar Sesión</a>
             </div>
         </div>
 
-        <form action="/grupobrasil/public/index.php?route=admin/updateUser" method="POST" class="needs-validation <?php echo $form_validation_class; ?>" novalidate>
+        <form action="./index.php?route=admin/updateUser" method="POST" class="needs-validation <?php echo $form_validation_class; ?>" novalidate>
             <input type="hidden" name="id_usuario" value="<?php echo htmlspecialchars($user_data_to_display['id_usuario']); ?>">
 
             <div class="row">
@@ -155,13 +155,13 @@ $form_validation_class = $error_message ? 'was-validated' : '';
 
             <div class="d-flex justify-content-start gap-2 mt-3">
                 <button type="submit" class="btn btn-primary">Actualizar Usuario</button>
-                <a href="/grupobrasil/public/index.php?route=admin/users" class="btn btn-secondary">Cancelar</a>
+                <a href="./index.php?route=admin/users" class="btn btn-secondary">Cancelar</a>
             </div>
         </form>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/grupobrasil/public/js/edit_user_form.js"></script>
+    <script src="./js/edit_user_form.js"></script>
     <script>
         // Script para inicializar los toasts de Bootstrap y la validación
         document.addEventListener('DOMContentLoaded', function() {

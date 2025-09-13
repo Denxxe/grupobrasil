@@ -1,7 +1,7 @@
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">Administración de Noticias</h1>
-        <a href="/grupobrasil/public/index.php?route=admin/news/create" class="btn btn-vinotinto-600 text-white">
+        <a href="./index.php?route=admin/news/create" class="btn btn-vinotinto-600 text-white">
             <i class="fas fa-plus"></i> Crear Nueva Noticia
         </a>
     </div>
@@ -43,7 +43,7 @@
                                     </td>
                                     <td class="text-center">
                                         <?php if (!empty($noticia['imagen_principal'])): ?>
-                                            <img src="/grupobrasil/public/<?php echo htmlspecialchars($noticia['imagen_principal']); ?>" alt="Imagen de noticia" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+                                            <img src="./<?php echo htmlspecialchars($noticia['imagen_principal']); ?>" alt="Imagen de noticia" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
                                         <?php else: ?>
                                             Sin imagen
                                         <?php endif; ?>
@@ -58,7 +58,7 @@
                                         ?>
                                     </td>
                                     <td>
-                                        <a href="/grupobrasil/public/index.php?route=admin/news/edit&id=<?php echo htmlspecialchars($noticia['id_noticia']); ?>" class="btn btn-warning btn-sm m-1">
+                                        <a href="./index.php?route=admin/news/edit&id=<?php echo htmlspecialchars($noticia['id_noticia']); ?>" class="btn btn-warning btn-sm m-1">
                                             <i class="fas fa-edit"></i> Editar
                                         </a>
                                         <button type="button" class="btn btn-danger btn-sm m-1 delete-news-btn"

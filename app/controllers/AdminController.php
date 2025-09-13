@@ -25,7 +25,7 @@ class AdminController {
         if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 1) {
             // Redirigir si el usuario no es un administrador
             $_SESSION['error_message'] = "Acceso no autorizado. Debe ser administrador.";
-            header('Location: /grupobrasil/public/index.php?route=login');
+            header('Location: ./index.php?route=login');
             exit();
         }
     }
@@ -200,24 +200,24 @@ class AdminController {
 
                 if ($newUserId) {
                     $_SESSION['success_message'] = 'Usuario creado exitosamente. La contraseña inicial es la Cédula de Identidad del usuario. Se le pedirá que complete su perfil al iniciar sesión por primera vez.';
-                    header('Location: /grupobrasil/public/index.php?route=admin/users');
+                    header('Location: ./index.php?route=admin/users');
                     exit();
                 } else {
                     $_SESSION['error_message'] = 'Error al guardar el usuario en la base de datos. Por favor, inténtelo de nuevo.';
                     $_SESSION['old_form_data'] = $_POST;
-                    header('Location: /grupobrasil/public/index.php?route=admin/users/create');
+                    header('Location: ./index.php?route=admin/users/create');
                     exit();
                 }
             } else {
                 // Si hay errores, guardarlos en sesión y redirigir al formulario
                 $_SESSION['form_errors'] = $errors;
                 $_SESSION['old_form_data'] = $_POST; 
-                header('Location: /grupobrasil/public/index.php?route=admin/users/create');
+                header('Location: ./index.php?route=admin/users/create');
                 exit();
             }
         } else {
             // Si no es un POST, redirigir al formulario de creación
-            header('Location: /grupobrasil/public/index.php?route=admin/users/create');
+            header('Location: ./index.php?route=admin/users/create');
             exit();
         }
     }
@@ -229,7 +229,7 @@ class AdminController {
     public function editUser($id) {
         if (!is_numeric($id) || $id <= 0) {
             $_SESSION['error_message'] = "ID de usuario inválido.";
-            header('Location: /grupobrasil/public/index.php?route=admin/users');
+            header('Location: ./index.php?route=admin/users');
             exit();
         }
 
@@ -237,7 +237,7 @@ class AdminController {
 
         if (!$user) {
             $_SESSION['error_message'] = "Usuario no encontrado.";
-            header('Location: /grupobrasil/public/index.php?route=admin/users');
+            header('Location: ./index.php?route=admin/users');
             exit();
         }
 
@@ -272,7 +272,7 @@ class AdminController {
      */
     public function updateUser() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /grupobrasil/public/index.php?route=admin/users');
+            header('Location: ./index.php?route=admin/users');
             exit();
         }
 
@@ -280,7 +280,7 @@ class AdminController {
 
         if (!is_numeric($id_usuario) || $id_usuario <= 0) {
             $_SESSION['error_message'] = "Error: ID de usuario inválido en el formulario.";
-            header('Location: /grupobrasil/public/index.php?route=admin/users');
+            header('Location: ./index.php?route=admin/users');
             exit();
         }
 
@@ -375,7 +375,7 @@ class AdminController {
                 if ($current_user['foto_perfil'] && file_exists(__DIR__ . '/../../public' . $current_user['foto_perfil'])) {
                     unlink(__DIR__ . '/../../public' . $current_user['foto_perfil']);
                 }
-                $data['foto_perfil'] = '/grupobrasil/public/uploads/profile_pictures/' . $file_name;
+                $data['foto_perfil'] = './uploads/profile_pictures/' . $file_name;
             } else {
                 $errors[] = 'Error al subir la nueva foto de perfil. Código: ' . $_FILES['foto_perfil']['error'];
             }
@@ -394,7 +394,7 @@ class AdminController {
             $_SESSION['error_message'] = "Por favor, corrija los siguientes errores:<br>" . implode("<br>", $errors);
             $_SESSION['old_form_data'] = $_POST; 
             $_SESSION['old_form_data']['foto_perfil'] = $data['foto_perfil']; // Conservar la URL de la imagen si se subió
-            header('Location: /grupobrasil/public/index.php?route=admin/users/edit&id=' . $id_usuario);
+            header('Location: ./index.php?route=admin/users/edit&id=' . $id_usuario);
             exit();
         }
 
@@ -403,13 +403,13 @@ class AdminController {
 
         if ($result) {
             $_SESSION['success_message'] = "Usuario actualizado exitosamente.";
-            header('Location: /grupobrasil/public/index.php?route=admin/users');
+            header('Location: ./index.php?route=admin/users');
             exit();
         } else {
             $_SESSION['error_message'] = "Error al actualizar el usuario en la base de datos. Por favor, inténtelo de nuevo.";
             $_SESSION['old_form_data'] = $_POST; // Preserva los datos para rellenar el formulario
             $_SESSION['old_form_data']['foto_perfil'] = $data['foto_perfil']; // Conservar la URL de la imagen si se subió
-            header('Location: /grupobrasil/public/index.php?route=admin/users/edit&id=' . $id_usuario);
+            header('Location: ./index.php?route=admin/users/edit&id=' . $id_usuario);
             exit();
         }
     }
@@ -421,21 +421,21 @@ class AdminController {
     public function deleteUser($id) {
         if (!is_numeric($id) || $id <= 0) {
             $_SESSION['error_message'] = "ID de usuario inválido o no proporcionado para la eliminación.";
-            header('Location: /grupobrasil/public/index.php?route=admin/users');
+            header('Location: ./index.php?route=admin/users');
             exit();
         }
 
         // Previene que un administrador se elimine a sí mismo
         if (isset($_SESSION['id_usuario']) && $id == $_SESSION['id_usuario']) {
             $_SESSION['error_message'] = "No puedes eliminar tu propia cuenta de administrador.";
-            header('Location: /grupobrasil/public/index.php?route=admin/users');
+            header('Location: ./index.php?route=admin/users');
             exit();
         }
 
         $userToDelete = $this->usuarioModel->getById($id); // Usar getById
         if (!$userToDelete) {
             $_SESSION['error_message'] = "Usuario a eliminar no encontrado.";
-            header('Location: /grupobrasil/public/index.php?route=admin/users');
+            header('Location: ./index.php?route=admin/users');
             exit();
         }
 
@@ -455,7 +455,7 @@ class AdminController {
             $_SESSION['error_message'] = "Hubo un error al intentar eliminar el usuario '" . htmlspecialchars($userToDelete['nombre'] . ' ' . $userToDelete['apellido']) . "'.";
         }
 
-        header('Location: /grupobrasil/public/index.php?route=admin/users');
+        header('Location: ./index.php?route=admin/users');
         exit();
     }
 
@@ -578,7 +578,7 @@ public function storeNews() {
                 // Por ahora, simplemente no la asignamos a $news_data si hay errores.
 
                 $_SESSION['error_error_messages'] = $errors; // Usar el array de errores
-                header('Location: /grupobrasil/public/index.php?route=admin/news/create');
+                header('Location: ./index.php?route=admin/news/create');
                 exit();
             }
 
@@ -597,16 +597,16 @@ public function storeNews() {
 
             if ($new_news_id) {
                 $_SESSION['success_message'] = "Noticia creada exitosamente con ID: " . $new_news_id;
-                header('Location: /grupobrasil/public/index.php?route=admin/news');
+                header('Location: ./index.php?route=admin/news');
                 exit();
             } else {
                 $_SESSION['error_error_messages'] = ['Error al crear la noticia en la base de datos. Consulta los logs para más detalles.'];
                 $_SESSION['old_form_data'] = $_POST;
-                header('Location: /grupobrasil/public/index.php?route=admin/news/create');
+                header('Location: ./index.php?route=admin/news/create');
                 exit();
             }
         } else {
-            header('Location: /grupobrasil/public/index.php?route=admin/news/create');
+            header('Location: ./index.php?route=admin/news/create');
             exit();
         }
     }
@@ -615,7 +615,7 @@ public function storeNews() {
 public function editNews($id) {
         if (!is_numeric($id) || $id <= 0) {
             $_SESSION['error_message'] = "ID de noticia inválido para edición.";
-            header('Location: /grupobrasil/public/index.php?route=admin/news');
+            header('Location: ./index.php?route=admin/news');
             exit();
         }
 
@@ -624,7 +624,7 @@ public function editNews($id) {
 
         if (!$news) {
             $_SESSION['error_message'] = "Noticia no encontrada.";
-            header('Location: /grupobrasil/public/index.php?route=admin/news');
+            header('Location: ./index.php?route=admin/news');
             exit();
         }
 
@@ -656,7 +656,7 @@ public function editNews($id) {
   
     public function updateNews() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /grupobrasil/public/index.php?route=admin/news');
+            header('Location: ./index.php?route=admin/news');
             exit();
         }
 
@@ -664,7 +664,7 @@ public function editNews($id) {
 
         if (!is_numeric($id_noticia) || $id_noticia <= 0) {
             $_SESSION['error_message'] = "Error: ID de noticia inválido en el formulario de actualización.";
-            header('Location: /grupobrasil/public/index.php?route=admin/news');
+            header('Location: ./index.php?route=admin/news');
             exit();
         }
 
@@ -672,7 +672,7 @@ public function editNews($id) {
         $current_news = $this->noticiaModel->getNewsById($id_noticia, false); // Obtenerla sin importar si está activa o no
         if (!$current_news) {
             $_SESSION['error_message'] = "Noticia a actualizar no encontrada.";
-            header('Location: /grupobrasil/public/index.php?route=admin/news');
+            header('Location: ./index.php?route=admin/news');
             exit();
         }
 
@@ -752,7 +752,7 @@ public function editNews($id) {
             if (isset($data_to_update['imagen_principal'])) {
                  $_SESSION['old_form_data']['imagen_principal'] = $data_to_update['imagen_principal'];
             }
-            header('Location: /grupobrasil/public/index.php?route=admin/news/edit&id=' . $id_noticia);
+            header('Location: ./index.php?route=admin/news/edit&id=' . $id_noticia);
             exit();
         }
 
@@ -761,7 +761,7 @@ public function editNews($id) {
 
         if ($result) {
             $_SESSION['success_message'] = "Noticia actualizada exitosamente.";
-            header('Location: /grupobrasil/public/index.php?route=admin/news');
+            header('Location: ./index.php?route=admin/news');
             exit();
         } else {
             $_SESSION['error_error_messages'] = ['Error al actualizar la noticia en la base de datos. Por favor, inténtelo de nuevo.'];
@@ -769,7 +769,7 @@ public function editNews($id) {
             if (isset($data_to_update['imagen_principal'])) {
                 $_SESSION['old_form_data']['imagen_principal'] = $data_to_update['imagen_principal'];
             }
-            header('Location: /grupobrasil/public/index.php?route=admin/news/edit&id=' . $id_noticia);
+            header('Location: ./index.php?route=admin/news/edit&id=' . $id_noticia);
             exit();
         }
     }
@@ -781,14 +781,14 @@ public function editNews($id) {
     public function deleteNews($id) {
         if (!is_numeric($id) || $id <= 0) {
             $_SESSION['error_message'] = "ID de noticia inválido o no proporcionado para la eliminación.";
-            header('Location: /grupobrasil/public/index.php?route=admin/news');
+            header('Location: ./index.php?route=admin/news');
             exit();
         }
 
         $newsToDelete = $this->noticiaModel->getNewsById($id, false); // Obtenerla sin importar si está activa o no
         if (!$newsToDelete) {
             $_SESSION['error_message'] = "Noticia a eliminar no encontrada.";
-            header('Location: /grupobrasil/public/index.php?route=admin/news');
+            header('Location: ./index.php?route=admin/news');
             exit();
         }
 
@@ -813,7 +813,7 @@ public function editNews($id) {
             $_SESSION['error_message'] = "Hubo un error al intentar eliminar la noticia '" . htmlspecialchars($newsToDelete['titulo']) . "'.";
         }
 
-        header('Location: /grupobrasil/public/index.php?route=admin/news');
+        header('Location: ./index.php?route=admin/news');
         exit();
     }
 
@@ -835,7 +835,7 @@ public function editNews($id) {
     public function softDeleteComment($id) {
         if (!is_numeric($id) || $id <= 0) {
             $_SESSION['error_message'] = "ID de comentario inválido.";
-            header('Location: /grupobrasil/public/index.php?route=admin/comments');
+            header('Location: ./index.php?route=admin/comments');
             exit();
         }
         $result = $this->comentarioModel->softDelete($id); // Asume que tienes softDelete en Comentario.php
@@ -844,7 +844,7 @@ public function editNews($id) {
         } else {
             $_SESSION['error_message'] = "Error al eliminar lógicamente el comentario.";
         }
-        header('Location: /grupobrasil/public/index.php?route=admin/comments');
+        header('Location: ./index.php?route=admin/comments');
         exit();
     }
 
@@ -852,7 +852,7 @@ public function editNews($id) {
     public function activateComment($id) {
         if (!is_numeric($id) || $id <= 0) {
             $_SESSION['error_message'] = "ID de comentario inválido.";
-            header('Location: /grupobrasil/public/index.php?route=admin/comments');
+            header('Location: ./index.php?route=admin/comments');
             exit();
         }
         // Asume un método como updateStatus en Comentario.php
@@ -862,7 +862,7 @@ public function editNews($id) {
         } else {
             $_SESSION['error_message'] = "Error al activar el comentario.";
         }
-        header('Location: /grupobrasil/public/index.php?route=admin/comments');
+        header('Location: ./index.php?route=admin/comments');
         exit();
     }
 
@@ -870,7 +870,7 @@ public function editNews($id) {
     public function deleteComment($id) {
         if (!is_numeric($id) || $id <= 0) {
             $_SESSION['error_message'] = "ID de comentario inválido para eliminación física.";
-            header('Location: /grupobrasil/public/index.php?route=admin/comments');
+            header('Location: ./index.php?route=admin/comments');
             exit();
         }
         $result = $this->comentarioModel->delete($id); // Asume que tienes delete en Comentario.php
@@ -879,7 +879,7 @@ public function editNews($id) {
         } else {
             $_SESSION['error_message'] = "Error al eliminar físicamente el comentario.";
         }
-        header('Location: /grupobrasil/public/index.php?route=admin/comments');
+        header('Location: ./index.php?route=admin/comments');
         exit();
     }
 
@@ -899,7 +899,7 @@ public function editNews($id) {
     public function markNotificationRead($id) {
         if (!is_numeric($id) || $id <= 0) {
             $_SESSION['error_message'] = "ID de notificación inválido.";
-            header('Location: /grupobrasil/public/index.php?route=admin/notifications');
+            header('Location: ./index.php?route=admin/notifications');
             exit();
         }
         $result = $this->notificacionModel->update($id, ['leida' => 1]);
@@ -908,7 +908,7 @@ public function editNews($id) {
         } else {
             $_SESSION['error_message'] = "Error al marcar notificación como leída.";
         }
-        header('Location: /grupobrasil/public/index.php?route=admin/notifications');
+        header('Location: ./index.php?route=admin/notifications');
         exit();
     }
 
@@ -919,14 +919,14 @@ public function editNews($id) {
         } else {
             $_SESSION['error_message'] = "Error al marcar todas las notificaciones como leídas.";
         }
-        header('Location: /grupobrasil/public/index.php?route=admin/notifications');
+        header('Location: ./index.php?route=admin/notifications');
         exit();
     }
 
     public function deleteNotification($id) {
         if (!is_numeric($id) || $id <= 0) {
             $_SESSION['error_message'] = "ID de notificación inválido.";
-            header('Location: /grupobrasil/public/index.php?route=admin/notifications');
+            header('Location: ./index.php?route=admin/notifications');
             exit();
         }
         $result = $this->notificacionModel->delete($id);
@@ -935,7 +935,7 @@ public function editNews($id) {
         } else {
             $_SESSION['error_message'] = "Error al eliminar la notificación.";
         }
-        header('Location: /grupobrasil/public/index.php?route=admin/notifications');
+        header('Location: ./index.php?route=admin/notifications');
         exit();
     }
 }
