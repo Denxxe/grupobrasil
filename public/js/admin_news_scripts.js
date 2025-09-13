@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Actualizar el href del botón de confirmación del modal
             var confirmButton = deleteModal.querySelector('#confirmDeleteButton');
             if (confirmButton) {
-                confirmButton.href = '/grupobrasil/public/index.php?route=admin/news/delete&id=' + newsId;
+                confirmButton.href = './index.php?route=admin/news/delete&id=' + newsId;
             }
         });
     }

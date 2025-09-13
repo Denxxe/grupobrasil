@@ -52,7 +52,7 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
-    <link href="/grupobrasil/public/css/admin_styles.css?v=<?php echo time(); ?>" rel="stylesheet"> 
+    <link href="./css/admin_styles.css?v=<?php echo time(); ?>" rel="stylesheet"> 
 
 </head>
 <body class="h-full flex"
@@ -66,27 +66,27 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
         <nav class="flex-grow mt-4">
             <ul class="space-y-2">
                 <li>
-                    <a href="/grupobrasil/public/index.php?route=subadmin/dashboard" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=subadmin/dashboard" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
                         <i class="fas fa-tachometer-alt mr-3 sidebar-icon"></i> <span class="sidebar-text">Dashboard</span>
                     </a>
                 </li>
                 <li>
-                    <a href="/grupobrasil/public/index.php?route=subadmin/news" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=subadmin/news" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
                         <i class="fas fa-newspaper mr-3 sidebar-icon"></i> <span class="sidebar-text">Noticias</span>
                     </a>
                 </li>
                 <li>
-                    <a href="/grupobrasil/public/index.php?route=subadmin/comments" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=subadmin/comments" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
                         <i class="fas fa-comments mr-3 sidebar-icon"></i> <span class="sidebar-text">Comentarios</span>
                     </a>
                 </li>
                 <li>
-                    <a href="/grupobrasil/public/index.php?route=subadmin/notifications" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=subadmin/notifications" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
                         <i class="fas fa-bell mr-3 sidebar-icon"></i> <span class="sidebar-text">Notificaciones</span>
                     </a>
                 </li>
                 <li>
-                    <a href="/grupobrasil/public/index.php?route=subadmin/reports" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=subadmin/reports" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
                         <i class="fas fa-chart-line mr-3 sidebar-icon"></i> <span class="sidebar-text">Reportes</span>
                     </a>
                 </li>
@@ -96,7 +96,7 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
             <button id="sidebarCollapseToggle" class="hidden lg:flex items-center justify-center w-full text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200 py-2 mb-2">
                 <i class="fas fa-chevron-left text-xl"></i>
             </button>
-            <a href="/grupobrasil/public/index.php?route=login/logout" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+            <a href="./index.php?route=login/logout" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
                 <i class="fas fa-sign-out-alt mr-3 sidebar-icon"></i> <span class="sidebar-text">Cerrar Sesión</span>
             </a>
         </div>
@@ -148,7 +148,7 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
-    <script src="/grupobrasil/public/js/admin_dashboard.js?v=<?php echo time(); ?>"></script>
-    <script src="/grupobrasil/public/js/toast_initializer.js?v=<?php echo time(); ?>"></script>
+    <script src="./js/admin_dashboard.js?v=<?php echo time(); ?>"></script>
+    <script src="./js/toast_initializer.js?v=<?php echo time(); ?>"></script>
     </body>
 </html>

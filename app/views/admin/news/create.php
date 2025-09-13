@@ -10,7 +10,7 @@
             <h6 class="m-0 font-weight-bold text-vinotinto-700">Formulario para Crear Noticia</h6>
         </div>
         <div class="card-body">
-            <form action="/grupobrasil/public/index.php?route=admin/news/store" method="POST" enctype="multipart/form-data">
+            <form action="./index.php?route=admin/news/store" method="POST" enctype="multipart/form-data">
                 
                 <div class="mb-3">
                     <label for="titulo" class="form-label">Título de la Noticia</label>
@@ -45,7 +45,7 @@
 </div>
 
                 <div class="d-flex justify-content-end mt-4">
-                    <a href="/grupobrasil/public/index.php?route=admin/news" class="btn btn-secondary me-2">Cancelar</a>
+                    <a href="./index.php?route=admin/news" class="btn btn-secondary me-2">Cancelar</a>
                     <button type="submit" class="btn btn-vinotinto-600 text-white">Guardar Noticia</button>
                 </div>
             </form>

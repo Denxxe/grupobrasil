@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Sub-Administrador - Sistema Consejo Comunal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/grupobrasil/public/css/style.css">
+    <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>Dashboard de Sub-Administrador</h2>
-            <a href="/grupobrasil/public/index.php?route=login/logout" class="btn btn-danger">Cerrar Sesión</a>
+            <a href="./index.php?route=login/logout" class="btn btn-danger">Cerrar Sesión</a>
         </div>
 
         <?php if (isset($_SESSION['nombre_usuario'])): ?>

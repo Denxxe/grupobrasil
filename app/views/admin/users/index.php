@@ -2,14 +2,14 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Gestión de Miembros de la Comunidad</h2>
         <div>
-            <a href="/grupobrasil/public/index.php?route=admin/dashboard" class="btn btn-secondary me-2">Volver al Dashboard</a>
-            <a href="/grupobrasil/public/index.php?route=login/logout" class="btn btn-danger">Cerrar Sesión</a>
+            <a href="./index.php?route=admin/dashboard" class="btn btn-secondary me-2">Volver al Dashboard</a>
+            <a href="./index.php?route=login/logout" class="btn btn-danger">Cerrar Sesión</a>
         </div>
     </div>
 
-    <a href="/grupobrasil/public/index.php?route=admin/users/create" class="btn btn-primary mb-3">Añadir Nuevo Usuario</a>
+    <a href="./index.php?route=admin/users/create" class="btn btn-primary mb-3">Añadir Nuevo Usuario</a>
 
-    <form action="/grupobrasil/public/index.php" method="GET" class="mb-4">
+    <form action="./index.php" method="GET" class="mb-4">
         <input type="hidden" name="route" value="admin/users">
         <div class="row g-3">
             <div class="col-md-4">
@@ -50,7 +50,7 @@
             </div>
             <div class="col-12 d-flex justify-content-end">
                 <button type="submit" class="btn btn-info me-2">Aplicar Filtros</button>
-                <a href="/grupobrasil/public/index.php?route=admin/users" class="btn btn-warning">Limpiar Filtros</a>
+                <a href="./index.php?route=admin/users" class="btn btn-warning">Limpiar Filtros</a>
             </div>
         </div>
     </form>
@@ -106,8 +106,8 @@
                                 <?php echo $usuario['activo'] ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-danger">No</span>'; ?>
                             </td>
                             <td>
-                                <a href="/grupobrasil/public/index.php?route=admin/users/edit&id=<?php echo htmlspecialchars($usuario['id_usuario']); ?>" class="btn btn-warning btn-sm">Editar</a>
-                                <a href="/grupobrasil/public/index.php?route=admin/users/delete&id=<?php echo htmlspecialchars($usuario['id_usuario']); ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de que quieres eliminar este usuario?');">Eliminar</a>
+                                <a href="./index.php?route=admin/users/edit&id=<?php echo htmlspecialchars($usuario['id_usuario']); ?>" class="btn btn-warning btn-sm">Editar</a>
+                                <a href="./index.php?route=admin/users/delete&id=<?php echo htmlspecialchars($usuario['id_usuario']); ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de que quieres eliminar este usuario?');">Eliminar</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>

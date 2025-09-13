@@ -36,7 +36,7 @@ if (isset($_GET['error'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio de Sesión - Sistema Consejo Comunal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/grupobrasil/public/css/style.css">
+    <link rel="stylesheet" href="./css/style.css">
     <style>
         body {
             display: flex;
@@ -88,7 +88,7 @@ if (isset($_GET['error'])) {
         }
         ?>
 
-        <form action="/grupobrasil/public/index.php?route=login/authenticate" method="POST" novalidate>
+        <form action="./index.php?route=login/authenticate" method="POST" novalidate>
             <div class="mb-3">
                 <label for="ci_usuario" class="form-label">Cédula de Identidad:</label>
                 <input type="text" class="form-control" id="ci_usuario" name="ci_usuario" 

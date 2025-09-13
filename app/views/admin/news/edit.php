@@ -24,7 +24,7 @@ $news_data = !empty($old_data) ? $old_data : $news;
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800"><?php echo htmlspecialchars($page_title); ?></h1>
-        <a href="/grupobrasil/public/index.php?route=admin/news" class="btn btn-secondary">
+        <a href="./index.php?route=admin/news" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Volver a Noticias
         </a>
     </div>
@@ -46,7 +46,7 @@ $news_data = !empty($old_data) ? $old_data : $news;
             <h6 class="m-0 font-weight-bold text-vinotinto-700">Formulario de Edición de Noticia</h6>
         </div>
         <div class="card-body">
-            <form action="/grupobrasil/public/index.php?route=admin/news/update" method="POST" enctype="multipart/form-data">
+            <form action="./index.php?route=admin/news/update" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="id_noticia" value="<?php echo htmlspecialchars($news['id_noticia']); ?>">
 
                 <div class="mb-3">
@@ -79,7 +79,7 @@ $news_data = !empty($old_data) ? $old_data : $news;
                     <?php if (!empty($news_data['imagen_principal'])): ?>
                         <div class="mb-2">
                             <p>Imagen actual:</p>
-                            <img src="/grupobrasil/public/<?php echo htmlspecialchars($news_data['imagen_principal']); ?>"
+                            <img src="./<?php echo htmlspecialchars($news_data['imagen_principal']); ?>"
                                  alt="Imagen actual" class="img-thumbnail" style="max-width: 200px; height: auto;">
                             <div class="form-check mt-2">
                                 <input class="form-check-input" type="checkbox" id="remove_imagen_principal" name="remove_imagen_principal" value="1">

@@ -71,7 +71,7 @@ if (!isset($_SESSION['id_usuario'])) {
             break;
         default:
             $_SESSION['error_message'] = "Debes iniciar sesión para acceder a esta página.";
-            header('Location: /grupobrasil/public/index.php?route=login');
+            header('Location: ./index.php?route=login');
             exit();
     }
 } else { // 2. USUARIO AUTENTICADO
@@ -82,17 +82,17 @@ if (!isset($_SESSION['id_usuario'])) {
     if ($route === 'login' || $route === '') {
         switch ($userRole) {
             case 1: // Administrador
-                header('Location: /grupobrasil/public/index.php?route=admin/dashboard');
+                header('Location: ./index.php?route=admin/dashboard');
                 exit();
             case 2: // Sub-administrador
-                header('Location: /grupobrasil/public/index.php?route=subadmin/dashboard');
+                header('Location: ./index.php?route=subadmin/dashboard');
                 exit();
             case 3: // Usuario Común
-                header('Location: /grupobrasil/public/index.php?route=user/dashboard');
+                header('Location: ./index.php?route=user/dashboard');
                 exit();
             default:
                 $_SESSION['error_message'] = "Rol de usuario desconocido. Sesión cerrada.";
-                header('Location: /grupobrasil/public/index.php?route=login/logout');
+                header('Location: ./index.php?route=login/logout');
                 exit();
         }
     }
@@ -117,7 +117,7 @@ if (!isset($_SESSION['id_usuario'])) {
             case 'admin':
                 if ($userRole !== 1) {
                     $_SESSION['error_message'] = "No tienes permisos para acceder al panel de administración.";
-                    header('Location: /grupobrasil/public/index.php?route=user/dashboard');
+                    header('Location: ./index.php?route=user/dashboard');
                     exit();
                 }
                 $controllerName = 'AdminController';
@@ -158,7 +158,7 @@ if (!isset($_SESSION['id_usuario'])) {
             case 'subadmin':
                 if ($userRole !== 2 && $userRole !== 1) { // Admin también puede acceder
                     $_SESSION['error_message'] = "No tienes permisos para acceder a esta sección.";
-                    header('Location: /grupobrasil/public/index.php?route=user/dashboard');
+                    header('Location: ./index.php?route=user/dashboard');
                     exit();
                 }
                 $controllerName = 'SubadminController';
@@ -191,7 +191,7 @@ if (!isset($_SESSION['id_usuario'])) {
             case 'user':
                 if ($userRole !== 3 && $userRole !== 2 && $userRole !== 1) {
                     $_SESSION['error_message'] = "No tienes permisos para acceder a esta sección.";
-                    header('Location: /grupobrasil/public/index.php?route=login');
+                    header('Location: ./index.php?route=login');
                     exit();
                 }
                 $controllerName = 'UserController';
