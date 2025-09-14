@@ -66,7 +66,7 @@ if (session_status() == PHP_SESSION_NONE) {
                                 }
                                 ?>
 
-                                <form action="/grupobrasil/public/index.php?route=login/authenticate" method="POST" novalidate>
+                                <form action="../public/index.php?route=login/authenticate" method="POST" novalidate>
                                     <div class="form-floating mb-3">
                                         <input type="text" class="form-control" id="ci_usuario" name="ci_usuario" placeholder="Cédula" pattern="[0-9]+" minlength="6" maxlength="10" required>
                                         <label for="ci_usuario"><i class="bi bi-person-vcard me-2"></i>Cédula de Identidad</label>
