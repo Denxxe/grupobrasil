@@ -1,0 +1,99 @@
+/*
+ * Estilos Modernos para Login (Split Screen)
+ * Paleta de color principal: #800020 (Borgoña)
+ */
+
+:root {
+    --primary-color: #800020;
+    --primary-color-hover: #600018;
+    --font-family: 'Poppins', sans-serif;
+}
+
+body {
+    font-family: var(--font-family);
+}
+
+.login {
+    min-height: 100vh;
+}
+
+.bg-image {
+    background-image: linear-gradient(to right, rgba(0,0,0,0.6), rgba(0,0,0,0.2)), url('https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=2069&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.brand-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+    width: 100%;
+}
+
+.brand-icon {
+    font-size: 5rem;
+    color: #fff;
+    margin-bottom: 1rem;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.brand-panel h1 {
+    font-weight: 700;
+    font-size: 2.5rem;
+}
+
+.login-heading {
+    color: var(--primary-color);
+}
+
+/* Estilos para los campos flotantes */
+.form-floating > .form-control {
+    padding: 1rem 1rem;
+    height: auto;
+}
+
+.form-floating > label {
+    padding: 1rem 1rem;
+    color: #6c757d;
+}
+
+.form-floating > .form-control:focus ~ label {
+    opacity: .65;
+    transform: scale(.85) translateY(-.5rem) translateX(.15rem);
+    color: var(--primary-color);
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(128, 0, 32, 0.25);
+}
+
+/* Estilos para el botón de login */
+.btn-login {
+    font-size: 0.9rem;
+    letter-spacing: 0.05rem;
+    padding: 0.9rem 1rem;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    transition: all 0.2s;
+}
+
+.btn-login:hover {
+    background-color: var(--primary-color-hover);
+    border-color: var(--primary-color-hover);
+}
+
+/* Para dispositivos móviles, la columna de la imagen tendrá el degradado */
+@media (max-width: 767.98px) {
+    .bg-image {
+        background: linear-gradient(160deg, var(--primary-color) 0%, #a02a44 100%);
+        min-height: 30vh;
+    }
+    .login {
+        min-height: 70vh;
+    }
+}
