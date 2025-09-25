@@ -1,7 +1,3 @@
-<?php 
-// Este archivo podría incluir tu header común
-include __DIR__ . '/../partials/header.php'; 
-?>
 
 <div class="container my-4">
     <h1 class="mb-4">Últimas Noticias</h1>

@@ -134,15 +134,19 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
         </div>
 
         <main class="flex-grow">
-            <?php
-            if (isset($content_view) && file_exists($content_view)) {
-                include_once $content_view;
-            } else {
-                echo '<div class="alert alert-danger" role="alert">Error: La vista de contenido no se pudo cargar.</div>';
-                error_log("Error: La vista de contenido '$content_view' no existe o no está definida.");
-            }
-            ?>
-        </main>
+    <?php
+    if (isset($content_view_path) && file_exists($content_view_path)) {
+        include_once $content_view_path;
+    } else {
+        echo '<div class="alert alert-danger" role="alert">
+                Error: La vista de contenido no se pudo cargar.<br>
+                Ruta: ' . htmlspecialchars($content_view_path ?? 'N/A') . '
+              </div>';
+        error_log("Error: La vista de contenido '$content_view_path' no existe o no está definida.");
+    }
+    ?>
+</main>
+
 
     </div>
 
