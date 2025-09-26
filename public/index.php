@@ -69,6 +69,7 @@ if (!isset($_SESSION['id_usuario'])) {
             $controllerName = 'LoginController';
             $actionName = 'login';
             break;
+            
         default:
             $_SESSION['error_message'] = "Debes iniciar sesión para acceder a esta página.";
             header('Location: ./index.php?route=login');
@@ -150,6 +151,10 @@ if (!isset($_SESSION['id_usuario'])) {
                     elseif ($id === 'delete') { $actionName = 'deleteNotification'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
                     else { $actionName = 'manageNotifications'; }
                 }
+                elseif ($actionSegment === 'reports') {
+                  $actionName = 'reports';
+                }
+
                 elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
                     $actionName = 'dashboard';
                 }
@@ -169,6 +174,9 @@ if (!isset($_SESSION['id_usuario'])) {
                     if ($id === 'soft-delete') { $actionName = 'softDeleteComment'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
                     else { $actionName = 'manageComments'; }
                 }
+elseif ($actionSegment === 'reports') {
+    $actionName = 'reports';
+}
                 elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
                     $actionName = 'dashboard';
                 }
@@ -279,7 +287,10 @@ if ($controllerName) {
         http_response_code(404);
         $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Controlador No Encontrado', 'message' => "Error 404: Archivo de controlador '" . htmlspecialchars($controllerName) . "' no encontrado."]];
     }
+
+    
 }
+
 
 // --- Renderizado Final de la Vista ---
 // Extrae los datos para que estén disponibles como variables en el ámbito del include
