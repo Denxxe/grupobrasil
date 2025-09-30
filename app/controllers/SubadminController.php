@@ -33,7 +33,7 @@ class SubadminController extends AppController {
         $this->loadView('subadmin/dashboard', $data); 
     }
 
-    public function reports() {
+    public function reports() {-
     
         $noticias = $this->noticiaModel->getAll();
         $comentarios = $this->comentarioModel->getAll();

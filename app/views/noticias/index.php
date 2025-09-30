@@ -22,17 +22,19 @@
                             <p class="card-text flex-grow-1">
                                 <?php echo htmlspecialchars(mb_substr($noticia['contenido'], 0, 120)) . '...'; ?>
                             </p>
-                            <a href="/noticias/show/<?php echo htmlspecialchars($noticia['id_noticia']); ?>" 
-                               class="btn btn-outline-primary btn-sm mt-auto">
-                                <i class="bi bi-eye"></i> Leer más
-                            </a>
+                           <a href="./index.php?route=noticias/show/<?php echo urlencode($noticia['id_noticia']); ?>" 
+   class="btn btn-outline-primary btn-sm mt-auto">
+   <i class="bi bi-eye"></i> Leer más
+</a>
+
+
                         </div>
                     </div>
                 </div>
             <?php endforeach; ?>
         </div>
 
-        <!-- Ejemplo de paginación -->
+        <!-- Paginación futura -->
         <nav class="mt-4">
             <ul class="pagination justify-content-center">
                 <li class="page-item disabled"><a class="page-link">Anterior</a></li>
