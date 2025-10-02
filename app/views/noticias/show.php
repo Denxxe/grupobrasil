@@ -1,16 +1,16 @@
 <!-- grupobrasil/app/views/noticias/show.php -->
 
 <div class="container mx-auto p-6">
-    <!-- Título -->
-    <h1 class="text-3xl font-bold text-gray-800 mb-4">
-        <?= htmlspecialchars($noticia['titulo']) ?>
-    </h1>
 
     <!-- Imagen -->
-    <?php if (!empty($noticia['imagen'])): ?>
-        <img src="<?= htmlspecialchars($noticia['imagen']) ?>" 
+    <?php if (!empty($noticia['imagen_principal'])): ?>
+        <img src="/grupobrasil/public/<?= htmlspecialchars($noticia['imagen_principal']) ?>" 
              alt="Imagen de la noticia"
              class="w-full h-64 object-cover rounded-lg shadow mb-6">
+            <?php else: ?>
+                <img src="/grupobrasil/public/img/noticias/default.jpg"
+                     alt="Imagen por defecto"
+                     class="w-full h-full object-cover">
     <?php endif; ?>
 
     <!-- Contenido -->
@@ -48,13 +48,13 @@
         </button>
 
         <!-- Imagen principal -->
-        <div class="h-1/2 w-full">
-            <?php if (!empty($noticia['imagen'])): ?>
-                <img src="<?= htmlspecialchars($noticia['imagen']) ?>" 
+         <div class="h-1/2 w-full">
+            <?php if (!empty($noticia['imagen_principal'])): ?>
+                <img src="/grupobrasil/public/<?= htmlspecialchars($noticia['imagen_principal']) ?>" 
                      alt="Imagen de la noticia"
                      class="w-full h-full object-cover">
             <?php else: ?>
-                <img src="/public/img/noticias/default.jpg"
+                <img src="/grupobrasil/public/img/noticias/default.jpg"
                      alt="Imagen por defecto"
                      class="w-full h-full object-cover">
             <?php endif; ?>
