@@ -6,11 +6,11 @@
                 <div class="col">
                     <div class="card h-100 shadow-sm border-0">
                         <?php if (!empty($noticia['imagen_principal'])): ?>
-                            <img src="/assets/img/noticias/<?php echo htmlspecialchars($noticia['imagen_principal']); ?>" 
+                            <img src="/public/<?php echo htmlspecialchars($noticia['imagen_principal']); ?>" 
                                  class="card-img-top" 
                                  alt="<?php echo htmlspecialchars($noticia['titulo']); ?>">
-                        <?php else: ?>
-                            <img src="/assets/img/noticias/default.jpg" 
+                        <?php else: ?> 
+                            <img src="/public/img/noticias/default.jpg" 
                                  class="card-img-top" 
                                  alt="Imagen por defecto">
                         <?php endif; ?>

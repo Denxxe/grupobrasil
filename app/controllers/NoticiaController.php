@@ -136,20 +136,5 @@ class NoticiaController extends AppController {
         $this->redirect('noticias/show/' . $id_noticia);
     }
 
-    /**
-     * Compartir una noticia (ejemplo: generar link o red social).
-     */
-    public function share($id_noticia) {
-        $id_noticia = (int)$id_noticia;
-        if ($id_noticia <= 0) {
-            $this->setErrorMessage("Noticia inválida para compartir.");
-            $this->redirect('noticias');
-        }
 
-        // En un caso real: aquí podrías registrar en DB el "share" o generar link de WhatsApp/Facebook/etc.
-        $link = BASE_URL . "noticias/show/" . $id_noticia;
-
-        $this->setSuccessMessage("Comparte esta noticia con este enlace: " . $link);
-        $this->redirect('noticias/show/' . $id_noticia);
-    }
 }

@@ -11,11 +11,71 @@ class Comentario extends ModelBase {
         $this->primaryKey = 'id_comentario';
     }
 
-    /**
-     * Agrega un nuevo comentario a una noticia.
-     * @param array $data Array asociativo con los datos del comentario (id_noticia, id_usuario, contenido).
-     * @return int|false El ID del nuevo comentario insertado o false en caso de error.
-     */
+ public function getAllComments(bool $onlyActive = true, array $order = ['column' => 'fecha_comentario', 'direction' => 'DESC']) {
+    $sql = "SELECT 
+                c.id_comentario,
+                c.id_noticia,
+                n.titulo AS titulo_noticia,
+                c.id_usuario,
+                CONCAT(u.nombre, ' ', u.apellido) AS nombre_usuario,
+                c.contenido,
+                c.fecha_comentario,
+                c.activo
+            FROM " . $this->table . " c
+            JOIN usuarios u ON c.id_usuario = u.id_usuario
+            JOIN noticias n ON c.id_noticia = n.id_noticia";
+
+    $params = [];
+    $types = "";
+
+    if ($onlyActive) {
+        $sql .= " WHERE c.activo = ?";
+        $params[] = 1;
+        $types .= "i";
+    }
+
+    // Ordenamiento seguro
+    if (!empty($order['column']) && !empty($order['direction'])) {
+        $valid_columns = ['fecha_comentario', 'contenido', 'id_comentario'];
+        $order_column = in_array($order['column'], $valid_columns) ? $order['column'] : 'fecha_comentario';
+        $order_direction = strtoupper($order['direction']) === 'ASC' ? 'ASC' : 'DESC';
+        $sql .= " ORDER BY c.$order_column $order_direction";
+    }
+
+    $stmt = $this->conn->prepare($sql);
+
+    if ($stmt === false) {
+        error_log("Error al preparar la consulta getAllComments: " . $this->conn->error);
+        return [];
+    }
+
+    if (!empty($params)) {
+        $bind_names = array_merge([$types], $params);
+        $refs = [];
+        foreach ($bind_names as $key => $value) {
+            $refs[$key] = &$bind_names[$key];
+        }
+        call_user_func_array([$stmt, 'bind_param'], $refs);
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $comentarios = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $comentarios[] = $row;
+        }
+        $result->free();
+    } else {
+        error_log("Error al ejecutar getAllComments: " . $stmt->error);
+    }
+
+    $stmt->close();
+    return $comentarios;
+}
+
+
     public function agregarComentario(array $data) {
         $id_noticia = $data['id_noticia'] ?? null;
         $id_usuario = $data['id_usuario'] ?? null;
@@ -60,11 +120,23 @@ class Comentario extends ModelBase {
      * @param array $order Array de ordenamiento (ej: ['column' => 'fecha_comentario', 'direction' => 'DESC']).
      * @return array Un array de comentarios.
      */
-    public function obtenerComentariosPorNoticia(int $id_noticia, bool $onlyActive = true, array $order = ['column' => 'fecha_comentario', 'direction' => 'ASC']) {
-        $sql = "SELECT c.*, u.nombre AS usuario_nombre, u.apellido AS usuario_apellido, u.foto_perfil
-                FROM " . $this->table . " c
-                JOIN usuarios u ON c.id_usuario = u.id_usuario
-                WHERE c.id_noticia = ?";
+    public function obtenerComentariosPorNoticia(
+    int $id_noticia,
+    bool $onlyActive = true,
+    array $order = ['column' => 'fecha_comentario', 'direction' => 'ASC']
+) {
+    $sql = "SELECT 
+                c.id_comentario,
+                c.id_noticia,
+                c.id_usuario,
+                c.contenido,
+                c.fecha_comentario AS fecha_creacion, 
+                CONCAT(u.nombre, ' ', u.apellido) AS nombre_usuario,
+                u.foto_perfil
+            FROM " . $this->table . " c
+            JOIN usuarios u ON c.id_usuario = u.id_usuario
+            WHERE c.id_noticia = ?";
+
         
         $params = [$id_noticia];
         $types = "i";

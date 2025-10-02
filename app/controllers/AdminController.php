@@ -695,18 +695,13 @@ public function editNews($id) {
         header('Location: ./index.php?route=admin/news');
         exit();
     }
-
-    public function manageComments() {
-
-        $comentarios = $this->comentarioModel->getAllComments();
-
-        $data = [
-            'title' => 'Gestión de Comentarios',
-            'page_title' => 'Gestión de Comentarios',
-            'comentarios' => $comentarios
-        ];
-        $this->renderAdminView('comments/index', $data);
-    }
+public function manageComments() {
+    $comentarios = $this->comentarioModel->getAllComments(false); // false para ver activos e inactivos
+    $this->renderAdminView('comentarios/index', [
+        'page_title' => 'Gestión de Comentarios',
+        'comentarios' => $comentarios
+    ]);
+}
 
     public function softDeleteComment($id) {
         if (!is_numeric($id) || $id <= 0) {
