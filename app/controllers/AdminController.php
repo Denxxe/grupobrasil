@@ -695,61 +695,91 @@ public function editNews($id) {
         header('Location: ./index.php?route=admin/news');
         exit();
     }
+
+
+    
 public function manageComments() {
-    $comentarios = $this->comentarioModel->getAllComments(false); // false para ver activos e inactivos
+
+    $comentarios = $this->comentarioModel->getAllComments(false); 
     $this->renderAdminView('comentarios/index', [
         'page_title' => 'Gestión de Comentarios',
         'comentarios' => $comentarios
     ]);
 }
 
-    public function softDeleteComment($id) {
-        if (!is_numeric($id) || $id <= 0) {
-            $_SESSION['error_message'] = "ID de comentario inválido.";
-            header('Location: ./index.php?route=admin/comments');
-            exit();
-        }
-        $result = $this->comentarioModel->softDeleteComentario($id);
-        if ($result) {
-            $_SESSION['success_message'] = "Comentario eliminado lógicamente.";
-        } else {
-            $_SESSION['error_message'] = "Error al eliminar lógicamente el comentario.";
-        }
-        header('Location: ./index.php?route=admin/comments');
-        exit();
+public function getCommentsByNoticia() {
+
+    $id = $_GET['id'] ?? null;
+    if (!$id || !is_numeric($id)) {
+        echo json_encode(['success' => false, 'message' => 'ID inválido']);
+        exit;
     }
 
-    public function activateComment($id) {
-        if (!is_numeric($id) || $id <= 0) {
-            $_SESSION['error_message'] = "ID de comentario inválido.";
-            header('Location: ./index.php?route=admin/comments');
-            exit();
-        }
-        $result = $this->comentarioModel->update($id, ['activo' => 1]); 
-        if ($result) {
-            $_SESSION['success_message'] = "Comentario activado.";
-        } else {
-            $_SESSION['error_message'] = "Error al activar el comentario.";
-        }
-        header('Location: ./index.php?route=admin/comments');
-        exit();
+    $comentarios = $this->comentarioModel->obtenerComentariosPorNoticia((int)$id, false);
+    $titulo = "";
+    if (!empty($comentarios)) {
+        $titulo = $comentarios[0]['titulo_noticia'] ?? '';
+    } else {
+        $noticiaModel = new Noticia();
+        $noticia = $noticiaModel->getById((int)$id);
+        $titulo = $noticia['titulo'] ?? 'Noticia';
     }
 
-    public function deleteComment($id) {
-        if (!is_numeric($id) || $id <= 0) {
-            $_SESSION['error_message'] = "ID de comentario inválido para eliminación física.";
-            header('Location: ./index.php?route=admin/comments');
-            exit();
-        }
-        $result = $this->comentarioModel->delete($id);
-        if ($result) {
-            $_SESSION['success_message'] = "Comentario eliminado físicamente.";
-        } else {
-            $_SESSION['error_message'] = "Error al eliminar físicamente el comentario.";
-        }
+    echo json_encode([
+        'success' => true,
+        'titulo' => $titulo,
+        'comentarios' => $comentarios
+    ]);
+    exit;
+}
+
+public function softDeleteComment($id) {
+    if (!is_numeric($id) || $id <= 0) {
+        $_SESSION['error_message'] = "ID de comentario inválido.";
         header('Location: ./index.php?route=admin/comments');
         exit();
     }
+    $result = $this->comentarioModel->softDeleteComentario($id);
+    if ($result) {
+        $_SESSION['success_message'] = "Comentario eliminado lógicamente.";
+    } else {
+        $_SESSION['error_message'] = "Error al eliminar lógicamente el comentario.";
+    }
+    header('Location: ./index.php?route=admin/comments');
+    exit();
+}
+
+public function activateComment($id) {
+    if (!is_numeric($id) || $id <= 0) {
+        $_SESSION['error_message'] = "ID de comentario inválido.";
+        header('Location: ./index.php?route=admin/comments');
+        exit();
+    }
+    $result = $this->comentarioModel->activarComentario($id); // ✅ corregido
+    if ($result) {
+        $_SESSION['success_message'] = "Comentario activado.";
+    } else {
+        $_SESSION['error_message'] = "Error al activar el comentario.";
+    }
+    header('Location: ./index.php?route=admin/comments');
+    exit();
+}
+
+public function deleteComment($id) {
+    if (!is_numeric($id) || $id <= 0) {
+        $_SESSION['error_message'] = "ID de comentario inválido para eliminación física.";
+        header('Location: ./index.php?route=admin/comments');
+        exit();
+    }
+    $result = $this->comentarioModel->deleteComentario($id); // ✅ corregido
+    if ($result) {
+        $_SESSION['success_message'] = "Comentario eliminado físicamente.";
+    } else {
+        $_SESSION['error_message'] = "Error al eliminar físicamente el comentario.";
+    }
+    header('Location: ./index.php?route=admin/comments');
+    exit();
+}
 
     public function manageNotifications() {
         $notificaciones = $this->notificacionModel->getAllNotifications();

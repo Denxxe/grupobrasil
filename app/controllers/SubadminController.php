@@ -46,4 +46,13 @@ class SubadminController extends AppController {
 
         $this->loadView('subadmin/reports', $data);
     }
+
+public function manageComments() {
+    $comentarios = $this->comentarioModel->getAllComments(false); // Ver activos e inactivos
+    return $this->loadView('subadmin/comentarios/index', [
+        'page_title' => 'Gestión de Comentarios (Subadmin)',
+        'comentarios' => $comentarios
+    ]);
+}
+
 }
