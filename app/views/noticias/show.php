@@ -146,7 +146,7 @@
                 <p class="text-gray-800"><?= nl2br(htmlspecialchars($comentario['contenido'])) ?></p>
                 <small class="text-gray-500">
                     Por <?= htmlspecialchars($comentario['nombre_usuario'] ?? 'Anónimo') ?>
-                    el <?= htmlspecialchars($comentario['fecha_creacion']) ?>
+                    el <?= htmlspecialchars($comentario['fecha_comentario']) ?>
                 </small>
             </li>
         <?php endforeach; ?>

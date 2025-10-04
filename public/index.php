@@ -140,20 +140,24 @@ if (!isset($_SESSION['id_usuario'])) {
                     else { $actionName = 'manageNews'; }
                 }
                 
-  elseif ($actionSegment === 'comments') {
-    if ($id === 'soft-delete') { 
-        $actionName = 'softDeleteComment'; 
-        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-    } elseif ($id === 'activate') { 
-        $actionName = 'activateComment'; 
-        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-    } elseif ($id === 'delete') { 
-        $actionName = 'deleteComment'; 
-        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-    } else { 
-        $actionName = 'manageComments'; 
-    }
-}
+                elseif ($actionSegment === 'comments') {
+                    if ($id === 'soft-delete') { 
+                        $actionName = 'softDeleteComment'; 
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
+                    } elseif ($id === 'activate') { 
+                        $actionName = 'activateComment'; 
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
+                    } elseif ($id === 'delete') { 
+                        $actionName = 'deleteComment'; 
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
+                    } else { 
+                        $actionName = 'manageComments'; 
+                    }
+                }
+                elseif ($actionSegment === 'getCommentsByNoticia') {
+                    $actionName = 'getCommentsByNoticia';
+                }
+
                 elseif ($actionSegment === 'notifications') {
                     if ($id === 'mark-read') { $actionName = 'markNotificationRead'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
                     elseif ($id === 'mark-all-read') { $actionName = 'markAllNotificationsRead'; $id = null; }

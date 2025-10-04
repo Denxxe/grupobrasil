@@ -19,7 +19,7 @@ class Comentario extends ModelBase {
                 c.id_usuario,
                 CONCAT(u.nombre, ' ', u.apellido) AS nombre_usuario,
                 c.contenido,
-                c.fecha_comentario AS fecha_creacion,
+                c.fecha_comentario,
                 c.activo
             FROM " . $this->table . " c
             JOIN usuarios u ON c.id_usuario = u.id_usuario
@@ -119,7 +119,7 @@ class Comentario extends ModelBase {
                 c.id_noticia,
                 c.id_usuario,
                 c.contenido,
-                c.fecha_comentario AS fecha_creacion, 
+                c.fecha_comentario, 
                 CONCAT(u.nombre, ' ', u.apellido) AS nombre_usuario,
                 u.foto_perfil
             FROM " . $this->table . " c
