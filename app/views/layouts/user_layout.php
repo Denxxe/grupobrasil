@@ -76,7 +76,7 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=user/news" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=noticias" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
                         <i class="fas fa-newspaper mr-3 sidebar-icon"></i> <span class="sidebar-text">Noticias</span>
                     </a>
                 </li>
@@ -128,16 +128,20 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
             </div>
         </div>
 
-        <main class="flex-grow">
-            <?php
-            if (isset($content_view) && file_exists($content_view)) {
-                include_once $content_view;
-            } else {
-                echo '<div class="alert alert-danger" role="alert">Error: La vista de contenido no se pudo cargar.</div>';
-                error_log("Error: La vista de contenido '$content_view' no existe o no está definida.");
-            }
-            ?>
-        </main>
+       <main class="flex-grow">
+    <?php
+    if (isset($content_view_path) && file_exists($content_view_path)) {
+        include_once $content_view_path;
+    } else {
+        echo '<div class="alert alert-danger" role="alert">
+                Error: La vista de contenido no se pudo cargar.<br>
+                Ruta: ' . htmlspecialchars($content_view_path ?? 'N/A') . '
+              </div>';
+        error_log("Error: La vista de contenido '$content_view_path' no existe o no está definida.");
+    }
+    ?>
+</main>
+
 
     </div>
 

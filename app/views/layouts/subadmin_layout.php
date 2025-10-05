@@ -24,7 +24,6 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($title); ?> | Grupo Brasil</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -43,6 +42,7 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
             }
         }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     
@@ -71,7 +71,7 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=subadmin/news" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=noticias" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
                         <i class="fas fa-newspaper mr-3 sidebar-icon"></i> <span class="sidebar-text">Noticias</span>
                     </a>
                 </li>
@@ -134,15 +134,19 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
         </div>
 
         <main class="flex-grow">
-            <?php
-            if (isset($content_view) && file_exists($content_view)) {
-                include_once $content_view;
-            } else {
-                echo '<div class="alert alert-danger" role="alert">Error: La vista de contenido no se pudo cargar.</div>';
-                error_log("Error: La vista de contenido '$content_view' no existe o no está definida.");
-            }
-            ?>
-        </main>
+    <?php
+    if (isset($content_view_path) && file_exists($content_view_path)) {
+        include_once $content_view_path;
+    } else {
+        echo '<div class="alert alert-danger" role="alert">
+                Error: La vista de contenido no se pudo cargar.<br>
+                Ruta: ' . htmlspecialchars($content_view_path ?? 'N/A') . '
+              </div>';
+        error_log("Error: La vista de contenido '$content_view_path' no existe o no está definida.");
+    }
+    ?>
+</main>
+
 
     </div>
 

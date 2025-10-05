@@ -1,20 +1,22 @@
 <?php
 // grupobrasil/app/controllers/SubadminController.php
-
-require_once __DIR__ . '/AppController.php'; // Asegúrate de incluir AppController
 require_once __DIR__ . '/../models/Usuario.php';
+require_once __DIR__ . '/../models/Noticia.php';
+require_once __DIR__ . '/../models/Comentario.php';
+require_once __DIR__ . '/AppController.php';
 
-// Hereda de AppController para usar loadView
 class SubadminController extends AppController { 
     private $usuarioModel;
+    private $noticiaModel;  
+    private $comentarioModel; 
 
     public function __construct() {
-        parent::__construct(); // Llama al constructor del padre
+        parent::__construct();
         $this->usuarioModel = new Usuario();
+        $this->noticiaModel = new Noticia();     
+        $this->comentarioModel = new Comentario();
         
-        // Verificación de rol aquí o en un middleware/router centralizado.
-        // Si no tienes un router con middleware, puedes añadir una verificación simple:
-        if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 2) { // 2 para sub-administrador
+        if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 2) {
             header('Location:./index.php?route=login&error=acceso_denegado');
             exit();
         }
@@ -28,7 +30,29 @@ class SubadminController extends AppController {
             'usuariosAsignados' => $usuariosAsignados 
         ];
 
-        // Usa la función loadView del AppController
         $this->loadView('subadmin/dashboard', $data); 
     }
+
+    public function reports() {
+    
+        $noticias = $this->noticiaModel->getAll();
+        $comentarios = $this->comentarioModel->getAll();
+
+        $data = [
+            'page_title' => 'Reportes de Subadministración',
+            'noticias' => $noticias,
+            'comentarios' => $comentarios
+        ];
+
+        $this->loadView('subadmin/reports', $data);
+    }
+
+public function manageComments() {
+    $comentarios = $this->comentarioModel->getAllComments(false); // Ver activos e inactivos
+    return $this->loadView('subadmin/comentarios/index', [
+        'page_title' => 'Gestión de Comentarios (Subadmin)',
+        'comentarios' => $comentarios
+    ]);
+}
+
 }
