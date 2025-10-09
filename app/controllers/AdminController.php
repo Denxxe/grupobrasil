@@ -760,7 +760,7 @@ public function editNews($id) {
     public function softDeleteComment($id) {
         if (!is_numeric($id) || $id <= 0) {
             $_SESSION['error_message'] = "ID de comentario inválido.";
-            header('Location: ./index.php?route=admin/manageComments');
+            header('Location: ./index.php?route=admin/Comments');
             exit();
         }
         $result = $this->comentarioModel->softDeleteComentario((int)$id);
@@ -769,14 +769,14 @@ public function editNews($id) {
         } else {
             $_SESSION['error_message'] = "Error al eliminar lógicamente el comentario.";
         }
-        header('Location: ' . $_SERVER['HTTP_REFERER'] ?? './index.php?route=admin/manageComments');
+        header('Location: ' . $_SERVER['HTTP_REFERER'] ?? './index.php?route=admin/Comments');
         exit();
     }
 
   public function activateComment($id) {
         if (!is_numeric($id) || $id <= 0) {
             $_SESSION['error_message'] = "ID de comentario inválido.";
-            header('Location: ./index.php?route=admin/manageComments'); // Ruta corregida
+            header('Location: ./index.php?route=admin/Comments');
             exit();
         }
         $result = $this->comentarioModel->activarComentario((int)$id);
@@ -785,14 +785,14 @@ public function editNews($id) {
         } else {
             $_SESSION['error_message'] = "Error al activar el comentario.";
         }
-        header('Location: ' . $_SERVER['HTTP_REFERER'] ?? './index.php?route=admin/manageComments');
+        header('Location: ' . $_SERVER['HTTP_REFERER'] ?? './index.php?route=admin/Comments');
         exit();
     }
 
  public function deleteComment($id) {
         if (!is_numeric($id) || $id <= 0) {
             $_SESSION['error_message'] = "ID de comentario inválido para eliminación física.";
-            header('Location: ./index.php?route=admin/manageComments'); // Ruta corregida
+            header('Location: ./index.php?route=admin/Comments');
             exit();
         }
         $result = $this->comentarioModel->deleteComentario((int)$id);
@@ -801,7 +801,7 @@ public function editNews($id) {
         } else {
             $_SESSION['error_message'] = "Error al eliminar físicamente el comentario.";
         }
-        header('Location: ' . $_SERVER['HTTP_REFERER'] ?? './index.php?route=admin/manageComments');
+        header('Location: ' . $_SERVER['HTTP_REFERER'] ?? './index.php?route=admin/Comments');
         exit();
     }
 

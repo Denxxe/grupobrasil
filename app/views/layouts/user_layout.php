@@ -1,21 +1,15 @@
 <?php
 // grupobrasil/app/views/layouts/user_layout.php
 
-// Asegúrate de que NO haya NADA (espacios, saltos de línea, BOM) antes de esta etiqueta PHP.
-
-// Asignar los mensajes de sesión a variables locales para usar en los data-attributes.
+// ... (El código de setup de variables y unset de sesión permanece igual) ...
 $success_message = $_SESSION['success_message'] ?? '';
 $error_message = $_SESSION['error_message'] ?? '';
-
-// IMPORTANTE: Limpiar las variables de sesión INMEDIATAMENTE después de haberlas capturado.
 unset($_SESSION['success_message']);
 unset($_SESSION['error_message']);
 
-// Asignar títulos por defecto si no vienen del controlador
 $title = $title ?? 'User Dashboard';
 $page_title = $page_title ?? 'Mi Perfil';
-
-$content_view = $content_view ?? ''; // Fallback por si acaso, aunque el controlador debería definirla.
+$content_view_path = $content_view_path ?? ''; 
 
 ?>
 <!DOCTYPE html>

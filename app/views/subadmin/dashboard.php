@@ -1,15 +1,32 @@
+<?php
+error_log("[v0] Cargando dashboard de subadmin");
+error_log("[v0] id_usuario: " . ($_SESSION['id_usuario'] ?? 'no definido'));
+error_log("[v0] id_rol: " . ($_SESSION['id_rol'] ?? 'no definido'));
+error_log("[v0] requires_setup: " . ($_SESSION['requires_setup'] ?? 'no definido'));
+?>
+
 <div class="container mx-auto px-6 py-8">
     <!-- Header -->
    
     <!-- Bienvenida -->
-    <?php if (isset($_SESSION['nombre_usuario'])): ?>
+    <?php if (isset($_SESSION['nombre_usuario']) || isset($_SESSION['nombre'])): ?>
         <p class="text-lg text-gray-700 mb-4">
             Bienvenido, 
             <span class="font-semibold text-gray-900">
-                <?php echo htmlspecialchars($_SESSION['nombre_usuario']); ?>
+                <?php echo htmlspecialchars($_SESSION['nombre_usuario'] ?? $_SESSION['nombre'] ?? 'Sub-Administrador'); ?>
             </span> 
             (Sub-Administrador).
         </p>
+    <?php endif; ?>
+
+    <!-- Mensaje de éxito -->
+    <?php if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message'])): ?>
+        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6" role="alert">
+            <?php 
+                echo htmlspecialchars($_SESSION['success_message']); 
+                unset($_SESSION['success_message']);
+            ?>
+        </div>
     <?php endif; ?>
 
     <!-- Info -->

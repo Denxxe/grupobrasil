@@ -1,26 +1,36 @@
 <?php
 // grupobrasil/app/views/user/dashboard.php
 
-// Verificar si el usuario está autenticado y es un usuario común
-if (!isset($_SESSION['id_usuario']) || $_SESSION['id_rol'] != 3) {
-    header('Location: ./index.php?route=login&error=acceso_denegado');
-    exit();
-}
+// La verificación de acceso ya se hace en el constructor del UserController
+// y en AppController::loadView()
+
+error_log("[v0] Cargando dashboard de usuario");
+error_log("[v0] id_usuario: " . ($_SESSION['id_usuario'] ?? 'no definido'));
+error_log("[v0] id_rol: " . ($_SESSION['id_rol'] ?? 'no definido'));
+error_log("[v0] requires_setup: " . ($_SESSION['requires_setup'] ?? 'no definido'));
 ?>
 
 <div class="container mx-auto px-6 py-8">
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold text-gray-800">
-            Bienvenido, <?php echo htmlspecialchars($_SESSION['nombre_completo'] ?? 'Usuario'); ?> 👋
+            Bienvenido, <?php echo htmlspecialchars($_SESSION['nombre_completo'] ?? $_SESSION['nombre'] ?? 'Usuario'); ?> 👋
         </h1>
-
     </div>
 
     <!-- Mensaje de éxito -->
-    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6" role="alert">
-      Aquí podrás ver y gestionar la información relevante para tu perfil y las actividades de la comunidad.
-    </div>
+    <?php if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message'])): ?>
+        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6" role="alert">
+            <?php 
+                echo htmlspecialchars($_SESSION['success_message']); 
+                unset($_SESSION['success_message']);
+            ?>
+        </div>
+    <?php else: ?>
+        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6" role="alert">
+            Aquí podrás ver y gestionar la información relevante para tu perfil y las actividades de la comunidad.
+        </div>
+    <?php endif; ?>
 
     <!-- Opciones en Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

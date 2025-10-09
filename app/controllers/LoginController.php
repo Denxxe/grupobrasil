@@ -6,11 +6,11 @@ require_once __DIR__ . '/../models/Usuario.php';
 class LoginController {
     private $usuarioModel;
 
-    public function __construct() {
-        $this->usuarioModel = new Usuario();
+    public function __construct($usuarioModel) {
+        $this->usuarioModel = $usuarioModel;
     }
 
-      public function index() { // <--- ESTE ES EL MÉTODO QUE MUESTRA EL FORMULARIO DE LOGIN
+    public function index() { // <--- ESTE ES EL MÉTODO QUE MUESTRA EL FORMULARIO DE LOGIN
         // Si ya hay una sesión activa, redirigir al dashboard adecuado
         if (isset($_SESSION['id_usuario'])) {
             if ($_SESSION['id_rol'] == 1) { // Administrador
@@ -26,6 +26,7 @@ class LoginController {
         $success = $_GET['success'] ?? '';
         require_once __DIR__ . '/../views/login.php'; // <--- ESTO CARGA LA VISTA
     }
+
     public function login() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ci_usuario = trim($_POST['ci_usuario'] ?? '');
@@ -48,10 +49,9 @@ class LoginController {
                     exit();
                 }
 
-                // **** LÓGICA DE REDIRECCIÓN BASADA EN requires_setup ****
                 if ($user['requires_setup'] == 1) {
                     $_SESSION['temp_message'] = "¡Bienvenido por primera vez! Por favor, completa tu perfil y establece una nueva contraseña.";
-                    header('Location:./index.php?route=user/setup_profile');
+                    header('Location:./index.php?route=user/setupProfile');
                     exit();
                 }
 

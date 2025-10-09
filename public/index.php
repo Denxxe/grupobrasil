@@ -1,6 +1,6 @@
 <?php
 // grupobrasil/public/index.php
-
+ob_start(); 
 // Inicia la sesión al principio de todo si aún no está iniciada
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
@@ -19,7 +19,7 @@ define('VIEWS_PATH', APP_ROOT . 'app/views/');
 define('UTILS_PATH', APP_ROOT . 'app/utils/');
 
 // --- Carga de archivos de configuración y base de datos ---
-$db = require_once CONFIG_PATH . 'database.php'; // Asume que database.php devuelve la conexión $db
+require_once CONFIG_PATH . 'database.php'; // Solo cargar la clase, no asignar a $db
 
 // --- Carga de modelos (asegúrate de que ModelBase se cargue primero si es una clase base) ---
 require_once MODELS_PATH . 'ModelBase.php';
@@ -61,7 +61,7 @@ $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Página No Encon
 if (!isset($_SESSION['id_usuario'])) {
     switch ($route) {
         case 'login':
-        case '': // Si no se especifica ruta, llevar al login
+        case '':
             $controllerName = 'LoginController';
             $actionName = 'index';
             break;
@@ -77,18 +77,26 @@ if (!isset($_SESSION['id_usuario'])) {
     }
 } else { // 2. USUARIO AUTENTICADO
 
-    $userRole = $_SESSION['id_rol']; // Obtener el rol del usuario de la sesión
+    $userRole = $_SESSION['id_rol'];
+
+    if (isset($_SESSION['requires_setup']) && $_SESSION['requires_setup'] == 1) {
+        // Si el usuario requiere setup y no está en la ruta de setup, redirigir
+        if ($route !== 'user/setupProfile' && $route !== 'user/updateProfile' && $route !== 'login/logout') {
+            header('Location: ./index.php?route=user/setupProfile');
+            exit();
+        }
+    }
 
     // Redirección por defecto a dashboard si se accede a la raíz o a 'login' estando autenticado
     if ($route === 'login' || $route === '') {
         switch ($userRole) {
-            case 1: // Administrador
+            case 1:
                 header('Location: ./index.php?route=admin/dashboard');
                 exit();
-            case 2: // Sub-administrador
+            case 2:
                 header('Location: ./index.php?route=subadmin/dashboard');
                 exit();
-            case 3: // Usuario Común
+            case 3:
                 header('Location: ./index.php?route=user/dashboard');
                 exit();
             default:
@@ -105,15 +113,12 @@ if (!isset($_SESSION['id_usuario'])) {
     }
     // --- Lógica de Enrutamiento de APPs Autenticadas (ADMIN, SUBADMIN, USER) ---
     else {
-        // Extraer segmentos de la ruta
-        $controllerSegment = array_shift($routeParts); // Ej: 'admin', 'noticias', 'user'
-        $actionSegment = array_shift($routeParts) ?? 'index'; // Ej: 'dashboard', 'show', 'create'
-        $id = array_shift($routeParts); // El tercer segmento, que podría ser un ID (ej: noticias/show/123)
+        $controllerSegment = array_shift($routeParts);
+        $actionSegment = array_shift($routeParts) ?? 'index';
+        $id = array_shift($routeParts);
 
-        // Asignar el nombre del controlador inicial, puede ser sobrescrito en el switch
         $controllerName = ucfirst($controllerSegment) . 'Controller';
 
-        // --- Manejo Específico de Controladores y Acciones ---
         switch ($controllerSegment) {
             case 'admin':
                 if ($userRole !== 1) {
@@ -200,11 +205,17 @@ if (!isset($_SESSION['id_usuario'])) {
         } else { 
             $actionName = 'manageComments'; 
         }
+
     } elseif ($actionSegment === 'reports') {
         $actionName = 'reports';
     } elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
         $actionName = 'dashboard';
-    }
+    } elseif ($actionSegment === 'notifications') {
+                    if ($id === 'mark-read') { $actionName = 'markNotificationRead'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
+                    elseif ($id === 'mark-all-read') { $actionName = 'markAllNotificationsRead'; $id = null; }
+                    elseif ($id === 'delete') { $actionName = 'deleteNotification'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
+                    else { $actionName = 'manageNotifications'; }
+                }
     break;
 
             case 'noticias':
@@ -227,12 +238,27 @@ if (!isset($_SESSION['id_usuario'])) {
                     header('Location: ./index.php?route=login');
                     exit();
                 }
-                $controllerName = 'UserController';
-                if ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
+               $controllerName = 'UserController';
+                
+                if ($actionSegment === 'notifications') {
+                    if ($id === 'mark-read') { $actionName = 'markNotificationRead'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
+                    elseif ($id === 'mark-all-read') { $actionName = 'markAllNotificationsRead'; $id = null; }
+                    elseif ($id === 'delete') { $actionName = 'deleteNotification'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
+                    else { $actionName = 'manageNotifications'; }
+                }
+   
+                elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
                     $actionName = 'dashboard';
                 }
+                
+                elseif ($actionSegment === 'setupProfile') {
+                    $actionName = 'setupProfile';
+                }
+                elseif ($actionSegment === 'updateProfile' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                    $actionName = 'updateProfile';
+                }
+                
                 break;
-
             default:
                 // Si la ruta no coincide con ningún controlador conocido para usuarios autenticados
                 http_response_code(404);
@@ -255,14 +281,12 @@ if ($controllerName) {
             http_response_code(500);
             $viewData = ['view' => 'error/500', 'data' => ['page_title' => 'Error Interno', 'message' => "Error 500: Clase de controlador '" . htmlspecialchars($controllerName) . "' no encontrada en el archivo."]];
         } else {
-            // Instancia de los modelos y se pasan al controlador
-            // Esto es crucial para la inyección de dependencias
-            $usuarioModel = new Usuario($db);
-            $noticiaModel = new Noticia($db);
-            $comentarioModel = new Comentario($db);
-            $likeModel = new Like($db);
-            $notificacionModel = new Notificacion($db);
-            $categoriaModel = new Categoria($db);
+            $usuarioModel = new Usuario();
+            $noticiaModel = new Noticia();
+            $comentarioModel = new Comentario();
+            $likeModel = new Like();
+            $notificacionModel = new Notificacion();
+            $categoriaModel = new Categoria();
 
             // Determinar qué controlador instanciar con qué dependencias
             switch ($controllerName) {
@@ -313,13 +337,7 @@ if ($controllerName) {
         $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Controlador No Encontrado', 'message' => "Error 404: Archivo de controlador '" . htmlspecialchars($controllerName) . "' no encontrado."]];
     }
 
-    
 }
-
-
-// --- Renderizado Final de la Vista ---
-// Extrae los datos para que estén disponibles como variables en el ámbito del include
-// $data contendrá lo que el controlador haya devuelto, más los mensajes flash
 $data = $viewData['data'] ?? [];
 $data['success_message'] = $success_message;
 $data['error_message'] = $error_message;
