@@ -10,11 +10,6 @@ class Usuario extends ModelBase {
         $this->primaryKey = 'id_usuario';
     }
 
-    /**
-     * Método para buscar un usuario por su CI.
-     * @param string $ci_usuario La cédula de identidad del usuario.
-     * @return array|false Un array asociativo con los datos del usuario o false si no se encuentra.
-     */
     public function buscarPorCI($ci_usuario) {
         $stmt = $this->conn->prepare("SELECT * FROM " . $this->table . " WHERE ci_usuario = ?");
         if ($stmt === false) {
@@ -27,11 +22,6 @@ class Usuario extends ModelBase {
         return $result->fetch_assoc();
     }
 
-    /**
-     * Obtiene un usuario por su ID de usuario.
-     * @param int $id_usuario ID del usuario a buscar.
-     * @return array|false Un array asociativo con los datos del usuario o false si no se encuentra o hay un error.
-     */
     public function obtenerUsuarioPorId(int $id_usuario) {
         $sql = "SELECT * FROM " . $this->table . " WHERE " . $this->primaryKey . " = ?";
         $stmt = $this->conn->prepare($sql);
@@ -52,11 +42,6 @@ class Usuario extends ModelBase {
         }
     }
 
-    /**
-     * Busca un usuario por su dirección de correo electrónico.
-     * @param string $email El correo electrónico a buscar.
-     * @return array|false Un array asociativo con los datos del usuario o false si no se encuentra o hay un error.
-     */
     public function buscarPorEmail(string $email) {
         $sql = "SELECT * FROM " . $this->table . " WHERE email = ?";
         $stmt = $this->conn->prepare($sql);
@@ -77,10 +62,6 @@ class Usuario extends ModelBase {
         }
     }
 
-    /**
-     * Obtiene el número total de usuarios en la base de datos.
-     * @return int El número total de usuarios, o 0 si hay un error.
-     */
     public function getTotalUsuarios(): int {
         $sql = "SELECT COUNT(*) AS total FROM " . $this->table;
         $result = $this->conn->query($sql);
@@ -94,12 +75,6 @@ class Usuario extends ModelBase {
         }
     }
 
-    /**
-     * Obtiene todos los registros de la tabla, con opciones de filtro y ordenamiento.
-     * @param array $filters Array asociativo de filtros (e.g., ['search' => 'texto', 'id_rol' => 1]).
-     * @param array $order Array asociativo de ordenamiento (e.g., ['column' => 'nombre', 'direction' => 'ASC']).
-     * @return array|false Un array de registros o false si hay un error.
-     */
     public function getAllFiltered(array $filters = [], array $order = []) {
         $sql = "SELECT * FROM " . $this->table;
         $where_clauses = [];
@@ -176,14 +151,6 @@ class Usuario extends ModelBase {
         }
     }
 
-
-    /**
-     * Crea un nuevo usuario en la base de datos.
-     * @param array $data Array asociativo con los datos del usuario.
-     * Debe contener 'ci_usuario', 'nombre', 'apellido', 'password', 'id_rol', etc.
-     * La contraseña debe venir ya hasheada.
-     * @return int|bool ID del nuevo usuario si fue exitoso, false en caso contrario.
-     */
     public function crearUsuario(array $data) {
         // Asegúrate de que la contraseña ya viene hasheada desde el controlador
         // Antes de insertar, verifica que los campos necesarios existan
@@ -237,23 +204,15 @@ class Usuario extends ModelBase {
         }
     }
 
-    /**
-     * Actualiza un usuario existente por su ID.
-     * @param int $id_usuario ID del usuario a actualizar.
-     * @param array $data Array asociativo con los datos a actualizar.
-     * La contraseña debe venir ya hasheada si se va a actualizar.
-     * @return bool True si fue exitoso, false en caso contrario.
-     */
     public function actualizarUsuario(int $id_usuario, array $data) {
         if (empty($data)) {
-            return false; // No hay datos para actualizar
+            return false;
         }
 
         $set_clauses = [];
         $params = [];
         $types = "";
 
-        // Mapeo de campos a tipos para bind_param
         $field_types = [
             'ci_usuario' => 's', 'nombre' => 's', 'apellido' => 's', 'fecha_nacimiento' => 's',
             'direccion' => 's', 'telefono' => 's', 'email' => 's', 'password' => 's',
@@ -262,7 +221,7 @@ class Usuario extends ModelBase {
         ];
 
         foreach ($data as $field => $value) {
-            if (array_key_exists($field, $field_types)) { // Solo actualizar campos válidos
+            if (array_key_exists($field, $field_types)) {
                 $set_clauses[] = "$field = ?";
                 $params[] = $value;
                 $types .= $field_types[$field];
@@ -270,12 +229,12 @@ class Usuario extends ModelBase {
         }
 
         if (empty($set_clauses)) {
-            return false; // No hay campos válidos para actualizar
+            return false;
         }
 
         $sql = "UPDATE " . $this->table . " SET " . implode(', ', $set_clauses) . " WHERE " . $this->primaryKey . " = ?";
-        $types .= "i"; // El tipo para el id_usuario
-        $params[] = $id_usuario; // Añadir el ID al final de los parámetros
+        $types .= "i";
+        $params[] = $id_usuario;
 
         $stmt = $this->conn->prepare($sql);
 
@@ -284,8 +243,6 @@ class Usuario extends ModelBase {
             return false;
         }
 
-        // Usar call_user_func_array para bind_param debido a un número variable de parámetros
-        // Necesitamos pasar la referencia de los parámetros
         $bind_names = array_merge([$types], $params);
         $refs = [];
         foreach ($bind_names as $key => $value) {
@@ -293,20 +250,16 @@ class Usuario extends ModelBase {
         }
         call_user_func_array([$stmt, 'bind_param'], $refs);
 
-
         if ($stmt->execute()) {
-            return $stmt->affected_rows > 0;
+            // Retornar true si se ejecutó correctamente, independientemente de affected_rows
+            // affected_rows puede ser 0 si los datos no cambiaron, pero no es un error
+            return true;
         } else {
             error_log("Error al ejecutar actualizarUsuario: " . $stmt->error);
             return false;
         }
     }
 
-    /**
-     * Elimina un usuario por su ID.
-     * @param int $id ID del usuario a eliminar.
-     * @return bool True si la eliminación fue exitosa, false en caso contrario.
-     */
     public function eliminarUsuario($id) {
         $stmt = $this->conn->prepare("DELETE FROM usuarios WHERE id_usuario = ?");
         if ($stmt === false) {

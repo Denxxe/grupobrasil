@@ -11,12 +11,6 @@ class Noticia extends ModelBase {
         $this->primaryKey = 'id_noticia';
     }
 
-    /**
-     * Obtiene todas las noticias.
-     * @param bool $onlyActive Si es true, solo retorna noticias activas.
-     * @param array $order Define la columna y dirección de ordenación.
-     * @return array Un array de arrays asociativos de noticias.
-     */
     public function getAllNews(bool $onlyActive = true, array $order = ['column' => 'fecha_publicacion', 'direction' => 'DESC']) {
         $sql = "SELECT id_noticia, titulo, contenido, imagen_principal, fecha_publicacion, id_usuario_publicador, id_categoria, activo 
                 FROM " . $this->table; // Añadir id_categoria para getAllNews

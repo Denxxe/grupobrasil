@@ -99,9 +99,6 @@ class NoticiaController extends AppController {
         $this->redirect('noticias/show/' . $id_noticia);
     }
 
-    /**
-     * Alterna el "like" de una noticia por parte del usuario autenticado.
-     */
     public function toggleLike() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('noticias');

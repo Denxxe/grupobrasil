@@ -11,14 +11,6 @@ class Like extends ModelBase {
         $this->primaryKey = 'id_like';
     }
 
-    /**
-     * Registra un "Me Gusta" de un usuario a una noticia.
-     * Se asegura de que un usuario no pueda dar más de un like por noticia gracias a la clave UNIQUE en la DB.
-     *
-     * @param int $id_noticia El ID de la noticia a la que se le dará "Me Gusta".
-     * @param int $id_usuario El ID del usuario que da el "Me Gusta".
-     * @return int|false El ID del nuevo like si fue exitoso, o false si ya existía o hubo un error.
-     */
     public function darLike(int $id_noticia, int $id_usuario) {
         // Primero, verifica si el usuario ya dio like a esta noticia para evitar duplicados
         if ($this->usuarioDioLike($id_noticia, $id_usuario)) {
@@ -41,13 +33,6 @@ class Like extends ModelBase {
         return $new_id;
     }
 
-    /**
-     * Elimina un "Me Gusta" de un usuario a una noticia (deshacer el like).
-     *
-     * @param int $id_noticia El ID de la noticia.
-     * @param int $id_usuario El ID del usuario.
-     * @return bool True si el like fue eliminado, false en caso contrario.
-     */
     public function quitarLike(int $id_noticia, int $id_usuario) {
         $sql = "DELETE FROM " . $this->table . " WHERE id_noticia = ? AND id_usuario = ?";
         
@@ -71,12 +56,6 @@ class Like extends ModelBase {
         }
     }
 
-    /**
-     * Cuenta el número total de "Me Gusta" para una noticia específica.
-     *
-     * @param int $id_noticia El ID de la noticia.
-     * @return int El número total de likes para esa noticia.
-     */
     public function contarLikesPorNoticia(int $id_noticia): int {
         $sql = "SELECT COUNT(*) AS total_likes FROM " . $this->table . " WHERE id_noticia = ?";
         
@@ -103,13 +82,6 @@ class Like extends ModelBase {
         return 0;
     }
 
-    /**
-     * Verifica si un usuario específico ya dio "Me Gusta" a una noticia.
-     *
-     * @param int $id_noticia El ID de la noticia.
-     * @param int $id_usuario El ID del usuario.
-     * @return bool True si el usuario ya dio like, false en caso contrario.
-     */
     public function usuarioDioLike(int $id_noticia, int $id_usuario): bool {
         $sql = "SELECT COUNT(*) AS liked FROM " . $this->table . " WHERE id_noticia = ? AND id_usuario = ? LIMIT 1";
         

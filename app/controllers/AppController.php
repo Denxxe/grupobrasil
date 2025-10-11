@@ -1,15 +1,10 @@
 <?php
 // grupobrasil/app/controllers/AppController.php
 
-// Asegúrate de que las sesiones estén iniciadas al principio de tu index.php
-// session_start(); 
-
 class AppController {
-    protected $db; // Propiedad para almacenar la conexión a la base de datos
+    protected $db; 
 
     public function __construct() {
-        // Inicializa los mensajes flash para que estén disponibles en todas las vistas
-        // Si no existen, los inicializamos como arrays vacíos
         if (!isset($_SESSION['success_message'])) {
             $_SESSION['success_message'] = [];
         }
@@ -18,111 +13,105 @@ class AppController {
         }
     }
 
-    /**
-     * Establece la conexión a la base de datos para que los modelos la utilicen.
-     * Esto se llamará desde index.php al instanciar el controlador.
-     * @param PDO $db Objeto PDO de la conexión a la base de datos.
-     */
     public function setDb(PDO $db) {
         $this->db = $db;
     }
 
-    /**
-     * Carga una vista y la envuelve en el layout adecuado según el rol del usuario.
-     * También pasa datos a la vista y gestiona los mensajes flash.
-     *
-     * @param string $viewName El nombre de la vista a cargar (ej. 'admin/dashboard', 'login').
-     * @param array $data Un array asociativo de datos a pasar a la vista.
-     */
     protected function loadView($viewName, $data = []) {
-        // Extrae los datos para que estén disponibles como variables en la vista
-        extract($data);
-
-        // Define el título de la página por defecto
+        $content_view_path = __DIR__ . '/../views/' . $viewName . '.php';
         $page_title = $data['page_title'] ?? 'Grupo Brasil';
 
-        // Recupera y limpia los mensajes flash de la sesión
-        $success_message = $_SESSION['success_message'] ?? null;
-        $error_message = $_SESSION['error_message'] ?? null;
-        unset($_SESSION['success_message']); // Elimina el mensaje después de recuperarlo
-        unset($_SESSION['error_message']);   // Elimina el mensaje después de recuperarlo
+        $requires_setup = isset($_SESSION['requires_setup']) && $_SESSION['requires_setup'] == 1;
 
-        // Determina el layout a usar basado en el rol del usuario
-        // O si no hay sesión, usa un layout público por defecto.
-        $layout = 'default_public_layout.php'; // Layout por defecto para no-logueados o login
+        error_log("[v0] AppController::loadView() llamado");
+        error_log("[v0] Vista solicitada: " . $viewName);
+        error_log("[v0] requires_setup: " . ($requires_setup ? 'true' : 'false'));
+        error_log("[v0] id_rol: " . ($_SESSION['id_rol'] ?? 'no definido'));
+
+        $layout = 'default_public_layout.php'; 
         if (isset($_SESSION['id_rol'])) {
             switch ($_SESSION['id_rol']) {
-                case 1: // Administrador
-                    $layout = 'admin_layout.php';
+                case 1: $layout = 'admin_layout.php'; break;
+                case 2: 
+                    $layout = $requires_setup ? 'default_public_layout.php' : 'subadmin_layout.php';
                     break;
-                case 2: // Sub-administrador
-                    $layout = 'subadmin_layout.php';
+                case 3: 
+                    $layout = $requires_setup ? 'default_public_layout.php' : 'user_layout.php';
                     break;
-                case 3: // Usuario Común
-                    $layout = 'user_layout.php';
-                    break;
-                default:
-                    $layout = 'default_public_layout.php'; // Fallback
-                    break;
+                default: $layout = 'default_public_layout.php'; break;
             }
         }
-        
-        // Rutas completas a la vista de contenido y al layout
-        $content_view_path = __DIR__ . '/../views/' . $viewName . '.php';
+
+        error_log("[v0] Layout seleccionado: " . $layout);
+
+        if ($requires_setup && $viewName !== 'user/setup_profile') {
+            error_log("[v0] Usuario requiere setup, forzando vista setup_profile");
+            
+            // Cargar datos del usuario para el setup
+            require_once __DIR__ . '/../models/Usuario.php';
+            $usuarioModel = new Usuario();
+            $user_data = $usuarioModel->obtenerUsuarioPorId($_SESSION['id_usuario']);
+            
+            // Preparar datos para la vista de setup
+            $data = [
+                'page_title' => 'Configuración Obligatoria',
+                'user_data' => $user_data,
+                'temp_message' => $_SESSION['temp_message'] ?? ($_SESSION['welcome_message'] ?? null),
+                'form_errors' => $_SESSION['form_errors'] ?? [],
+                'old_form_data' => $_SESSION['old_form_data'] ?? $user_data
+            ];
+            
+            // Limpiar mensajes temporales
+            unset($_SESSION['welcome_message'], $_SESSION['temp_message'], $_SESSION['form_errors'], $_SESSION['old_form_data']);
+            
+            $page_title = $data['page_title'];
+            $layout = 'default_public_layout.php'; 
+            $viewName = 'user/setup_profile';
+            $content_view_path = __DIR__ . '/../views/' . $viewName . '.php';
+        }
+
         $layout_path = __DIR__ . '/../views/layouts/' . $layout;
 
-        // Verifica si la vista de contenido existe
+        error_log("[v0] Ruta de vista: " . $content_view_path);
+        error_log("[v0] Ruta de layout: " . $layout_path);
+
         if (!file_exists($content_view_path)) {
-            error_log("Error: La vista '" . htmlspecialchars($viewName) . "' no se encontró en " . htmlspecialchars($content_view_path));
-            http_response_code(404); // Not Found
-            echo "Error: Vista no encontrada.";
+            error_log("[v0] ERROR: La vista no existe: " . $content_view_path);
+            http_response_code(404);
+            echo "Error: Vista no encontrada: " . htmlspecialchars($viewName);
             exit();
         }
 
-        // Verifica si el layout existe
         if (!file_exists($layout_path)) {
-            error_log("Error: El layout '" . htmlspecialchars($layout) . "' no se encontró en " . htmlspecialchars($layout_path));
-            http_response_code(500); // Internal Server Error
-            echo "Error: Layout no encontrado.";
+            error_log("[v0] ERROR: El layout no existe: " . $layout_path);
+            http_response_code(500);
+            echo "Error: Layout no encontrado: " . htmlspecialchars($layout);
             exit();
         }
 
-        // Incluye el layout, que a su vez incluirá la vista de contenido
+        extract($data);
+        
+        error_log("[v0] Incluyendo layout: " . $layout);
+        error_log("[v0] content_view_path disponible: " . $content_view_path);
         include_once $layout_path;
-        exit(); // Termina la ejecución después de renderizar la vista
+        exit();
     }
 
-    /**
-     * Agrega un mensaje de éxito a la sesión para mostrar en la siguiente solicitud.
-     * @param string $message
-     */
     protected function setSuccessMessage($message) {
-        // Almacena los mensajes como un array si quieres permitir múltiples mensajes
-        // O simplemente sobrescribe si solo quieres el último
-        $_SESSION['success_message'] = $message; // Simplificamos para un solo mensaje por tipo
+        $_SESSION['success_message'] = $message;
     }
 
-    /**
-     * Agrega un mensaje de error a la sesión para mostrar en la siguiente solicitud.
-     * @param string $message
-     */
     protected function setErrorMessage($message) {
-        $_SESSION['error_message'] = $message; // Simplificamos para un solo mensaje por tipo
+        $_SESSION['error_message'] = $message;
     }
 
-    /**
-     * Redirige a una ruta específica y termina la ejecución.
-     * Usa esto para redirecciones HTTP después de acciones POST, etc.
-     *
-     * @param string $route La ruta a la que redirigir (ej. 'login', 'admin/dashboard').
-     * @param array $params Parámetros adicionales para la URL (ej. ['id' => 1]).
-     */
     protected function redirect($route, $params = []) {
         $queryString = http_build_query($params);
         $url = './index.php?route=' . urlencode($route);
         if (!empty($queryString)) {
             $url .= '&' . $queryString;
         }
+        error_log("[v0] Redirigiendo a: " . $url);
         header('Location: ' . $url);
         exit();
     }

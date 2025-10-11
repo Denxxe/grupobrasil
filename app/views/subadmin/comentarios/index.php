@@ -34,12 +34,13 @@
                         <td class="px-4 py-2 text-center">
                             <!-- El subadmin puede desactivar (soft delete) -->
                             <?php if ($comentario['activo'] == 1): ?>
-                                <a href="./index.php?route=subadmin/comments/soft-delete&id=<?= $comentario['id_comentario'] ?>"
+                               <a href="./index.php?route=subadmin/softDeleteComment&id=<?= $comentario['id_comentario'] ?>"
                                    class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">
                                    Eliminar
                                 </a>
                             <?php else: ?>
-                                <a href="./index.php?route=subadmin/comments/activate&id=<?= $comentario['id_comentario'] ?>"
+                                <a href="./index.php?route=subadmin/activateComment&id=<?= $comentario['id_comentario'] ?>"
+
                                    class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
                                    Activar
                                 </a>

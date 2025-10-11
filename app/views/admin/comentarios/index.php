@@ -104,12 +104,12 @@ document.querySelectorAll('.open-modal').forEach(button => {
                                 </small>
                                 <div class="mt-2 flex gap-3 text-sm">
                                     <!-- Botón de Activar/Desactivar -->
-                                    <a href="./index.php?route=admin/${actionRoute}/${com.id_comentario}" 
+                                    <a href="./index.php?route=admin/${actionRoute}&id=${com.id_comentario}"
                                        class="px-3 py-1 ${actionColor} text-white font-medium rounded transition duration-150">
                                         ${actionText}
                                     </a>
                                     <!-- Botón de Eliminación Física -->
-                                    <a href="./index.php?route=admin/deleteComment/${com.id_comentario}" 
+                                   <a href="./index.php?route=admin/deleteComment&id=${com.id_comentario}"
                                        onclick="return confirm('¿Estás seguro de ELIMINAR FÍSICAMENTE este comentario? Esta acción es irreversible.');"
                                        class="px-3 py-1 bg-gray-700 text-white font-medium rounded hover:bg-gray-800 transition duration-150">
                                         Eliminar

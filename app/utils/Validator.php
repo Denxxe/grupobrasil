@@ -45,12 +45,7 @@ class Validator {
     }
 
     public static function isValidPassword(string $password): bool {
-        // Mínimo 8 caracteres
-        // Al menos una letra mayúscula (A-Z)
-        // Al menos una letra minúscula (a-z)
-        // Al menos un dígito (0-9)
-        // Al menos un carácter especial (ej. !@#$%^&*()_+={}[];:'",.<>/?`~)
-        $pattern = '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]|\\:;"\'<>,.?\/~`]).{8,}$/';
-        return preg_match($pattern, $password) === 1;
+        // Mínimo 6 caracteres
+        return strlen($password) >= 6;
     }
 }

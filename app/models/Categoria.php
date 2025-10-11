@@ -10,10 +10,6 @@ class Categoria extends ModelBase {
         $this->primaryKey = 'id_categoria'; // Clave primaria
     }
 
-    /**
-     * Obtiene todas las categorías de la base de datos.
-     * @return array Un array de todas las categorías.
-     */
     public function getAllCategories() {
         $sql = "SELECT id_categoria, nombre_categoria FROM " . $this->table . " ORDER BY nombre_categoria ASC";
         $stmt = $this->conn->prepare($sql);
