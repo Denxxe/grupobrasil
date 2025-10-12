@@ -34,7 +34,7 @@ class UserController extends AppController {
         $data = [
             'page_title' => 'Mi Dashboard',
         ];
-        $this->loadView('user/dashboard', $data); 
+        return $this->loadView('user/dashboard', $data); 
     }
 
    public function setupProfile() {

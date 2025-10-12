@@ -17,8 +17,10 @@ class LoginController {
                 header('Location:./index.php?route=admin/dashboard');
             } elseif ($_SESSION['id_rol'] == 2) { // Sub-administrador
                 header('Location:./index.php?route=subadmin/dashboard');
-            } else { // Usuario Común
+            } else if ($_SESSION['id_rol'] == 3){ // Usuario Común
                 header('Location:./index.php?route=user/dashboard');
+            }else{
+                $this->logout('Rol de usuario no reconocido.');     
             }
             exit();
         }
@@ -60,8 +62,10 @@ class LoginController {
                     header('Location:./index.php?route=admin/dashboard');
                 } elseif ($user['id_rol'] == 2) { // Sub-administrador
                     header('Location:./index.php?route=subadmin/dashboard');
-                } else { // Usuario Común
-                    header('Location:./index.php?route=user/dashboard');
+                } else if ($user['id_rol'] == 3){ // Usuario Común
+                    header  ('Location:./index.php?route=user/dashboard');
+                }else{
+                    $this->logout('Rol de usuario no reconocido.');     
                 }
                 exit();
 

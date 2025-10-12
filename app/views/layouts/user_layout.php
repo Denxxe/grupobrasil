@@ -1,6 +1,6 @@
 <?php
 // grupobrasil/app/views/layouts/user_layout.php
-
+echo "LAYOUT INCLUIDO"; 
 // ... (El código de setup de variables y unset de sesión permanece igual) ...
 $success_message = $_SESSION['success_message'] ?? '';
 $error_message = $_SESSION['error_message'] ?? '';
@@ -123,17 +123,14 @@ $content_view_path = $content_view_path ?? '';
         </div>
 
        <main class="flex-grow">
-    <?php
-    if (isset($content_view_path) && file_exists($content_view_path)) {
-        include_once $content_view_path;
-    } else {
-        echo '<div class="alert alert-danger" role="alert">
-                Error: La vista de contenido no se pudo cargar.<br>
-                Ruta: ' . htmlspecialchars($content_view_path ?? 'N/A') . '
-              </div>';
-        error_log("Error: La vista de contenido '$content_view_path' no existe o no está definida.");
-    }
-    ?>
+            <?php
+        if (isset($content_view_path) && file_exists($content_view_path)) {
+                include $content_view_path;
+            } else {
+                echo '<div class="alert alert-danger">No se pudo cargar la vista de contenido.<br>Ruta: ' . htmlspecialchars($content_view_path ?? 'N/A') . '</div>';
+            }
+            ?>
+    
 </main>
 
 

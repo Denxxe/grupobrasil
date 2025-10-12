@@ -101,6 +101,7 @@ if (!isset($_SESSION['id_usuario'])) {
                 exit();
             default:
                 $_SESSION['error_message'] = "Rol de usuario desconocido. Sesión cerrada.";
+                session_destroy();
                 header('Location: ./index.php?route=login/logout');
                 exit();
         }
@@ -360,6 +361,25 @@ $page_content = ob_get_clean(); // Captura el HTML de la vista
 
 // Incluye el layout principal, que debe tener una variable $page_content
 // y las variables $success_message, $error_message, $page_title disponibles
-include VIEWS_PATH . 'layouts/admin_layout.php'; // O un layout diferente según el rol/ruta si lo necesitas
+if (isset($_SESSION['id_rol'])) {
+    switch ($_SESSION['id_rol']) {
+        case 1:
+            $layout = 'layouts/admin_layout.php';
+            break;
+        case 2:
+            $layout = 'layouts/subadmin_layout.php';
+            break;
+        case 3:
+            $layout = 'layouts/user_layout.php';
+            break;
+        default:
+            $layout = 'layouts/admin_layout.php';
+            break;
+    }
+} else {
+    // Para login y vistas públicas
+    $layout = 'layouts/login_layout.php';
+}
 
+include VIEWS_PATH . $layout;
 ?>
