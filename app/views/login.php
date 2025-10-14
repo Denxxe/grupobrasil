@@ -35,7 +35,7 @@ if (session_status() == PHP_SESSION_NONE) {
                     <div class="brand-content">
                         <i class="bi bi-buildings-fill brand-icon"></i>
                         <h1 class="text-white">Bienvenido al Sistema de Gestión</h1>
-                        <p class="text-white-50">Consejo Comunal</p>
+                        <h3 class="text-white-50">Consejo Comunal <b>BRASIL</b> sector 2</h3>
                     </div>
                 </div>
             </div>

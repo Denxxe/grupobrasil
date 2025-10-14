@@ -53,7 +53,7 @@ $page_title = $page_title ?? 'Mi Perfil';
 
     <aside id="sidebar" class="sidebar bg-vinotinto-700 text-gray-100 flex flex-col p-4 rounded-r-lg shadow-lg">
         <div class="flex items-center justify-center p-4 border-b border-vinotinto-800 overflow-hidden">
-            <h1 class="text-2xl font-bold text-accentgold sidebar-text">Panel de Usuario</h1>
+            <h1 class="text-2xl font-bold text-accentgold sidebar-text"><?php echo $_SESSION['nombre_completo'] ?></h1>
         </div>
         <nav class="flex-grow mt-4">
             <ul class="space-y-2">
