@@ -41,4 +41,32 @@ class LiderComunal extends ModelBase {
         }
         return 0;
     }
+
+    /**
+     * Elimina todos los registros de lider_comunal para un habitante específico
+     *
+     * @param int $habitanteId El ID del habitante
+     * @return bool True si la operación fue exitosa
+     */
+    public function deleteByHabitanteId(int $habitanteId): bool {
+        $sql = "DELETE FROM {$this->table} WHERE id_habitante = ?";
+        
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("[v0] Error al preparar deleteByHabitanteId en LiderComunal: " . $this->conn->error);
+            return false;
+        }
+
+        $stmt->bind_param("i", $habitanteId);
+        $success = $stmt->execute();
+        $stmt->close();
+
+        if (!$success) {
+            error_log("[v0] Error al eliminar registros de lider_comunal: " . $this->conn->error);
+        } else {
+            error_log("[v0] Eliminados registros de lider_comunal para habitante ID: $habitanteId");
+        }
+
+        return true;
+    }
 }

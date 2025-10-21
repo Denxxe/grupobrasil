@@ -6,12 +6,23 @@
 <div class="container-fluid">
 
     <?php if (!empty($error_message)): ?>
-        <div class="alert alert-danger"><?= htmlspecialchars($error_message) ?></div>
-        <?php unset($_SESSION['error_message']); // Limpiar mensaje ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?= htmlspecialchars($error_message) ?>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <?php unset($_SESSION['error_message']); ?>
     <?php endif; ?>
+    
     <?php if (!empty($success_message)): ?>
-        <div class="alert alert-success"><?= htmlspecialchars($success_message) ?></div>
-        <?php unset($_SESSION['success_message']); // Limpiar mensaje ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <?= htmlspecialchars($success_message) ?>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <?php unset($_SESSION['success_message']); ?>
     <?php endif; ?>
 
     <div class="card shadow mb-4">
@@ -38,17 +49,13 @@
                         <?php 
                         if (isset($personas) && is_array($personas)):
                             foreach ($personas as $persona): 
-                                // ¡CORRECCIÓN AQUÍ! Usar notación de array asociativo []
-                                // La línea 42 es donde estaba fallando (id_persona)
                                 $id = htmlspecialchars($persona['id_persona']); 
                                 $cedula = htmlspecialchars($persona['cedula'] ?? 'N/A'); 
                                 $nombres = htmlspecialchars($persona['nombres'] ?? '');
                                 $apellidos = htmlspecialchars($persona['apellidos'] ?? '');
                                 $casa = htmlspecialchars($persona['numero_casa'] ?? 'S/N');
-                                // La columna se llama calle_nombre en el SQL
                                 $calle_nombre = htmlspecialchars($persona['calle_nombre'] ?? 'Sin Calle'); 
                                 $telefono = htmlspecialchars($persona['telefono'] ?? 'N/A');
-                                // La columna se llama tiene_usuario en el SQL
                                 $has_user = $persona['tiene_usuario'] ?? false; 
                         ?>
                         <tr>
@@ -64,16 +71,27 @@
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <!-- ENLACE CLAVE: Para gestionar roles de LIDERAZGO -->
-                                <a href="./index.php?route=admin/users/create-user-role&person_id=<?= $id ?>" class="btn btn-info btn-sm">
-                                    <i class="fas fa-user-shield"></i> 
-                                    <?= $has_user ? 'Gestionar Roles' : 'Crear Usuario/Líder' ?>
-                                </a>
-                                
-                                <!-- Botón de Edición Estándar -->
-                                <a href="./index.php?route=admin/users/edit&person_id=<?= $id ?>" class="btn btn-primary btn-sm ml-2">
-                                    <i class="fas fa-edit"></i> Editar
-                                </a>
+                                <!-- Added edit and delete buttons -->
+                                <div class="btn-group" role="group">
+                                    <!-- Gestionar Roles -->
+                                    <a href="./index.php?route=admin/users/create-user-role&person_id=<?= $id ?>" 
+                                       class="btn btn-info btn-sm" title="<?= $has_user ? 'Gestionar Roles' : 'Crear Usuario/Líder' ?>">
+                                        <i class="fas fa-user-shield"></i>
+                                    </a>
+                                    
+                                    <!-- Editar Habitante -->
+                                    <a href="./index.php?route=admin/users/edit-habitante&person_id=<?= $id ?>" 
+                                       class="btn btn-primary btn-sm" title="Editar Habitante">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    
+                                    <!-- Eliminar Habitante -->
+                                    <button type="button" class="btn btn-danger btn-sm" 
+                                            onclick="confirmarEliminacion(<?= $id ?>, '<?= addslashes($nombres . ' ' . $apellidos) ?>')"
+                                            title="Eliminar Habitante">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <?php 
@@ -87,18 +105,28 @@
     </div>
 </div>
 
-<!-- Scripts necesarios para DataTables (asumiendo que ya están en el layout) -->
+<!-- Added confirmation modal for deletion -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof $ !== 'undefined' && typeof $.fn.DataTable !== 'undefined') {
-            $('#dataTable').DataTable({
-                "language": {
-                    "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
-                }
-            });
-        } else {
-            // DataTables no está cargado, simplemente mostrar la tabla
-            console.log('DataTables library not loaded.');
-        }
-    });
+function confirmarEliminacion(personId, nombreCompleto) {
+    if (confirm('¿Está seguro de que desea eliminar al habitante "' + nombreCompleto + '"?\n\n' +
+                'ADVERTENCIA: Esta acción eliminará:\n' +
+                '- El registro del habitante\n' +
+                '- Su cuenta de usuario (si tiene)\n' +
+                '- Sus asignaciones de liderazgo\n' +
+                '- Sus registros de familia (la familia se mantendrá)\n\n' +
+                'Esta acción NO se puede deshacer.')) {
+        window.location.href = './index.php?route=admin/users/delete-habitante&person_id=' + personId;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof $ !== 'undefined' && typeof $.fn.DataTable !== 'undefined') {
+        $('#dataTable').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
+            },
+            "order": [[1, "asc"]]
+        });
+    }
+});
 </script>

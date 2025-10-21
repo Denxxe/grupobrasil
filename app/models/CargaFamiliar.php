@@ -41,4 +41,63 @@ class CargaFamiliar extends ModelBase {
         }
         return 0;
     }
+
+    /**
+     * Elimina todos los registros de carga_familiar donde el habitante es miembro
+     * NOTA: NO elimina registros donde el habitante es jefe, para mantener la familia
+     *
+     * @param int $habitanteId El ID del habitante
+     * @return bool True si la operación fue exitosa
+     */
+    public function deleteByHabitanteId(int $habitanteId): bool {
+        // Solo eliminamos donde el habitante es miembro, no donde es jefe
+        $sql = "DELETE FROM {$this->table} WHERE id_habitante = ?";
+        
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("[v0] Error al preparar deleteByHabitanteId en CargaFamiliar: " . $this->conn->error);
+            return false;
+        }
+
+        $stmt->bind_param("i", $habitanteId);
+        $success = $stmt->execute();
+        $stmt->close();
+
+        if (!$success) {
+            error_log("[v0] Error al eliminar registros de carga_familiar: " . $this->conn->error);
+        } else {
+            error_log("[v0] Eliminados registros de carga_familiar para habitante ID: $habitanteId");
+        }
+
+        return true;
+    }
+
+    /**
+     * Actualiza los registros donde el habitante es jefe, estableciendo id_jefe a NULL
+     * Esto mantiene la familia pero sin jefe asignado
+     *
+     * @param int $habitanteId El ID del habitante que era jefe
+     * @return bool True si la operación fue exitosa
+     */
+    public function updateJefeToNull(int $habitanteId): bool {
+        $sql = "UPDATE {$this->table} SET id_jefe = NULL WHERE id_jefe = ?";
+        
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("[v0] Error al preparar updateJefeToNull en CargaFamiliar: " . $this->conn->error);
+            return false;
+        }
+
+        $stmt->bind_param("i", $habitanteId);
+        $success = $stmt->execute();
+        $stmt->close();
+
+        if (!$success) {
+            error_log("[v0] Error al actualizar jefe a NULL: " . $this->conn->error);
+        } else {
+            error_log("[v0] Actualizado jefe a NULL para familias del habitante ID: $habitanteId");
+        }
+
+        return true;
+    }
 }

@@ -51,6 +51,81 @@ class Habitante extends ModelBase {
         return $this->delete($id);
     }
 
+    /**
+     * Elimina un habitante y todos sus registros relacionados en cascada
+     * Si el habitante es líder, también elimina su cuenta de usuario
+     *
+     * @param int $id El ID del habitante a eliminar
+     * @return bool True si la eliminación fue exitosa
+     */
+    public function deleteHabitanteWithCascade(int $id): bool {
+        error_log("[v0] Iniciando eliminación en cascada para habitante ID: $id");
+
+        // Primero obtenemos el habitante para verificar si tiene usuario
+        $habitante = $this->getById($id);
+        if (!$habitante) {
+            error_log("[v0] Habitante no encontrado con ID: $id");
+            return false;
+        }
+
+        $idPersona = $habitante['id_persona'];
+        error_log("[v0] Habitante encontrado, id_persona: $idPersona");
+
+        // Cargar modelos necesarios
+        require_once __DIR__ . '/LiderCalle.php';
+        require_once __DIR__ . '/LiderComunal.php';
+        require_once __DIR__ . '/CargaFamiliar.php';
+        require_once __DIR__ . '/HabitanteVivienda.php';
+        require_once __DIR__ . '/Usuario.php';
+
+        $liderCalle = new LiderCalle();
+        $liderComunal = new LiderComunal();
+        $cargaFamiliar = new CargaFamiliar();
+        $habitanteVivienda = new HabitanteVivienda();
+        $usuario = new Usuario();
+
+        // 1. Eliminar asignaciones de liderazgo de calle
+        error_log("[v0] Eliminando asignaciones de lider_calle...");
+        $liderCalle->deleteByHabitanteId($id);
+
+        // 2. Eliminar registros de liderazgo comunal
+        error_log("[v0] Eliminando registros de lider_comunal...");
+        $liderComunal->deleteByHabitanteId($id);
+
+        // 3. Actualizar familias donde era jefe (establecer jefe a NULL)
+        error_log("[v0] Actualizando familias donde era jefe...");
+        $cargaFamiliar->updateJefeToNull($id);
+
+        // 4. Eliminar registros donde era miembro de familia
+        error_log("[v0] Eliminando registros de carga_familiar...");
+        $cargaFamiliar->deleteByHabitanteId($id);
+
+        // 5. Eliminar asociaciones de vivienda
+        error_log("[v0] Eliminando asociaciones de habitante_vivienda...");
+        $habitanteVivienda->deleteByHabitanteId($id);
+
+        // 6. Verificar si tiene usuario y eliminarlo
+        $usuarioData = $usuario->findByPersonId($idPersona);
+        if ($usuarioData) {
+            error_log("[v0] Habitante tiene usuario, eliminando usuario ID: " . $usuarioData['id_usuario']);
+            $usuario->delete($usuarioData['id_usuario']);
+        } else {
+            error_log("[v0] Habitante no tiene usuario asociado");
+        }
+
+        // 7. Finalmente, eliminar el habitante
+        error_log("[v0] Eliminando registro de habitante...");
+        $success = $this->delete($id);
+
+        if ($success) {
+            error_log("[v0] Habitante eliminado exitosamente con todos sus registros relacionados");
+        } else {
+            error_log("[v0] Error al eliminar el habitante");
+        }
+
+        return $success;
+    }
+
     public function contar($filters = []) {
         $sql = "SELECT COUNT(*) AS total FROM " . $this->table . " WHERE activo = 1";
         $result = $this->conn->query($sql);

@@ -152,6 +152,17 @@ if (!isset($_SESSION['id_usuario'])) {
                     elseif ($subSegment === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') { 
                         $actionName = 'updateUser'; 
                     }
+                    elseif ($subSegment === 'edit-habitante') { 
+                        $actionName = 'editHabitante'; 
+                        $id = filter_input(INPUT_GET, 'person_id', FILTER_SANITIZE_NUMBER_INT); 
+                    }
+                    elseif ($subSegment === 'update-habitante' && $_SERVER['REQUEST_METHOD'] === 'POST') { 
+                        $actionName = 'updateHabitante'; 
+                    }
+                    elseif ($subSegment === 'delete-habitante') { 
+                        $actionName = 'deleteHabitante'; 
+                        $id = filter_input(INPUT_GET, 'person_id', FILTER_SANITIZE_NUMBER_INT); 
+                    }
                     elseif ($subSegment === 'create-user-role') { 
                         // RUTA: admin/users/create-user-role?person_id=X
                         $actionName = 'createUserRole'; 
@@ -232,37 +243,36 @@ if (!isset($_SESSION['id_usuario'])) {
                 }
                 $controllerName = 'SubadminController';
                 if ($actionSegment === 'news') {
-                if ($id === 'soft-delete') { 
-                    $actionName = 'requestSoftDeleteNews'; 
-                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-                } else { 
-                    $actionName = 'manageNews'; 
-                }
-            } elseif ($actionSegment === 'comments') {
-                if ($id === 'soft-delete') { 
-                    $actionName = 'softDeleteComment'; 
-                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-                } elseif ($id === 'activate') { 
-                    $actionName = 'activateComment'; 
-                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-                } elseif ($id === 'delete') { 
-                    $actionName = 'deleteComment'; 
-                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-                } else { 
-                    $actionName = 'manageComments'; 
-                }
-
-            } elseif ($actionSegment === 'reports') {
-                $actionName = 'reports';
-            } elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
-                $actionName = 'dashboard';
-            } elseif ($actionSegment === 'notifications') {
+                    if ($id === 'soft-delete') { 
+                        $actionName = 'requestSoftDeleteNews'; 
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
+                    } else { 
+                        $actionName = 'manageNews'; 
+                    }
+                } elseif ($actionSegment === 'comments') {
+                    if ($id === 'soft-delete') { 
+                        $actionName = 'softDeleteComment'; 
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
+                    } elseif ($id === 'activate') { 
+                        $actionName = 'activateComment'; 
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
+                    } elseif ($id === 'delete') { 
+                        $actionName = 'deleteComment'; 
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
+                    } else { 
+                        $actionName = 'manageComments'; 
+                    }
+                } elseif ($actionSegment === 'reports') {
+                    $actionName = 'reports';
+                } elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
+                    $actionName = 'dashboard';
+                } elseif ($actionSegment === 'notifications') {
                     if ($id === 'mark-read') { $actionName = 'markNotificationRead'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
                     elseif ($id === 'mark-all-read') { $actionName = 'markAllNotificationsRead'; $id = null; }
                     elseif ($id === 'delete') { $actionName = 'deleteNotification'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
                     else { $actionName = 'manageNotifications'; }
                 }
-            break;
+                break;
 
             case 'noticias':
                 $controllerName = 'NoticiaController';
@@ -284,7 +294,7 @@ if (!isset($_SESSION['id_usuario'])) {
                     header('Location: ./index.php?route=login');
                     exit();
                 }
-               $controllerName = 'UserController';
+                $controllerName = 'UserController';
                 
                 if ($actionSegment === 'notifications') {
                     if ($id === 'mark-read') { $actionName = 'markNotificationRead'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
@@ -346,7 +356,7 @@ if ($controllerName) {
                 case 'LoginController':
                     $controller = new LoginController($usuarioModel);
                     break;
-               case 'AdminController':
+                case 'AdminController':
                     $controller = new AdminController($usuarioModel, $personaModel, $noticiaModel, $comentarioModel, $notificacionModel, $calleModel, $liderCalleModel, $categoriaModel, $roleModel, $habitanteModel); 
                     break;
                 case 'SubadminController':
@@ -355,9 +365,9 @@ if ($controllerName) {
                 case 'NoticiaController':
                     $controller = new NoticiaController($noticiaModel, $comentarioModel, $likeModel); // Pasa solo los necesarios
                     break;
-               case 'UserController':
-                   $controller = new UserController($usuarioModel, $noticiaModel, $notificacionModel, $personaModel); 
-                   break;
+                case 'UserController':
+                    $controller = new UserController($usuarioModel, $noticiaModel, $notificacionModel, $personaModel); 
+                    break;
                 default:
                     // Si el controlador no tiene una asignación explícita de dependencias
                     $controller = new $controllerName();

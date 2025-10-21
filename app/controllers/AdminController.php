@@ -128,6 +128,158 @@ class AdminController extends AppController{
         $this->renderAdminView('users/personas', $data);
     }
 
+    /**
+     * Muestra el formulario de edición de un habitante
+     */
+    public function editHabitante() {
+        $personId = $_GET['person_id'] ?? null;
+
+        if (empty($personId)) {
+            $_SESSION['error_message'] = "ID de persona no especificado.";
+            header('Location: ./index.php?route=admin/users/personas');
+            return;
+        }
+
+        // Obtener datos de la persona
+        $persona = $this->personaModel->getById($personId);
+
+        if (!$persona) {
+            $_SESSION['error_message'] = "Habitante no encontrado.";
+            header('Location: ./index.php?route=admin/users/personas');
+            return;
+        }
+
+        // Obtener todas las calles para el selector
+        $calles = $this->calleModel->findAll();
+
+        $data = [
+            'page_title' => 'Editar Habitante',
+            'persona' => $persona,
+            'calles' => $calles,
+            'success_message' => $_SESSION['success_message'] ?? null,
+            'error_message' => $_SESSION['error_message'] ?? null,
+        ];
+
+        unset($_SESSION['success_message'], $_SESSION['error_message']);
+
+        $this->renderAdminView('users/edit_habitante', $data);
+    }
+
+    /**
+     * Procesa la actualización de un habitante
+     */
+    public function updateHabitante() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ./index.php?route=admin/users/personas');
+            return;
+        }
+
+        $personId = filter_input(INPUT_POST, 'person_id', FILTER_VALIDATE_INT);
+        $errors = [];
+
+        if (empty($personId)) {
+            $_SESSION['error_message'] = "Error: ID de persona no recibido.";
+            header('Location: ./index.php?route=admin/users/personas');
+            return;
+        }
+
+        // Validar campos
+        $data = $_POST;
+        if (Validator::isEmpty($data['cedula'] ?? '')) $errors[] = "La cédula es obligatoria.";
+        if (Validator::isEmpty($data['nombres'] ?? '')) $errors[] = "El nombre es obligatorio.";
+        if (Validator::isEmpty($data['apellidos'] ?? '')) $errors[] = "El apellido es obligatorio.";
+        if (empty($data['id_calle'] ?? '')) $errors[] = "Debe seleccionar una vereda de residencia.";
+
+        if (!empty($errors)) {
+            $_SESSION['error_message'] = "Por favor, corrija los siguientes errores:<br>" . implode("<br>", $errors);
+            header('Location: ./index.php?route=admin/users/edit-habitante&person_id=' . $personId);
+            return;
+        }
+
+        // Preparar datos para actualización
+        $personaData = [
+            'cedula' => trim($data['cedula'] ?? ''),
+            'nombres' => trim($data['nombres'] ?? ''),
+            'apellidos' => trim($data['apellidos'] ?? ''),
+            'telefono' => trim($data['telefono'] ?? null),
+            'id_calle' => (int)($data['id_calle'] ?? null),
+            'numero_casa' => trim($data['numero_casa'] ?? null),
+            'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
+            'sexo' => $data['sexo'] ?? null,
+            'direccion' => trim($data['direccion'] ?? null),
+            'correo' => trim($data['correo'] ?? null),
+        ];
+
+        $result = $this->personaModel->update($personId, $personaData);
+
+        if ($result) {
+            $_SESSION['success_message'] = "Habitante actualizado exitosamente.";
+            header('Location: ./index.php?route=admin/users/personas');
+        } else {
+            $_SESSION['error_message'] = "Error al actualizar el habitante.";
+            header('Location: ./index.php?route=admin/users/edit-habitante&person_id=' . $personId);
+        }
+    }
+
+    /**
+     * Elimina un habitante y todos sus registros relacionados en cascada
+     * Si es líder, también elimina su cuenta de usuario
+     * Si es jefe de familia, la familia se mantiene pero sin jefe
+     */
+    public function deleteHabitante() {
+        $personId = $_GET['person_id'] ?? null;
+
+        if (empty($personId) || !is_numeric($personId)) {
+            $_SESSION['error_message'] = "ID de persona inválido.";
+            header('Location: ./index.php?route=admin/users/personas');
+            return;
+        }
+
+        error_log("[v0] deleteHabitante called for person ID: $personId");
+
+        // Obtener datos de la persona para el mensaje
+        $persona = $this->personaModel->getById($personId);
+        if (!$persona) {
+            $_SESSION['error_message'] = "Habitante no encontrado.";
+            header('Location: ./index.php?route=admin/users/personas');
+            return;
+        }
+
+        $nombreCompleto = $persona['nombres'] . ' ' . $persona['apellidos'];
+
+        // Verificar si existe un habitante para esta persona
+        $habitante = $this->habitanteModel->findByPersonaId($personId);
+
+        if ($habitante) {
+            $habitanteId = $habitante['id_habitante'];
+            error_log("[v0] Found habitante ID: $habitanteId for person ID: $personId");
+
+            // Usar el método de eliminación en cascada
+            $success = $this->habitanteModel->deleteHabitanteWithCascade($habitanteId);
+
+            if ($success) {
+                // También eliminar la persona
+                $this->personaModel->delete($personId);
+                $_SESSION['success_message'] = "El habitante '$nombreCompleto' y todos sus registros relacionados han sido eliminados exitosamente.";
+            } else {
+                $_SESSION['error_message'] = "Error al eliminar el habitante '$nombreCompleto'.";
+            }
+        } else {
+            // Si no hay habitante, solo eliminar la persona
+            error_log("[v0] No habitante found, deleting only persona");
+            $success = $this->personaModel->delete($personId);
+
+            if ($success) {
+                $_SESSION['success_message'] = "La persona '$nombreCompleto' ha sido eliminada exitosamente.";
+            } else {
+                $_SESSION['error_message'] = "Error al eliminar la persona '$nombreCompleto'.";
+            }
+        }
+
+        header('Location: ./index.php?route=admin/users/personas');
+    }
+
+
     // -------------------------------------------------------------------------
     // GESTIÓN DE USUARIOS CON ACCESO (Líderes)
     // -------------------------------------------------------------------------
@@ -739,11 +891,7 @@ class AdminController extends AppController{
         return;
     }
 
-  // C:\xampp\htdocs\grupobrasil\app\controllers\AdminController.php
-
-// Asegúrate de que tu constructor inicialice $this->noticiaModel y $this->categoriaModel
-
-public function manageNews() {
+  public function manageNews() {
     $noticias = $this->noticiaModel->getAllNews(false, ['column' => 'fecha_publicacion', 'direction' => 'DESC']);
 
     // Simplificación y estandarización de mensajes de sesión
