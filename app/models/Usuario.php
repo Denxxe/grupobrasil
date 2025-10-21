@@ -260,7 +260,6 @@ class Usuario extends ModelBase {
                 throw new \Exception("Error al crear el registro de persona. Detalles: " . $this->conn->error);
             }
 
-            // 2. Preparar e insertar en la tabla 'usuario'
             $usuario_data = [
                 'id_persona' => $id_persona,
                 'nombre_usuario' => $data['nombre_usuario'] ?? $data['ci_usuario'], // Nombre de usuario para login
@@ -270,7 +269,6 @@ class Usuario extends ModelBase {
                 'foto_perfil' => $data['foto_perfil'] ?? null,
                 'biografia' => $data['biografia'] ?? null,
                 'activo' => $data['activo'] ?? 1,
-                'requires_setup' => $data['requires_setup'] ?? 1,
             ];
 
             // Usamos el método 'create' de la clase padre (ModelBase)
@@ -298,37 +296,36 @@ class Usuario extends ModelBase {
      */
     public function createUserOnly(array $data) {
         if (!$this->conn) {
-             error_log("No hay conexión a la base de datos.");
+             error_log("[v0] No hay conexión a la base de datos.");
              return false;
         }
 
         // Validar que los campos requeridos estén presentes
         if (empty($data['id_persona']) || empty($data['email']) || empty($data['password']) || empty($data['id_rol'])) {
-            error_log("createUserOnly: Faltan campos requeridos (id_persona, email, password, id_rol)");
+            error_log("[v0] createUserOnly: Faltan campos requeridos (id_persona, email, password, id_rol)");
             return false;
         }
 
-        // Preparar datos para insertar en la tabla 'usuario'
+        error_log("[v0] createUserOnly: Preparando datos para usuario");
+
         $usuario_data = [
             'id_persona' => $data['id_persona'],
             'email' => $data['email'],
-            'password' => $data['password'], // Ya debe venir hasheado
+            'password' => $data['password'],
             'id_rol' => $data['id_rol'],
             'activo' => $data['activo'] ?? 1,
-            'requires_setup' => $data['requires_setup'] ?? 0,
-            'nombre_usuario' => $data['nombre_usuario'] ?? $data['email'], // Opcional
-            'foto_perfil' => $data['foto_perfil'] ?? null,
-            'biografia' => $data['biografia'] ?? null,
         ];
 
-        // Usar el método create de ModelBase para insertar solo en la tabla usuario
+        error_log("[v0] createUserOnly: Llamando a parent::create con datos: " . json_encode($usuario_data));
+
         $id_usuario = parent::create($usuario_data);
 
         if (!$id_usuario) {
-            error_log("Error al crear el registro de usuario (solo): " . $this->conn->error);
+            error_log("[v0] Error al crear el registro de usuario (solo): " . $this->conn->error);
             return false;
         }
 
+        error_log("[v0] createUserOnly: Usuario creado exitosamente con ID: $id_usuario");
         return $id_usuario;
     }
 
@@ -376,10 +373,8 @@ class Usuario extends ModelBase {
                 throw new \Exception("Error al actualizar el registro de persona.");
             }
 
-            // 3. Preparar y actualizar en la tabla 'usuario'
-            $usuario_fields = ['nombre_usuario', 'id_rol', 'password', 'foto_perfil', 'biografia', 'activo', 'requires_setup', 'email'];
+            $usuario_fields = ['nombre_usuario', 'id_rol', 'password', 'foto_perfil', 'biografia', 'activo', 'email'];
             $usuario_data_update = array_intersect_key($data, array_flip($usuario_fields));
-            // Asegurar que si 'email' está en $data, se actualice en la tabla usuario también
             if (isset($data['email'])) $usuario_data_update['email'] = $data['email'];
             if (isset($data['activo'])) $usuario_data_update['activo'] = $data['activo'];
             
@@ -451,21 +446,11 @@ class Usuario extends ModelBase {
         }
     }
 
- public function getPersonData(int $id_usuario): ?array {
-    // Si los datos de usuario y persona están en tablas separadas:
-    /*
-    $sql = "SELECT p.* FROM personas p WHERE p.id_usuario = ?";
-    $stmt = $this->conn->prepare($sql);
-    $stmt->bind_param("i", $id_usuario);
-    // ... ejecuta y retorna el resultado
-    */
-
-    // Si tu modelo de usuario (Usuario.php) extiende de ModelBase y contiene todos los datos:
-    return $this->find($id_usuario);
-}
-
-    public function findByPersonId(int $personId) {
-        $sql = "SELECT * FROM " . $this->table . " WHERE id_persona = ? LIMIT 1";
+    /**
+     * Busca un usuario por su id_persona
+     */
+    public function findByPersonId(int $id_persona) {
+        $sql = $this->getBaseQuery() . " WHERE u.id_persona = ?";
         $stmt = $this->conn->prepare($sql);
 
         if ($stmt === false) {
@@ -473,23 +458,25 @@ class Usuario extends ModelBase {
             return false;
         }
 
-        $stmt->bind_param("i", $personId);
+        $stmt->bind_param("i", $id_persona);
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($result->num_rows > 0) {
             $data = $result->fetch_assoc();
             $stmt->close();
-            return $data; // Devolvemos array asociativo para ser consistentes.
+            return $data;
         }
 
         $stmt->close();
         return false;
     }
 
-     public function obtenerUsuarioPorId(int $id_usuario): ?array {
-        // Asumiendo que ModelBase tiene un método find(id)
-        return $this->find($id_usuario);
+    public function getPersonData(int $id_usuario): ?array {
+        $user = $this->getById($id_usuario);
+        if ($user && isset($user['id_persona'])) {
+            return ['id_persona' => $user['id_persona']];
+        }
+        return null;
     }
 }
-?>

@@ -32,6 +32,7 @@ require_once MODELS_PATH . 'Notificacion.php';
 require_once MODELS_PATH . 'Categoria.php';
 require_once MODELS_PATH . 'Calle.php'; 
 require_once MODELS_PATH . 'LiderCalle.php';
+require_once MODELS_PATH . 'Habitante.php'; // Added Habitante model
 
 // --- Carga de controladores ---
 require_once CONTROLLERS_PATH . 'LoginController.php';
@@ -81,14 +82,6 @@ if (!isset($_SESSION['id_usuario'])) {
 } else { // 2. USUARIO AUTENTICADO
 
     $userRole = $_SESSION['id_rol'];
-
-    if (isset($_SESSION['requires_setup']) && $_SESSION['requires_setup'] == 1) {
-        // Si el usuario requiere setup y no está en la ruta de setup, redirigir
-        if ($route !== 'user/setupProfile' && $route !== 'user/updateProfile' && $route !== 'login/logout') {
-            header('Location: ./index.php?route=user/setupProfile');
-            exit();
-        }
-    }
 
     // Redirección por defecto a dashboard si se accede a la raíz o a 'login' estando autenticado
     if ($route === 'login' || $route === '') {
@@ -315,7 +308,7 @@ if (!isset($_SESSION['id_usuario'])) {
             default:
                 // Si la ruta no coincide con ningún controlador conocido para usuarios autenticados
                 http_response_code(404);
-                $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Página No Encontrada', 'message' => "La página solicitada '" . htmlspecialchars($route) . "' no existe para tu rol."]];
+                $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Página No Encontrada', 'message' => "La página solicitada '" . htmlspecialchars($route) . "' no existe para tu rol."]] ;
                 $controllerName = null; // No intentar cargar un controlador inexistente
                 break;
         }
@@ -332,7 +325,7 @@ if ($controllerName) {
 
         if (!class_exists($controllerName)) {
             http_response_code(500);
-            $viewData = ['view' => 'error/500', 'data' => ['page_title' => 'Error Interno', 'message' => "Error 500: Clase de controlador '" . htmlspecialchars($controllerName) . "' no encontrada en el archivo."]];
+            $viewData = ['view' => 'error/500', 'data' => ['page_title' => 'Error Interno', 'message' => "Error 500: Clase de controlador '" . htmlspecialchars($controllerName) . "' no encontrada en el archivo."]] ;
         } else {
             // Cargar dependencias necesarias
             $usuarioModel = new Usuario();
@@ -345,8 +338,7 @@ if ($controllerName) {
             $calleModel = new Calle();
             $liderCalleModel = new LiderCalle();
             $roleModel = new Role();
-            $usuarioModel = new Usuario();
-            $personaModel = new Persona();
+            $habitanteModel = new Habitante(); // Added Habitante model instantiation
             $validator = new Validator();
 
             // Determinar qué controlador instanciar con qué dependencias
@@ -355,7 +347,7 @@ if ($controllerName) {
                     $controller = new LoginController($usuarioModel);
                     break;
                case 'AdminController':
-                    $controller = new AdminController($usuarioModel, $personaModel, $noticiaModel, $comentarioModel, $notificacionModel, $calleModel, $liderCalleModel, $categoriaModel, $roleModel); 
+                    $controller = new AdminController($usuarioModel, $personaModel, $noticiaModel, $comentarioModel, $notificacionModel, $calleModel, $liderCalleModel, $categoriaModel, $roleModel, $habitanteModel); 
                     break;
                 case 'SubadminController':
                     $controller = new SubadminController();
@@ -384,16 +376,16 @@ if ($controllerName) {
                 } else {
                     // Si el controlador no devuelve el formato esperado o algo inesperado
                     http_response_code(500);
-                    $viewData = ['view' => 'error/500', 'data' => ['page_title' => 'Error Interno', 'message' => "Error 500: La acción '" . htmlspecialchars($actionName) . "' del controlador " . htmlspecialchars($controllerName) . " no devolvió un formato de vista válido."]];
+                    $viewData = ['view' => 'error/500', 'data' => ['page_title' => 'Error Interno', 'message' => "Error 500: La acción '" . htmlspecialchars($actionName) . "' del controlador " . htmlspecialchars($controllerName) . " no devolvió un formato de vista válido."]] ;
                 }
             } else {
                 http_response_code(404);
-                $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Acción No Encontrada', 'message' => "Error 404: Acción '" . htmlspecialchars($actionName) . "' no encontrada para el controlador " . htmlspecialchars($controllerName) . "."]];
+                $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Acción No Encontrada', 'message' => "Error 404: Acción '" . htmlspecialchars($actionName) . "' no encontrada para el controlador " . htmlspecialchars($controllerName) . "."]] ;
             }
         }
     } else {
         http_response_code(404);
-        $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Controlador No Encontrado', 'message' => "Error 404: Archivo de controlador '" . htmlspecialchars($controllerName) . "' no encontrado."]];
+        $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Controlador No Encontrado', 'message' => "Error 404: Archivo de controlador '" . htmlspecialchars($controllerName) . "' no encontrado."]] ;
     }
 
 }

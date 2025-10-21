@@ -11,7 +11,7 @@ require_once __DIR__ . '/../models/Categoria.php';
 require_once __DIR__ . '/../models/Calle.php';
 require_once __DIR__ . '/../models/LiderCalle.php';
 require_once __DIR__ . '/../models/Role.php';
-require_once __DIR__ . '/../utils/Validator.php';
+require_once __DIR__ . '/../models/Habitante.php';
 require_once __DIR__ . '/AppController.php';
 
 class AdminController extends AppController{
@@ -24,6 +24,7 @@ class AdminController extends AppController{
     private $calleModel;
     private $liderCalleModel;
     private $roleModel;
+    private $habitanteModel;
 
     public function __construct(
         Usuario $usuarioModel,
@@ -34,7 +35,8 @@ class AdminController extends AppController{
         Calle $calleModel,
         LiderCalle $liderCalleModel,
         Categoria $categoriaModel,
-        Role $roleModel
+        Role $roleModel,
+        Habitante $habitanteModel
     ) {
         $this->usuarioModel = $usuarioModel;
         $this->personaModel = $personaModel;
@@ -45,6 +47,7 @@ class AdminController extends AppController{
         $this->liderCalleModel = $liderCalleModel;
         $this->categoriaModel = $categoriaModel;
         $this->roleModel = $roleModel;
+        $this->habitanteModel = $habitanteModel;
 
         // Lógica de seguridad y redirección (asume que rol 1 es Administrador)
         if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 1) {
@@ -362,7 +365,6 @@ class AdminController extends AppController{
             'id_rol' => (int)filter_input(INPUT_POST, 'id_rol', FILTER_SANITIZE_NUMBER_INT),
             'activo' => isset($_POST['activo']) ? 1 : 0,
             'biografia' => filter_input(INPUT_POST, 'biografia', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-            'requires_setup' => isset($_POST['requires_setup']) ? 1 : 0
         ];
 
         $errors = [];
@@ -480,7 +482,6 @@ class AdminController extends AppController{
             'id_rol' => $data['id_rol'],
             'activo' => $data['activo'],
             'biografia' => $data['biografia'],
-            'requires_setup' => $data['requires_setup'],
             'foto_perfil' => $data['foto_perfil']
         ];
 
@@ -531,7 +532,7 @@ class AdminController extends AppController{
         }
 
         // Opcional: Eliminar las asignaciones de calle antes de eliminar el usuario
-        $this->liderCalleModel->deleteByUsuarioId($id);
+        $this->liderCalleModel->deleteByHabitanteId($id);
 
         $success = $this->usuarioModel->delete($id);
 
@@ -569,10 +570,14 @@ class AdminController extends AppController{
         $usuarioExistente = $this->usuarioModel->findByPersonId($personId);
         $callesDirigidas = [];
 
-        // 3. Obtener Calles dirigidas si existe el usuario y es líder de vereda (rol 2)
-        if ($usuarioExistente && (int)$usuarioExistente['id_rol'] === 2) {
+        // 3. Obtener ID de habitante y Calles dirigidas si existe el usuario y es líder de vereda (rol 2)
+        $habitante = $this->habitanteModel->findByPersonaId($personId);
+        $habitanteId = $habitante ? $habitante['id_habitante'] : null;
+
+        if ($usuarioExistente && (int)$usuarioExistente['id_rol'] === 2 && $habitanteId) {
              // Asume que este método existe y retorna un array de IDs de calle.
-             $callesDirigidas = $this->liderCalleModel->getCallesIdsByUsuarioId($usuarioExistente['id_usuario']);
+             // Call getCallesIdsByHabitanteId on liderCalleModel
+             $callesDirigidas = $this->liderCalleModel->getCallesIdsByHabitanteId($habitanteId);
         }
 
         // LÓGICA DE RESTRICCIÓN DEL SUPERADMIN
@@ -603,6 +608,7 @@ class AdminController extends AppController{
 
     /**
      * CORREGIDO: Procesa la asignación/modificación de roles de líder.
+     * // Updated to work with habitante table structure
      */
     public function storeUserRole() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -635,7 +641,17 @@ class AdminController extends AppController{
             return;
         }
 
-        // 2. DETERMINAR EL ROL PRINCIPAL (Rol 2 tiene prioridad sobre Rol 3)
+        // 2. CREAR O OBTENER HABITANTE (requerido para la tabla lider_calle)
+        $habitanteId = $this->habitanteModel->createFromPersona($personId);
+        if (!$habitanteId) {
+            $_SESSION['error_message'] = "Error al crear/obtener el registro de habitante.";
+            header('Location: ./index.php?route=admin/users/personas');
+            return;
+        }
+        error_log("[v0] Habitante ID: $habitanteId");
+
+
+        // 3. DETERMINAR EL ROL PRINCIPAL (Rol 2 tiene prioridad sobre Rol 3)
         $rolPrincipal = null;
         if ($isLiderVereda) {
             $rolPrincipal = 2; // Líder de Vereda
@@ -648,7 +664,7 @@ class AdminController extends AppController{
 
         error_log("[v0] Determined rolPrincipal: " . ($rolPrincipal ?? 'null'));
 
-        // 3. CREACIÓN / ACTUALIZACIÓN DE CUENTA DE USUARIO
+        // 4. CREACIÓN / ACTUALIZACIÓN DE CUENTA DE USUARIO
         $usuarioExistente = $this->usuarioModel->findByPersonId($personId);
         $usuarioId = null;
         $successMessage = '';
@@ -683,7 +699,6 @@ class AdminController extends AppController{
                 'password' => password_hash($password, PASSWORD_DEFAULT),
                 'id_rol' => $rolPrincipal,
                 'activo' => 1,
-                'requires_setup' => 0, // No requiere setup adicional
             ];
 
             error_log("[v0] Creating new user with data: " . json_encode(['id_persona' => $personId, 'email' => $email, 'id_rol' => $rolPrincipal]));
@@ -701,15 +716,17 @@ class AdminController extends AppController{
         }
 
 
-        // 4. ASIGNAR/LIMPIAR LIDERAZGOS DE CALLE (Si hay un usuarioId para operar)
-        if ($usuarioId) {
-            error_log("[v0] Processing calle assignments for user ID: $usuarioId");
-            $this->liderCalleModel->deleteByUsuarioId($usuarioId);
+        // 5. ASIGNAR/LIMPIAR LIDERAZGOS DE CALLE (usando habitanteId)
+        if ($habitanteId && $rolPrincipal !== null) {
+            error_log("[v0] Processing calle assignments for habitante ID: $habitanteId");
+            // Call deleteByHabitanteId on liderCalleModel
+            $this->liderCalleModel->deleteByHabitanteId($habitanteId);
 
             if ($rolPrincipal === 2 && !empty($callesDirigidas)) { // Líder de Vereda
-                error_log("[v0] Assigning " . count($callesDirigidas) . " calles to user");
+                error_log("[v0] Assigning " . count($callesDirigidas) . " calles to habitante");
                 foreach ($callesDirigidas as $calleId) {
-                    $result = $this->liderCalleModel->create(['id_usuario' => $usuarioId, 'id_calle' => (int)$calleId]);
+                    // Use id_habitante in lider_calle creation
+                    $result = $this->liderCalleModel->create(['id_habitante' => $habitanteId, 'id_calle' => (int)$calleId]);
                     error_log("[v0] Assigned calle $calleId: " . ($result ? 'success' : 'failed'));
                 }
                 $successMessage .= " Y calles asignadas.";
