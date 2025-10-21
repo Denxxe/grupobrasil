@@ -479,4 +479,41 @@ class Usuario extends ModelBase {
         }
         return null;
     }
+
+    public function countNewThisWeek(): int {
+    $sevenDaysAgo = date('Y-m-d H:i:s', strtotime('-7 days'));
+    
+    // Asume que la columna de registro es 'fecha_registro'
+    $sql = "SELECT COUNT(*) FROM {$this->table} WHERE fecha_registro >= ?";
+    
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bind_param("s", $sevenDaysAgo);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result && $row = $result->fetch_row()) {
+        $stmt->close();
+        return (int) $row[0];
+    }
+    $stmt->close();
+    return 0;
+}
+
+
+public function countActiveLeaders(): int {
+    // Ajusta el ID de Rol (2) y el estado ('activo') según tu DB
+    $sql = "SELECT COUNT(*) FROM {$this->table} WHERE id_rol = 2 AND estado = 'activo'";
+    
+    $stmt = $this->conn->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result && $row = $result->fetch_row()) {
+        $stmt->close();
+        return (int) $row[0];
+    }
+    $stmt->close();
+    return 0;
+}
+    
 }

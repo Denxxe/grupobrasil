@@ -358,4 +358,20 @@ class Noticia extends ModelBase {
         }
         call_user_func_array([$stmt, 'bind_param'], $refs);
     }
+
+    public function countPendingReview(): int {
+    // Asume que la columna de estado es 'estado' y el valor de pendiente es 'pendiente'
+    $sql = "SELECT COUNT(*) FROM {$this->table} WHERE estado = 'pendiente'";
+    
+    $stmt = $this->conn->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result && $row = $result->fetch_row()) {
+        $stmt->close();
+        return (int) $row[0];
+    }
+    $stmt->close();
+    return 0;
+}
 }

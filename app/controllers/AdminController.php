@@ -73,17 +73,64 @@ class AdminController extends AppController{
     }
 
     public function dashboard() {
-        $totalUsuarios = $this->usuarioModel->getTotalUsuarios();
-        $totalNoticias = $this->noticiaModel->getTotalNoticias();
+    // 1. Cargar Modelos adicionales si no están cargados como propiedades
+    // Asumo que el controlador ya incluye o puede cargar estos archivos.
+    
+    // NOTA: Si ya tienes $this->pagoModel y $this->logModel instanciados,
+    // puedes omitir estas líneas.
+    require_once __DIR__ . '/../models/Pago.php';
+    require_once __DIR__ . '/../models/Log.php';
+    
+    $pagoModel = new Pago();
+    $logModel = new Log();
+    
+    // Asumo que tienes un método para establecer la conexión DB en los modelos
+    // si son instanciados aquí. Si son propiedades de clase, esto no es necesario.
+    // $pagoModel->setDb($this->db);
+    // $logModel->setDb($this->db);
 
-        $data = [
-            'title' => 'Dashboard',
-            'page_title' => 'Dashboard de Administración',
-            'totalUsuarios' => $totalUsuarios,
-            'totalNoticias' => $totalNoticias,
-        ];
-        $this->renderAdminView('dashboard', $data);
-    }
+
+    // 2. Obtener TODAS las Métricas Clave
+
+    // Métricas de Usuarios
+    $totalUsuarios = $this->usuarioModel->getTotalUsuarios(); // Existe
+    $nuevosUsuariosSemana = $this->usuarioModel->countNewThisWeek(); // Debes implementarlo
+    
+    // Métricas de Pagos/Beneficios
+    $totalPagosHoy = $pagoModel->sumPaymentsToday(); // Debes implementarlo
+    $variacionPagosAyer = $pagoModel->getPaymentChangeVsYesterday(); // Debes implementarlo (ej: 15.5 o -5.2)
+
+    // Métricas de Noticias
+    $noticiasPendientes = $this->noticiaModel->countPendingReview(); // Debes implementarlo
+    $lideresActivos = $this->usuarioModel->countActiveLeaders(); // Debes implementarlo (ej: rol 2)
+
+    
+    // 3. Compilar el array de estadísticas ($stats) para la vista
+    $stats = [
+        'total_usuarios' => $totalUsuarios,
+        'nuevos_usuarios_semana' => $nuevosUsuariosSemana,
+        'total_pagos_hoy' => $totalPagosHoy,
+        'variacion_pagos_ayer' => $variacionPagosAyer,
+        'noticias_pendientes' => $noticiasPendientes,
+        'lideres_activos' => $lideresActivos,
+    ];
+    
+    // 4. Obtener Actividad Reciente
+    // Este método debe devolver un array con la estructura esperada:
+    // ['icon' => 'fas fa-...', 'color' => 'text-...', 'message' => '...', 'time' => '...']
+    $activity_log = $logModel->getRecentActivity(10); // Debes implementarlo
+
+    
+    // 5. Preparar y cargar la vista
+    $data = [
+        'title' => 'Dashboard',
+        'page_title' => 'Dashboard de Administración',
+        'stats' => $stats, // CLAVE: Pasar el array de estadísticas
+        'activity_log' => $activity_log, // CLAVE: Pasar el log de actividad
+    ];
+
+    $this->renderAdminView('dashboard', $data);
+}
 
     // -------------------------------------------------------------------------
     // GESTIÓN DE HABITANTES (PERSONAS)
