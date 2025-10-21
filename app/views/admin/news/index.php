@@ -6,6 +6,19 @@
         </a>
     </div>
 
+    <?php if (isset($success_message) && $success_message): ?>
+        <div class="alert alert-success" role="alert"><?= htmlspecialchars($success_message) ?></div>
+    <?php endif; ?>
+
+    <?php if (isset($error_message) && $error_message): ?>
+        <div class="alert alert-danger" role="alert"><?= htmlspecialchars($error_message) ?></div>
+    <?php endif; ?>
+
+    <?php 
+        // Se asume que $noticias es pasado directamente a la vista desde el controlador
+        $noticias = $noticias ?? []; 
+    ?>
+
     <?php if (empty($noticias)): ?>
         <div class="alert alert-info text-center" role="alert">
             No hay noticias disponibles. ¡Crea la primera!
@@ -26,7 +39,7 @@
                                 <th>Imagen</th>
                                 <th>Fecha Publicación</th>
                                 <th>Publicado por</th>
-                                <th>Activo</th>
+                                <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -34,27 +47,46 @@
                             <?php foreach ($noticias as $noticia): ?>
                                 <tr>
                                     <td><?php echo htmlspecialchars($noticia['id_noticia']); ?></td>
-                                    <td><?php echo htmlspecialchars($noticia['titulo']); ?></td>
+                                    <td><?php echo htmlspecialchars($noticia['titulo'] ?? 'Sin título'); ?></td>
                                     <td>
                                         <?php
-                                        $excerpt = strip_tags($noticia['contenido']);
+                                        // Muestra un extracto del contenido
+                                        $excerpt = strip_tags($noticia['contenido'] ?? ''); 
                                         echo htmlspecialchars(mb_strimwidth($excerpt, 0, 100, '...'));
                                         ?>
                                     </td>
                                     <td class="text-center">
                                         <?php if (!empty($noticia['imagen_principal'])): ?>
-                                            <img src="./<?php echo htmlspecialchars($noticia['imagen_principal']); ?>" alt="Imagen de noticia" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+                                            <img src="./<?php echo htmlspecialchars($noticia['imagen_principal']); ?>" 
+                                                 alt="Imagen de noticia" 
+                                                 class="img-thumbnail" 
+                                                 style="width: 80px; height: 80px; object-fit: cover;">
                                         <?php else: ?>
                                             Sin imagen
                                         <?php endif; ?>
                                     </td>
-                                    <td><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($noticia['fecha_publicacion']))); ?></td>
                                     <td>
-                                        ID: <?php echo htmlspecialchars($noticia['id_usuario_publicador']); ?>
+                                        <?php 
+                                            echo htmlspecialchars(date('d/m/Y H:i', strtotime($noticia['fecha_publicacion'] ?? 'now'))); 
+                                        ?>
+                                    </td>
+                                    <td>
+                                        <?php 
+                                            // Asumiendo que el campo se llama 'nombre_usuario' tras el JOIN
+                                            echo htmlspecialchars($noticia['nombre_usuario'] ?? 'N/A'); 
+                                        ?>
                                     </td>
                                     <td>
                                         <?php
-                                            echo ($noticia['activo'] == 1) ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-danger">No</span>';
+                                            // Muestra el estado (publicado/borrador)
+                                            $estado = $noticia['estado'] ?? 'desconocido';
+                                            if ($estado === 'publicado') {
+                                                echo '<span class="badge bg-success">Publicado</span>';
+                                            } elseif ($estado === 'borrador') {
+                                                echo '<span class="badge bg-warning">Borrador</span>';
+                                            } else {
+                                                echo '<span class="badge bg-danger">' . htmlspecialchars($estado) . '</span>';
+                                            }
                                         ?>
                                     </td>
                                     <td>
@@ -64,7 +96,7 @@
                                         <button type="button" class="btn btn-danger btn-sm m-1 delete-news-btn"
                                                 data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal"
                                                 data-id="<?php echo htmlspecialchars($noticia['id_noticia']); ?>"
-                                                data-title="<?php echo htmlspecialchars($noticia['titulo']); ?>">
+                                                data-title="<?php echo htmlspecialchars($noticia['titulo'] ?? 'Noticia sin Título'); ?>">
                                             <i class="fas fa-trash"></i> Eliminar
                                         </button>
                                     </td>

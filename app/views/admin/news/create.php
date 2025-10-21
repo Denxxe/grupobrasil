@@ -29,7 +29,7 @@
         <?php foreach ($data['categorias'] ?? [] as $categoria): ?>
             <option value="<?= htmlspecialchars($categoria['id_categoria']) ?>"
                 <?= (isset($old_data['id_categoria']) && $old_data['id_categoria'] == $categoria['id_categoria']) ? 'selected' : '' ?>>
-                <?= htmlspecialchars($categoria['nombre_categoria']) ?>
+                <?= htmlspecialchars($categoria['nombre']) ?>
             </option>
         <?php endforeach; ?>
     </select>

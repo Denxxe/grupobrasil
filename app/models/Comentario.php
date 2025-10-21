@@ -17,12 +17,12 @@ class Comentario extends ModelBase {
                 c.id_noticia,
                 n.titulo AS titulo_noticia,
                 c.id_usuario,
-                CONCAT(u.nombre, ' ', u.apellido) AS nombre_usuario,
+                CONCAT(u.username) AS nombre_usuario,
                 c.contenido,
                 c.fecha_comentario,
                 c.activo
             FROM " . $this->table . " c
-            JOIN usuarios u ON c.id_usuario = u.id_usuario
+            JOIN usuario u ON c.id_usuario = u.id_usuario
             JOIN noticias n ON c.id_noticia = n.id_noticia";
 
     $params = [];
@@ -120,10 +120,10 @@ class Comentario extends ModelBase {
                 c.id_usuario,
                 c.contenido,
                 c.fecha_comentario, 
-                CONCAT(u.nombre, ' ', u.apellido) AS nombre_usuario,
+                CONCAT(u.username) AS nombre_usuario,
                 u.foto_perfil
             FROM " . $this->table . " c
-            JOIN usuarios u ON c.id_usuario = u.id_usuario
+            JOIN usuario u ON c.id_usuario = u.id_usuario
             WHERE c.id_noticia = ?";
 
         
