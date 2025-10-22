@@ -33,6 +33,8 @@ require_once MODELS_PATH . 'Categoria.php';
 require_once MODELS_PATH . 'Calle.php'; 
 require_once MODELS_PATH . 'LiderCalle.php';
 require_once MODELS_PATH . 'Habitante.php'; // Added Habitante model
+require_once MODELS_PATH . 'CargaFamiliar.php'; // Added Familia model
+require_once MODELS_PATH . 'Vivienda.php'; // Added Vivienda model
 
 // --- Carga de controladores ---
 require_once CONTROLLERS_PATH . 'LoginController.php';
@@ -242,7 +244,48 @@ if (!isset($_SESSION['id_usuario'])) {
                     exit();
                 }
                 $controllerName = 'SubadminController';
-                if ($actionSegment === 'news') {
+                
+                if ($actionSegment === 'habitantes') {
+                    if ($id === 'edit') {
+                        $actionName = 'editHabitante';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } elseif ($id === 'delete') {
+                        $actionName = 'deleteHabitante';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } elseif ($id === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $actionName = 'addHabitante';
+                        $id = null;
+                    } elseif ($id === 'asignar-lider-familia') {
+                        $actionName = 'asignarLiderFamilia';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } else {
+                        $actionName = 'habitantes';
+                    }
+                } elseif ($actionSegment === 'familias') {
+                    if ($id === 'ver') {
+                        $actionName = 'verFamilia';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } else {
+                        $actionName = 'familias';
+                    }
+                } elseif ($actionSegment === 'viviendas') {
+                    $actionName = 'viviendas';
+                } elseif ($actionSegment === 'editHabitante') {
+                    $actionName = 'editHabitante';
+                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                } elseif ($actionSegment === 'deleteHabitante') {
+                    $actionName = 'deleteHabitante';
+                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                } elseif ($actionSegment === 'addHabitante' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                    $actionName = 'addHabitante';
+                } elseif ($actionSegment === 'asignarLiderFamilia') {
+                    $actionName = 'asignarLiderFamilia';
+                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                } elseif ($actionSegment === 'verFamilia') {
+                    $actionName = 'verFamilia';
+                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                }
+                elseif ($actionSegment === 'news') {
                     if ($id === 'soft-delete') { 
                         $actionName = 'requestSoftDeleteNews'; 
                         $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
@@ -349,6 +392,8 @@ if ($controllerName) {
             $liderCalleModel = new LiderCalle();
             $roleModel = new Role();
             $habitanteModel = new Habitante(); // Added Habitante model instantiation
+            $familiaModel = new CargaFamiliar(); // Added Familia model instantiation
+            $viviendaModel = new Vivienda(); // Added Vivienda model instantiation
             $validator = new Validator();
 
             // Determinar qué controlador instanciar con qué dependencias
@@ -357,10 +402,10 @@ if ($controllerName) {
                     $controller = new LoginController($usuarioModel);
                     break;
                 case 'AdminController':
-                    $controller = new AdminController($usuarioModel, $personaModel, $noticiaModel, $comentarioModel, $notificacionModel, $calleModel, $liderCalleModel, $categoriaModel, $roleModel, $habitanteModel); 
+                    $controller = new AdminController($usuarioModel, $personaModel, $noticiaModel, $comentarioModel, $notificacionModel, $calleModel, $liderCalleModel, $categoriaModel, $roleModel, $habitanteModel, $familiaModel, $viviendaModel); 
                     break;
                 case 'SubadminController':
-                    $controller = new SubadminController();
+                    $controller = new SubadminController($usuarioModel, $personaModel, $noticiaModel, $comentarioModel, $notificacionModel, $calleModel, $liderCalleModel, $categoriaModel, $roleModel, $habitanteModel, $familiaModel, $viviendaModel);
                     break;
                 case 'NoticiaController':
                     $controller = new NoticiaController($noticiaModel, $comentarioModel, $likeModel); // Pasa solo los necesarios

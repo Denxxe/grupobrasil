@@ -2,7 +2,7 @@
 // grupobrasil/app/views/layouts/user_layout.php
 
 // ... (El código de setup de variables y unset de sesión permanece igual) ...
-$success_message =  '';
+$success_message = '';
 $error_message = '';
 
 
@@ -77,7 +77,16 @@ $page_title = $page_title ?? 'Mi Perfil';
                         <i class="fas fa-bell mr-3 sidebar-icon"></i> <span class="sidebar-text">Mis Notificaciones</span>
                     </a>
                 </li>
-                </ul>
+                <?php 
+                if (isset($_SESSION['available_roles']) && count($_SESSION['available_roles']) > 1): 
+                ?>
+                <li class="border-t border-vinotinto-600 pt-2 mt-2">
+                    <a href="./index.php?route=login/switchRole" class="flex items-center px-4 py-2 text-accentgold hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                        <i class="fas fa-exchange-alt mr-3 sidebar-icon"></i> <span class="sidebar-text">Cambiar Rol</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+            </ul>
         </nav>
         <div class="mt-auto p-4 border-t border-vinotinto-800">
             <button id="sidebarCollapseToggle" class="hidden lg:flex items-center justify-center w-full text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200 py-2 mb-2">
@@ -120,17 +129,15 @@ $page_title = $page_title ?? 'Mi Perfil';
             </div>
         </div>
 
-       <main class="flex-grow">
-<?php 
-if (isset($content_view_path) && file_exists($content_view_path)) {
-    include $content_view_path;
-} else {
-    echo '<div class="alert alert-danger">No se pudo cargar la vista de contenido.<br>Ruta: ' . htmlspecialchars($content_view_path ?? 'N/A') . '</div>';
-}
-    ?>
-</main>
-
-
+        <main class="flex-grow">
+            <?php 
+            if (isset($content_view_path) && file_exists($content_view_path)) {
+                include $content_view_path;
+            } else {
+                echo '<div class="alert alert-danger">No se pudo cargar la vista de contenido.<br>Ruta: ' . htmlspecialchars($content_view_path ?? 'N/A') . '</div>';
+            }
+            ?>
+        </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
@@ -138,5 +145,5 @@ if (isset($content_view_path) && file_exists($content_view_path)) {
     <script src="./js/admin_dashboard.js?v=<?php echo time(); ?>"></script>
     <script src="./js/toast_initializer.js?v=<?php echo time(); ?>"></script>
     <script src="./js/user_dashboard.js?v=<?php echo time(); ?>"></script>
-    </body>
+</body>
 </html>

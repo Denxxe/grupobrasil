@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 21-10-2025 a las 12:40:36
+-- Tiempo de generación: 22-10-2025 a las 20:32:18
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -152,6 +152,13 @@ CREATE TABLE `habitante` (
   `fecha_actualizacion` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Volcado de datos para la tabla `habitante`
+--
+
+INSERT INTO `habitante` (`id_habitante`, `id_persona`, `fecha_ingreso`, `condicion`, `activo`, `fecha_registro`, `fecha_actualizacion`) VALUES
+(1, 7, '2025-10-22', 'Residente', 1, '2025-10-21 20:34:19', '2025-10-21 20:34:19');
+
 -- --------------------------------------------------------
 
 --
@@ -199,6 +206,13 @@ CREATE TABLE `lider_calle` (
   `fecha_actualizacion` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Volcado de datos para la tabla `lider_calle`
+--
+
+INSERT INTO `lider_calle` (`id_habitante`, `id_calle`, `fecha_designacion`, `activo`, `fecha_registro`, `fecha_actualizacion`) VALUES
+(1, 1, '2025-10-22', 1, '2025-10-22 14:26:56', '2025-10-22 14:26:56');
+
 -- --------------------------------------------------------
 
 --
@@ -214,6 +228,20 @@ CREATE TABLE `lider_comunal` (
   `fecha_registro` datetime DEFAULT current_timestamp(),
   `fecha_actualizacion` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `log_actividad`
+--
+
+CREATE TABLE `log_actividad` (
+  `id_log` int(10) UNSIGNED NOT NULL,
+  `id_usuario` int(10) UNSIGNED DEFAULT NULL COMMENT 'Usuario que realizó la acción (NULL para acciones del sistema)',
+  `tipo` varchar(50) NOT NULL COMMENT 'Categoría de la acción (ej: pago_ok, usuario_creado, error)',
+  `mensaje` text NOT NULL COMMENT 'Descripción detallada de la actividad',
+  `fecha` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -234,13 +262,6 @@ CREATE TABLE `noticias` (
   `fecha_registro` datetime NOT NULL DEFAULT current_timestamp(),
   `fecha_actualizacion` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `noticias`
---
-
-INSERT INTO `noticias` (`id_noticia`, `id_usuario`, `id_categoria`, `titulo`, `contenido`, `imagen_principal`, `slug`, `estado`, `fecha_publicacion`, `fecha_registro`, `fecha_actualizacion`) VALUES
-(1, 2, 3, 'Noticia prueba', '2qwe', NULL, '', 'borrador', '2025-10-21 05:43:10', '2025-10-21 05:43:10', '2025-10-21 06:08:40');
 
 -- --------------------------------------------------------
 
@@ -276,6 +297,38 @@ CREATE TABLE `pago` (
   `fecha_registro` datetime DEFAULT current_timestamp(),
   `fecha_actualizacion` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `pagos`
+--
+
+CREATE TABLE `pagos` (
+  `id_pago` int(10) UNSIGNED NOT NULL,
+  `id_usuario` int(10) UNSIGNED NOT NULL COMMENT 'Usuario que recibe el pago/beneficio',
+  `id_tipo_beneficio` int(10) UNSIGNED NOT NULL,
+  `id_periodo` int(10) UNSIGNED NOT NULL,
+  `monto` decimal(10,2) NOT NULL COMMENT 'Monto pagado o valor del beneficio',
+  `fecha_pago` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Fecha real en que se registró el pago/entrega',
+  `concepto` varchar(255) DEFAULT NULL,
+  `estado` enum('pendiente','procesado','fallido','vencido') NOT NULL DEFAULT 'procesado',
+  `registrado_por_id` int(10) UNSIGNED DEFAULT NULL COMMENT 'ID del admin o líder que registró el pago'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `pagos_periodos`
+--
+
+CREATE TABLE `pagos_periodos` (
+  `id_periodo` int(10) UNSIGNED NOT NULL,
+  `nombre_periodo` varchar(100) NOT NULL COMMENT 'Ej: Enero 2025, Campaña Q1',
+  `fecha_inicio` date NOT NULL COMMENT 'Fecha desde la que se puede pagar',
+  `fecha_limite` date NOT NULL COMMENT 'Fecha límite para realizar el pago',
+  `estado` enum('activo','cerrado','archivado') NOT NULL DEFAULT 'activo'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -321,8 +374,9 @@ CREATE TABLE `persona` (
 --
 
 INSERT INTO `persona` (`id_persona`, `cedula`, `nombres`, `apellidos`, `fecha_nacimiento`, `sexo`, `telefono`, `direccion`, `id_calle`, `numero_casa`, `correo`, `estado`, `activo`, `fecha_registro`, `fecha_actualizacion`) VALUES
-(3, '12345678', 'Lider', 'Comunidad', '1980-01-01', 'F', '0987654321', 'Oficina Central', NULL, NULL, 'admin@grupobrasil.com', NULL, 1, '2025-10-20 23:29:39', '2025-10-20 23:29:39'),
-(6, '31044092', 'Cristian Jesus', 'Correa Pinto', NULL, NULL, '12345678', '', 3, '', '', 'Residente', 1, '2025-10-21 04:48:38', '2025-10-21 04:48:38');
+(3, '12345678', 'Lider', 'Comunidad', '1980-01-01', 'F', '0987654321', 'Oficina Central', 1, '2', 'admin@grupobrasil.com', NULL, 1, '2025-10-20 23:29:39', '2025-10-21 07:52:21'),
+(6, '31044092', 'Cristian Jesus', 'Correa Pinto', '0000-00-00', '', '12345678', 'Urbanización Brasil', 3, '6', 'cristiancorreaxd@gmail.com', 'Residente', 1, '2025-10-21 04:48:38', '2025-10-21 07:52:54'),
+(7, '87654321', 'Luis', 'Arredondo', NULL, NULL, '04147852753', '', 1, '', '', 'Residente', 1, '2025-10-21 20:33:17', '2025-10-21 20:33:17');
 
 -- --------------------------------------------------------
 
@@ -351,6 +405,27 @@ INSERT INTO `rol` (`id_rol`, `nombre`, `descripcion`, `activo`, `fecha_registro`
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `tipos_beneficio`
+--
+
+CREATE TABLE `tipos_beneficio` (
+  `id_tipo_beneficio` int(10) UNSIGNED NOT NULL,
+  `nombre` varchar(100) NOT NULL COMMENT 'Ej: Bolsa de Comida, Bombona de Gas, Campo Soberano',
+  `descripcion` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `tipos_beneficio`
+--
+
+INSERT INTO `tipos_beneficio` (`id_tipo_beneficio`, `nombre`, `descripcion`) VALUES
+(1, 'Bolsa de Comida', NULL),
+(2, 'Bombona de Gas', NULL),
+(3, 'Campo Soberano', NULL);
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `usuario`
 --
 
@@ -359,6 +434,7 @@ CREATE TABLE `usuario` (
   `id_persona` int(10) UNSIGNED DEFAULT NULL,
   `id_rol` int(10) UNSIGNED DEFAULT NULL,
   `password` varchar(255) NOT NULL,
+  `email` varchar(100) DEFAULT NULL,
   `fecha_registro` datetime DEFAULT current_timestamp(),
   `estado` varchar(20) DEFAULT NULL,
   `activo` tinyint(1) DEFAULT 1,
@@ -370,8 +446,10 @@ CREATE TABLE `usuario` (
 -- Volcado de datos para la tabla `usuario`
 --
 
-INSERT INTO `usuario` (`id_usuario`, `id_persona`, `id_rol`, `password`, `fecha_registro`, `estado`, `activo`, `fecha_actualizacion`, `username`) VALUES
-(2, 3, 1, '$2y$10$6OPuIKDZ12i0vwqYqf0pwevZS9hkghvPzKrfcAZrxtlxUgvv4TQcu', '2025-10-20 23:29:39', 'activo', 1, '2025-10-21 05:55:07', 'Admin');
+INSERT INTO `usuario` (`id_usuario`, `id_persona`, `id_rol`, `password`, `email`, `fecha_registro`, `estado`, `activo`, `fecha_actualizacion`, `username`) VALUES
+(2, 3, 1, '$2y$10$6OPuIKDZ12i0vwqYqf0pwevZS9hkghvPzKrfcAZrxtlxUgvv4TQcu', NULL, '2025-10-20 23:29:39', 'activo', 1, '2025-10-21 05:55:07', 'Admin'),
+(3, 6, 3, '$2y$10$kqO8xp6ijfL.yMNsd7n8vO2RyrxZndg8wUsi5n2y4JJUPQymWhHMW', 'cristiancorreaxd@gmail.com', '2025-10-21 07:19:28', NULL, 1, '2025-10-21 07:19:28', 'Usuario'),
+(4, 7, 2, '$2y$10$q7LKe3E9j6cfLYiFzn/VG.FhuJFYJjHkCeunqDMq/M57cxLZmBt1S', 'lfarredondot14@gmail.com', '2025-10-21 20:34:19', NULL, 1, '2025-10-22 14:26:56', 'Usuario');
 
 -- --------------------------------------------------------
 
@@ -471,6 +549,13 @@ ALTER TABLE `lider_comunal`
   ADD PRIMARY KEY (`id_habitante`,`fecha_inicio`);
 
 --
+-- Indices de la tabla `log_actividad`
+--
+ALTER TABLE `log_actividad`
+  ADD PRIMARY KEY (`id_log`),
+  ADD KEY `id_usuario` (`id_usuario`);
+
+--
 -- Indices de la tabla `noticias`
 --
 ALTER TABLE `noticias`
@@ -495,6 +580,21 @@ ALTER TABLE `pago`
   ADD KEY `pago_id_concepto_fkey` (`id_concepto`);
 
 --
+-- Indices de la tabla `pagos`
+--
+ALTER TABLE `pagos`
+  ADD PRIMARY KEY (`id_pago`),
+  ADD KEY `id_usuario` (`id_usuario`),
+  ADD KEY `id_tipo_beneficio` (`id_tipo_beneficio`),
+  ADD KEY `id_periodo` (`id_periodo`);
+
+--
+-- Indices de la tabla `pagos_periodos`
+--
+ALTER TABLE `pagos_periodos`
+  ADD PRIMARY KEY (`id_periodo`);
+
+--
 -- Indices de la tabla `participacion_evento`
 --
 ALTER TABLE `participacion_evento`
@@ -515,6 +615,13 @@ ALTER TABLE `persona`
 --
 ALTER TABLE `rol`
   ADD PRIMARY KEY (`id_rol`),
+  ADD UNIQUE KEY `nombre` (`nombre`);
+
+--
+-- Indices de la tabla `tipos_beneficio`
+--
+ALTER TABLE `tipos_beneficio`
+  ADD PRIMARY KEY (`id_tipo_beneficio`),
   ADD UNIQUE KEY `nombre` (`nombre`);
 
 --
@@ -576,13 +683,19 @@ ALTER TABLE `evento`
 -- AUTO_INCREMENT de la tabla `habitante`
 --
 ALTER TABLE `habitante`
-  MODIFY `id_habitante` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id_habitante` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `indicador_gestion`
 --
 ALTER TABLE `indicador_gestion`
   MODIFY `id_indicador` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `log_actividad`
+--
+ALTER TABLE `log_actividad`
+  MODIFY `id_log` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `noticias`
@@ -603,6 +716,18 @@ ALTER TABLE `pago`
   MODIFY `id_pago` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `pagos`
+--
+ALTER TABLE `pagos`
+  MODIFY `id_pago` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `pagos_periodos`
+--
+ALTER TABLE `pagos_periodos`
+  MODIFY `id_periodo` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `participacion_evento`
 --
 ALTER TABLE `participacion_evento`
@@ -612,7 +737,7 @@ ALTER TABLE `participacion_evento`
 -- AUTO_INCREMENT de la tabla `persona`
 --
 ALTER TABLE `persona`
-  MODIFY `id_persona` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_persona` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT de la tabla `rol`
@@ -621,10 +746,16 @@ ALTER TABLE `rol`
   MODIFY `id_rol` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT de la tabla `tipos_beneficio`
+--
+ALTER TABLE `tipos_beneficio`
+  MODIFY `id_tipo_beneficio` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT de la tabla `usuario`
 --
 ALTER TABLE `usuario`
-  MODIFY `id_usuario` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_usuario` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `vivienda`
@@ -689,6 +820,12 @@ ALTER TABLE `lider_comunal`
   ADD CONSTRAINT `lider_comunal_id_habitante_fkey` FOREIGN KEY (`id_habitante`) REFERENCES `habitante` (`id_habitante`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 --
+-- Filtros para la tabla `log_actividad`
+--
+ALTER TABLE `log_actividad`
+  ADD CONSTRAINT `log_actividad_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
 -- Filtros para la tabla `noticias`
 --
 ALTER TABLE `noticias`
@@ -707,6 +844,14 @@ ALTER TABLE `notificaciones`
 ALTER TABLE `pago`
   ADD CONSTRAINT `pago_id_concepto_fkey` FOREIGN KEY (`id_concepto`) REFERENCES `concepto_pago` (`id_concepto`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `pago_id_usuario_fkey` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Filtros para la tabla `pagos`
+--
+ALTER TABLE `pagos`
+  ADD CONSTRAINT `pagos_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `pagos_ibfk_2` FOREIGN KEY (`id_tipo_beneficio`) REFERENCES `tipos_beneficio` (`id_tipo_beneficio`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `pagos_ibfk_3` FOREIGN KEY (`id_periodo`) REFERENCES `pagos_periodos` (`id_periodo`) ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `participacion_evento`

@@ -174,4 +174,13 @@ class ModelBase {
             return false;
         }
     }
+
+    public function rawQuery(string $sql) {
+        // Ejecuta la consulta usando la conexión interna
+        return $this->conn->query($sql);
+    }
+
+    public function getConnection() {
+        return $this->conn;
+    }
 }

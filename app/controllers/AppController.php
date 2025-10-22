@@ -18,7 +18,14 @@ class AppController {
     }
 
     protected function loadView($viewName, $data = []) {
+        
+        // 1. Definir la ruta del contenido
         $content_view_path = __DIR__ . '/../views/' . $viewName . '.php';
+        
+        // 2. INYECTAR la ruta de la vista del contenido en $data
+        // Esto asegura que $content_view_path esté disponible cuando se llama a extract()
+        $data['content_view_path'] = $content_view_path; 
+
         $page_title = $data['page_title'] ?? 'Grupo Brasil';
 
         error_log("[v0] AppController::loadView() llamado");
@@ -56,6 +63,7 @@ class AppController {
             exit();
         }
 
+        // Ahora, extract($data) hace que $content_view_path esté disponible en el layout
         extract($data);
         
         error_log("[v0] Incluyendo layout: " . $layout);

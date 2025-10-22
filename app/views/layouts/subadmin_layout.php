@@ -12,8 +12,8 @@ unset($_SESSION['success_message']);
 unset($_SESSION['error_message']);
 
 // Asignar títulos por defecto si no vienen del controlador
-$title = $title ?? 'Sub-Admin Dashboard';
-$page_title = $page_title ?? 'Dashboard de Sub-Administración';
+$title = $title ?? 'Líder de Vereda Dashboard';
+$page_title = $page_title ?? 'Dashboard de Líder de Vereda';
 
 $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el controlador debería definirla.
 
@@ -68,6 +68,21 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
                 <li>
                     <a href="./index.php?route=subadmin/dashboard" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
                         <i class="fas fa-tachometer-alt mr-3 sidebar-icon"></i> <span class="sidebar-text">Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="./index.php?route=subadmin/habitantes" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                        <i class="fas fa-users mr-3 sidebar-icon"></i> <span class="sidebar-text">Habitantes</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="./index.php?route=subadmin/familias" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                        <i class="fas fa-user-friends mr-3 sidebar-icon"></i> <span class="sidebar-text">Familias</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="./index.php?route=subadmin/viviendas" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                        <i class="fas fa-home mr-3 sidebar-icon"></i> <span class="sidebar-text">Viviendas</span>
                     </a>
                 </li>
                 <li>
