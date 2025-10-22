@@ -42,11 +42,11 @@ class Notificacion extends ModelBase {
         bool $unreadOnly = true,
         array $order = ['column' => 'fecha_creacion', 'direction' => 'DESC']
     ) {
+        // [CORRECCIÓN APLICADA] Nombre de columna y tabla de usuario
         $sql = "SELECT n.*, 
-                       u_origen.nombre AS origen_nombre, 
-                       u_origen.apellido AS origen_apellido
+                       u_origen.username AS origen_nombre
                 FROM " . $this->table . " n
-                LEFT JOIN usuarios u_origen ON n.id_usuario_origen = u_origen.id_usuario
+                LEFT JOIN usuario u_origen ON n.id_usuario_origen = u_origen.id_usuario
                 WHERE n.id_usuario_destino = ?";
         
         $params = [$id_usuario_destino];
@@ -162,17 +162,17 @@ class Notificacion extends ModelBase {
         return 0;
     }
 
-  public function getAllNotifications(
+    public function getAllNotifications(
         array $order = ['column' => 'fecha_creacion', 'direction' => 'DESC']
     ) {
+        // [CORRECCIÓN DE SINTAXIS] Eliminada la coma final antes de FROM.
+        // [CORRECCIÓN APLICADA] Usando 'usuario' y 'username' para los JOINS.
         $sql = "SELECT n.*, 
-                       u_origen.nombre AS origen_nombre, 
-                       u_origen.apellido AS origen_apellido,
-                       u_destino.nombre AS destino_nombre,
-                       u_destino.apellido AS destino_apellido
+                       u_origen.username AS origen_nombre, 
+                       u_destino.username AS destino_nombre
                 FROM " . $this->table . " n
-                LEFT JOIN usuarios u_origen ON n.id_usuario_origen = u_origen.id_usuario
-                LEFT JOIN usuarios u_destino ON n.id_usuario_destino = u_destino.id_usuario"; // Unimos también por destino
+                LEFT JOIN usuario u_origen ON n.id_usuario_origen = u_origen.id_usuario
+                LEFT JOIN usuario u_destino ON n.id_usuario_destino = u_destino.id_usuario";
         
         $params = [];
         $types = "";
@@ -227,6 +227,4 @@ class Notificacion extends ModelBase {
     public function find(int $id): ?array {
         return parent::find($id); 
     }
-
-
 }

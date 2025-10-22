@@ -11,8 +11,9 @@ class Categoria extends ModelBase {
     }
 
     public function getAllCategories() {
-        $sql = "SELECT id_categoria, nombre_categoria FROM " . $this->table . " ORDER BY nombre_categoria ASC";
-        $stmt = $this->conn->prepare($sql);
+        // CORRECCIÓN: Se cambia 'nombre_categoria' por 'nombre'
+        $sql = "SELECT id_categoria, nombre FROM " . $this->table . " ORDER BY nombre ASC";
+        $stmt = $this->conn->prepare($sql); // Línea 15 donde se generaba el error
 
         if ($stmt === false) {
             error_log("Error al preparar la consulta getAllCategories: " . $this->conn->error);

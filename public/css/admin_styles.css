@@ -1,120 +1,293 @@
 /* grupobrasil/public/css/admin_styles.css */
 
-/* Estilos base para el cuerpo y la fuente */
-body {
-    font-family: 'Inter', sans-serif;
-    background-color: #f3f4f6; /* Un color de fondo gris claro de Tailwind (gray-100) */
-    overflow: hidden; /* Evita que el body se desplace, solo el contenido principal lo hará */
-    height: 100vh; /* Asegura que el body ocupe el 100% de la altura de la ventana */
-    display: flex; /* Usa flexbox para alinear la barra lateral y el contenido */
-}
-/* Definición de variables CSS para facilitar el manejo de anchos */
+/* Rediseño completo con estilo minimalista y profesional usando vinotinto */
+
+/* Variables CSS para colores vinotinto y espaciado */
 :root {
-    --sidebar-width-expanded: 250px;
-    --sidebar-width-collapsed: 80px;
+  --sidebar-width-expanded: 260px;
+  --sidebar-width-collapsed: 70px;
+  --vinotinto-primary: #6d071a;
+  --vinotinto-hover: #8f2424;
+  --vinotinto-light: #a52a2a;
+  --accent-gold: #d4af37;
+  --bg-light: #f8f9fa;
+  --text-dark: #2d3748;
+  --text-muted: #718096;
+  --border-color: #e2e8f0;
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-/* Estilos de la barra lateral: Fija y ocupa toda la altura */
+/* Estilos base para el cuerpo */
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: var(--bg-light);
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  color: var(--text-dark);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Barra lateral con diseño minimalista */
 .sidebar {
-    position: fixed; /* Posiciona la barra lateral de forma fija */
-    top: 0;
-    left: 0;
-    height: 100vh; /* Ocupa el 100% de la altura de la ventana */
-    width: var(--sidebar-width-expanded); /* Ancho expandido por defecto */
-    transition: width 0.3s ease, margin-left 0.3s ease; /* Transición suave para ancho y movimiento */
-    z-index: 1000; /* Asegura que esté por encima de otros elementos */
-    overflow-y: auto; /* Permite que el contenido de la barra lateral se desplace si es muy largo */
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra para resaltar */
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: var(--sidebar-width-expanded);
+  background: linear-gradient(180deg, var(--vinotinto-primary) 0%, #4d0512 100%);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: var(--shadow-lg);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Estilos del área de contenido principal */
+/* Scrollbar personalizado para la sidebar */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Área de contenido principal */
 .content {
-    margin-left: var(--sidebar-width-expanded); /* Margen inicial para dejar espacio a la barra lateral */
-    transition: margin-left 0.3s ease; /* Transición suave para el margen del contenido */
-    flex-grow: 1; /* Permite que el contenido ocupe el espacio restante */
-    overflow-y: auto; /* Permite que solo el contenido principal se desplace verticalmente */
-    height: 100vh; /* Asegura que el área de contenido ocupe toda la altura visible */
-    display: flex; /* Permite que los elementos internos se organicen con flexbox */
-    flex-direction: column; /* Organiza los elementos internos en columna */
+  margin-left: var(--sidebar-width-expanded);
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-grow: 1;
+  overflow-y: auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-light);
 }
 
-/* Estilos para el texto y los iconos dentro de la barra lateral */
+/* Texto e iconos de la sidebar */
 .sidebar-text {
-    transition: opacity 0.1s ease, width 0.1s ease; /* Transición rápida para el texto */
-    white-space: nowrap; /* Evita que el texto se rompa en líneas */
-    overflow: hidden; /* Oculta el texto que excede el ancho */
-}
-.sidebar-icon {
-    transition: margin-right 0.3s ease; /* Transición suave para el margen del icono */
+  transition: opacity 0.2s ease, width 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.01em;
 }
 
-/* Ejemplo en tu archivo CSS personalizado */
+.sidebar-icon {
+  transition: margin-right 0.3s ease;
+  font-size: 18px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* Botones con estilo vinotinto */
 .btn-vinotinto-600 {
-    background-color: #800020; /* Un color vinotinto oscuro, ajusta según tu paleta */
-    color: #ffffff; /* Color de texto blanco */
-    border-color: #800020; /* O un borde ligeramente más oscuro */
+  background-color: var(--vinotinto-primary);
+  color: #ffffff;
+  border: 1px solid var(--vinotinto-primary);
+  font-weight: 500;
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  letter-spacing: 0.01em;
 }
 
 .btn-vinotinto-600:hover {
-    background-color: #6a001a; /* Un poco más oscuro al pasar el ratón */
-    border-color: #6a001a;
+  background-color: var(--vinotinto-hover);
+  border-color: var(--vinotinto-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
-/* MEDIA QUERIES para responsividad (Móvil vs. Escritorio) */
 
-/* Estilos para pantallas pequeñas (móviles) */
+.btn-vinotinto-600:active {
+  transform: translateY(0);
+}
+
+/* Cards con diseño minimalista */
+.card {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Headers y títulos */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text-dark);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Links con estilo vinotinto */
+a {
+  color: var(--vinotinto-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--vinotinto-hover);
+}
+
+/* Inputs y forms con mejor diseño */
+.form-control,
+.form-select {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.625rem 0.875rem;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--vinotinto-primary);
+  box-shadow: 0 0 0 3px rgba(109, 7, 26, 0.1);
+  outline: none;
+}
+
+/* Badges con estilo vinotinto */
+.badge {
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.badge-vinotinto {
+  background-color: var(--vinotinto-primary);
+  color: white;
+}
+
+/* Tablas con diseño limpio */
+.table {
+  font-size: 14px;
+}
+
+.table thead th {
+  background-color: #f7fafc;
+  color: var(--text-dark);
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-color);
+  padding: 0.875rem 1rem;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table tbody td {
+  padding: 0.875rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table tbody tr:hover {
+  background-color: #f7fafc;
+}
+
+/* Alerts con mejor diseño */
+.alert {
+  border-radius: 8px;
+  border: none;
+  padding: 1rem 1.25rem;
+  font-size: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* MEDIA QUERIES para responsividad */
+
+/* Móviles */
 @media (max-width: 768px) {
-    .sidebar {
-        margin-left: calc(-1 * var(--sidebar-width-expanded)); /* Oculta la barra lateral por defecto */
-        /* position: fixed, height: 100vh, z-index: 1000 ya están definidos y aplican */
-    }
-    /* Muestra la barra lateral cuando tiene la clase 'show' */
-    .sidebar.show {
-        margin-left: 0;
-    }
-    .content {
-        margin-left: 0; /* El contenido no tiene margen en móviles */
-        /* height: 100vh; overflow-y: auto; display: flex; flex-direction: column; siguen aplicando */
-    }
-    /* Oculta los elementos relacionados con el colapso de escritorio en móviles */
-    #sidebarCollapseToggle {
-        display: none !important;
-    }
-    .lg\:hidden { /* Asegura que el header móvil esté visible */
-        display: flex !important;
-    }
-    .hidden.lg\:block { /* Asegura que el header de escritorio esté oculto */
-        display: none !important;
-    }
+  .sidebar {
+    margin-left: calc(-1 * var(--sidebar-width-expanded));
+  }
+
+  .sidebar.show {
+    margin-left: 0;
+  }
+
+  .content {
+    margin-left: 0;
+  }
+
+  #sidebarCollapseToggle {
+    display: none !important;
+  }
 }
 
-/* Estilos para pantallas grandes (escritorio) cuando la barra lateral está COLAPSADA */
+/* Escritorio - Sidebar colapsada */
 @media (min-width: 769px) {
-    /* Cuando el body tiene la clase 'sidebar-collapsed' */
-    body.sidebar-collapsed .sidebar {
-        width: var(--sidebar-width-collapsed); /* Ancho colapsado */
-    }
-    body.sidebar-collapsed .content {
-        margin-left: var(--sidebar-width-collapsed); /* Ajusta el margen del contenido */
-    }
-    /* Oculta el texto de los elementos de navegación */
-    body.sidebar-collapsed .sidebar .sidebar-text {
-        opacity: 0;
-        width: 0;
-    }
-    /* Elimina el margen derecho de los íconos */
-    body.sidebar-collapsed .sidebar .sidebar-icon {
-        margin-right: 0 !important;
-    }
-    /* Centra el contenido (ícono) dentro de los enlaces de la barra lateral */
-    body.sidebar-collapsed .sidebar nav ul li a,
-    body.sidebar-collapsed .sidebar > div > a { /* Para el enlace de cerrar sesión */
-        justify-content: center;
-        padding-left: 0;
-        padding-right: 0;
-    }
-    /* Asegura que el título del dashboard se oculte también */
-    body.sidebar-collapsed .sidebar h1 {
-        opacity: 0;
-        width: 0;
-    }
+  body.sidebar-collapsed .sidebar {
+    width: var(--sidebar-width-collapsed);
+  }
+
+  body.sidebar-collapsed .content {
+    margin-left: var(--sidebar-width-collapsed);
+  }
+
+  body.sidebar-collapsed .sidebar .sidebar-text {
+    opacity: 0;
+    width: 0;
+  }
+
+  body.sidebar-collapsed .sidebar .sidebar-icon {
+    margin-right: 0 !important;
+  }
+
+  body.sidebar-collapsed .sidebar nav ul li a,
+  body.sidebar-collapsed .sidebar nav ul li button,
+  body.sidebar-collapsed .sidebar > div > a {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  body.sidebar-collapsed .sidebar h1 {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+  }
+}
+
+/* Animaciones suaves */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease;
 }

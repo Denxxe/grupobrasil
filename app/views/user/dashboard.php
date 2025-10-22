@@ -3,7 +3,6 @@
 
 // La verificación de acceso ya se hace en el constructor del UserController
 // y en AppController::loadView()
-
 error_log("[v0] Cargando dashboard de usuario");
 error_log("[v0] id_usuario: " . ($_SESSION['id_usuario'] ?? 'no definido'));
 error_log("[v0] id_rol: " . ($_SESSION['id_rol'] ?? 'no definido'));

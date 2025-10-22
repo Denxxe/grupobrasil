@@ -2,14 +2,12 @@
 // grupobrasil/app/views/layouts/user_layout.php
 
 // ... (El código de setup de variables y unset de sesión permanece igual) ...
-$success_message = $_SESSION['success_message'] ?? '';
-$error_message = $_SESSION['error_message'] ?? '';
-unset($_SESSION['success_message']);
-unset($_SESSION['error_message']);
+$success_message =  '';
+$error_message = '';
+
 
 $title = $title ?? 'User Dashboard';
 $page_title = $page_title ?? 'Mi Perfil';
-$content_view_path = $content_view_path ?? ''; 
 
 ?>
 <!DOCTYPE html>
@@ -55,7 +53,7 @@ $content_view_path = $content_view_path ?? '';
 
     <aside id="sidebar" class="sidebar bg-vinotinto-700 text-gray-100 flex flex-col p-4 rounded-r-lg shadow-lg">
         <div class="flex items-center justify-center p-4 border-b border-vinotinto-800 overflow-hidden">
-            <h1 class="text-2xl font-bold text-accentgold sidebar-text">Panel de Usuario</h1>
+            <h1 class="text-2xl font-bold text-accentgold sidebar-text"><?php echo $_SESSION['nombre_completo'] ?></h1>
         </div>
         <nav class="flex-grow mt-4">
             <ul class="space-y-2">
@@ -123,16 +121,12 @@ $content_view_path = $content_view_path ?? '';
         </div>
 
        <main class="flex-grow">
-    <?php
-    if (isset($content_view_path) && file_exists($content_view_path)) {
-        include_once $content_view_path;
-    } else {
-        echo '<div class="alert alert-danger" role="alert">
-                Error: La vista de contenido no se pudo cargar.<br>
-                Ruta: ' . htmlspecialchars($content_view_path ?? 'N/A') . '
-              </div>';
-        error_log("Error: La vista de contenido '$content_view_path' no existe o no está definida.");
-    }
+<?php 
+if (isset($content_view_path) && file_exists($content_view_path)) {
+    include $content_view_path;
+} else {
+    echo '<div class="alert alert-danger">No se pudo cargar la vista de contenido.<br>Ruta: ' . htmlspecialchars($content_view_path ?? 'N/A') . '</div>';
+}
     ?>
 </main>
 

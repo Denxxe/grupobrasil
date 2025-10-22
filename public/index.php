@@ -24,11 +24,15 @@ require_once CONFIG_PATH . 'database.php'; // Solo cargar la clase, no asignar a
 // --- Carga de modelos (asegúrate de que ModelBase se cargue primero si es una clase base) ---
 require_once MODELS_PATH . 'ModelBase.php';
 require_once MODELS_PATH . 'Usuario.php';
+require_once MODELS_PATH . 'Persona.php'; // Asegúrate de incluir Persona.php aquí
 require_once MODELS_PATH . 'Noticia.php';
 require_once MODELS_PATH . 'Comentario.php';
 require_once MODELS_PATH . 'Like.php';
 require_once MODELS_PATH . 'Notificacion.php';
 require_once MODELS_PATH . 'Categoria.php';
+require_once MODELS_PATH . 'Calle.php'; 
+require_once MODELS_PATH . 'LiderCalle.php';
+require_once MODELS_PATH . 'Habitante.php'; // Added Habitante model
 
 // --- Carga de controladores ---
 require_once CONTROLLERS_PATH . 'LoginController.php';
@@ -79,14 +83,6 @@ if (!isset($_SESSION['id_usuario'])) {
 
     $userRole = $_SESSION['id_rol'];
 
-    if (isset($_SESSION['requires_setup']) && $_SESSION['requires_setup'] == 1) {
-        // Si el usuario requiere setup y no está en la ruta de setup, redirigir
-        if ($route !== 'user/setupProfile' && $route !== 'user/updateProfile' && $route !== 'login/logout') {
-            header('Location: ./index.php?route=user/setupProfile');
-            exit();
-        }
-    }
-
     // Redirección por defecto a dashboard si se accede a la raíz o a 'login' estando autenticado
     if ($route === 'login' || $route === '') {
         switch ($userRole) {
@@ -101,6 +97,7 @@ if (!isset($_SESSION['id_usuario'])) {
                 exit();
             default:
                 $_SESSION['error_message'] = "Rol de usuario desconocido. Sesión cerrada.";
+                session_destroy();
                 header('Location: ./index.php?route=login/logout');
                 exit();
         }
@@ -115,7 +112,7 @@ if (!isset($_SESSION['id_usuario'])) {
     else {
         $controllerSegment = array_shift($routeParts);
         $actionSegment = array_shift($routeParts) ?? 'index';
-        $id = array_shift($routeParts);
+        $id = array_shift($routeParts); // TERCER SEGMENTO (puede ser 'personas', 'create', o un ID)
 
         $controllerName = ucfirst($controllerSegment) . 'Controller';
 
@@ -127,14 +124,74 @@ if (!isset($_SESSION['id_usuario'])) {
                     exit();
                 }
                 $controllerName = 'AdminController';
-                if ($actionSegment === 'users') {
-                    if ($id === 'create') { $actionName = 'createUser'; }
-                    elseif ($id === 'store' && $_SERVER['REQUEST_METHOD'] === 'POST') { $actionName = 'storeUser'; $id = null; }
-                    elseif ($id === 'edit') { $actionName = 'editUser'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
-                    elseif ($id === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') { $actionName = 'updateUser'; $id = null; }
-                    elseif ($id === 'delete') { $actionName = 'deleteUser'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
-                    else { $actionName = 'manageUsers'; }
+
+                // CORRECCIÓN CLAVE: Usar la estructura admin/users/{sub_segment}
+                if ($actionSegment === 'users') { 
+                    
+                    $subSegment = $id; 
+                    $id = null; // Reiniciamos $id, lo reasignamos más abajo si aplica (ej. para 'edit?id=X')
+                    
+                    // Lógica para listados de USUARIOS (Líderes) y PERSONAS (Habitantes)
+                    if ($subSegment === 'personas') {
+                        $actionName = 'personas'; 
+                    } 
+                    elseif ($subSegment === 'usuarios') {
+                        $actionName = 'usuarios'; 
+                    }
+                    // Lógica para CRUD de Usuario (Afecta Usuario y Persona)
+                    elseif ($subSegment === 'create') { 
+                        $actionName = 'createUser'; 
+                    }
+                    elseif ($subSegment === 'store' && $_SERVER['REQUEST_METHOD'] === 'POST') { 
+                        $actionName = 'storeUser'; 
+                    }
+                    elseif ($subSegment === 'edit') { 
+                        $actionName = 'editUser'; 
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
+                    }
+                    elseif ($subSegment === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') { 
+                        $actionName = 'updateUser'; 
+                    }
+                    elseif ($subSegment === 'edit-habitante') { 
+                        $actionName = 'editHabitante'; 
+                        $id = filter_input(INPUT_GET, 'person_id', FILTER_SANITIZE_NUMBER_INT); 
+                    }
+                    elseif ($subSegment === 'update-habitante' && $_SERVER['REQUEST_METHOD'] === 'POST') { 
+                        $actionName = 'updateHabitante'; 
+                    }
+                    elseif ($subSegment === 'delete-habitante') { 
+                        $actionName = 'deleteHabitante'; 
+                        $id = filter_input(INPUT_GET, 'person_id', FILTER_SANITIZE_NUMBER_INT); 
+                    }
+                    elseif ($subSegment === 'create-user-role') { 
+                        // RUTA: admin/users/create-user-role?person_id=X
+                        $actionName = 'createUserRole'; 
+                        $id = filter_input(INPUT_GET, 'person_id', FILTER_SANITIZE_NUMBER_INT); 
+                    }
+                    elseif ($subSegment === 'store-user-role' && $_SERVER['REQUEST_METHOD'] === 'POST') { 
+                        // RUTA: admin/users/store-user-role
+                        $actionName = 'storeUserRole'; 
+                    }
+
+                    elseif ($subSegment === 'delete') { 
+                        $actionName = 'deleteUser'; 
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
+                    }
+                    // Si la ruta es solo admin/users, por defecto va a usuarios (Líderes)
+                    else { 
+                        $actionName = 'usuarios'; 
+                    }
+
                 }
+                // Si el segmento es 'usuarios' o 'personas' directamente (ej. admin/usuarios)
+                elseif ($actionSegment === 'usuarios') {
+                    $actionName = 'usuarios';
+                }
+                elseif ($actionSegment === 'personas') {
+                    $actionName = 'personas';
+                }
+                
+                // Resto de la lógica de Admin
                 elseif ($actionSegment === 'news') {
                     if ($id === 'create') { $actionName = 'createNews'; }
                     elseif ($id === 'store' && $_SERVER['REQUEST_METHOD'] === 'POST') { $actionName = 'storeNews'; $id = null; }
@@ -170,7 +227,7 @@ if (!isset($_SESSION['id_usuario'])) {
                     else { $actionName = 'manageNotifications'; }
                 }
                 elseif ($actionSegment === 'reports') {
-                  $actionName = 'reports';
+                    $actionName = 'reports';
                 }
 
                 elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
@@ -185,38 +242,37 @@ if (!isset($_SESSION['id_usuario'])) {
                     exit();
                 }
                 $controllerName = 'SubadminController';
-                 if ($actionSegment === 'news') {
-        if ($id === 'soft-delete') { 
-            $actionName = 'requestSoftDeleteNews'; 
-            $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-        } else { 
-            $actionName = 'manageNews'; 
-        }
-    } elseif ($actionSegment === 'comments') {
-        if ($id === 'soft-delete') { 
-            $actionName = 'softDeleteComment'; 
-            $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-        } elseif ($id === 'activate') { 
-            $actionName = 'activateComment'; 
-            $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-        } elseif ($id === 'delete') { 
-            $actionName = 'deleteComment'; 
-            $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-        } else { 
-            $actionName = 'manageComments'; 
-        }
-
-    } elseif ($actionSegment === 'reports') {
-        $actionName = 'reports';
-    } elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
-        $actionName = 'dashboard';
-    } elseif ($actionSegment === 'notifications') {
+                if ($actionSegment === 'news') {
+                    if ($id === 'soft-delete') { 
+                        $actionName = 'requestSoftDeleteNews'; 
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
+                    } else { 
+                        $actionName = 'manageNews'; 
+                    }
+                } elseif ($actionSegment === 'comments') {
+                    if ($id === 'soft-delete') { 
+                        $actionName = 'softDeleteComment'; 
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
+                    } elseif ($id === 'activate') { 
+                        $actionName = 'activateComment'; 
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
+                    } elseif ($id === 'delete') { 
+                        $actionName = 'deleteComment'; 
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
+                    } else { 
+                        $actionName = 'manageComments'; 
+                    }
+                } elseif ($actionSegment === 'reports') {
+                    $actionName = 'reports';
+                } elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
+                    $actionName = 'dashboard';
+                } elseif ($actionSegment === 'notifications') {
                     if ($id === 'mark-read') { $actionName = 'markNotificationRead'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
                     elseif ($id === 'mark-all-read') { $actionName = 'markAllNotificationsRead'; $id = null; }
                     elseif ($id === 'delete') { $actionName = 'deleteNotification'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
                     else { $actionName = 'manageNotifications'; }
                 }
-    break;
+                break;
 
             case 'noticias':
                 $controllerName = 'NoticiaController';
@@ -238,7 +294,7 @@ if (!isset($_SESSION['id_usuario'])) {
                     header('Location: ./index.php?route=login');
                     exit();
                 }
-               $controllerName = 'UserController';
+                $controllerName = 'UserController';
                 
                 if ($actionSegment === 'notifications') {
                     if ($id === 'mark-read') { $actionName = 'markNotificationRead'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
@@ -246,7 +302,7 @@ if (!isset($_SESSION['id_usuario'])) {
                     elseif ($id === 'delete') { $actionName = 'deleteNotification'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
                     else { $actionName = 'manageNotifications'; }
                 }
-   
+    
                 elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
                     $actionName = 'dashboard';
                 }
@@ -262,7 +318,7 @@ if (!isset($_SESSION['id_usuario'])) {
             default:
                 // Si la ruta no coincide con ningún controlador conocido para usuarios autenticados
                 http_response_code(404);
-                $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Página No Encontrada', 'message' => "La página solicitada '" . htmlspecialchars($route) . "' no existe para tu rol."]];
+                $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Página No Encontrada', 'message' => "La página solicitada '" . htmlspecialchars($route) . "' no existe para tu rol."]] ;
                 $controllerName = null; // No intentar cargar un controlador inexistente
                 break;
         }
@@ -279,14 +335,21 @@ if ($controllerName) {
 
         if (!class_exists($controllerName)) {
             http_response_code(500);
-            $viewData = ['view' => 'error/500', 'data' => ['page_title' => 'Error Interno', 'message' => "Error 500: Clase de controlador '" . htmlspecialchars($controllerName) . "' no encontrada en el archivo."]];
+            $viewData = ['view' => 'error/500', 'data' => ['page_title' => 'Error Interno', 'message' => "Error 500: Clase de controlador '" . htmlspecialchars($controllerName) . "' no encontrada en el archivo."]] ;
         } else {
+            // Cargar dependencias necesarias
             $usuarioModel = new Usuario();
+            $personaModel = new Persona(); // Añadir el modelo Persona
             $noticiaModel = new Noticia();
             $comentarioModel = new Comentario();
             $likeModel = new Like();
             $notificacionModel = new Notificacion();
             $categoriaModel = new Categoria();
+            $calleModel = new Calle();
+            $liderCalleModel = new LiderCalle();
+            $roleModel = new Role();
+            $habitanteModel = new Habitante(); // Added Habitante model instantiation
+            $validator = new Validator();
 
             // Determinar qué controlador instanciar con qué dependencias
             switch ($controllerName) {
@@ -294,16 +357,16 @@ if ($controllerName) {
                     $controller = new LoginController($usuarioModel);
                     break;
                 case 'AdminController':
-                    $controller = new AdminController($usuarioModel, $noticiaModel, $comentarioModel, $notificacionModel, $categoriaModel, new Validator());
+                    $controller = new AdminController($usuarioModel, $personaModel, $noticiaModel, $comentarioModel, $notificacionModel, $calleModel, $liderCalleModel, $categoriaModel, $roleModel, $habitanteModel); 
                     break;
                 case 'SubadminController':
-                    $controller = new SubadminController($usuarioModel, $noticiaModel, $comentarioModel, $notificacionModel, $categoriaModel, new Validator());
+                    $controller = new SubadminController();
                     break;
                 case 'NoticiaController':
                     $controller = new NoticiaController($noticiaModel, $comentarioModel, $likeModel); // Pasa solo los necesarios
                     break;
                 case 'UserController':
-                    $controller = new UserController($usuarioModel, $noticiaModel, $notificacionModel);
+                    $controller = new UserController($usuarioModel, $noticiaModel, $notificacionModel, $personaModel); 
                     break;
                 default:
                     // Si el controlador no tiene una asignación explícita de dependencias
@@ -313,28 +376,26 @@ if ($controllerName) {
 
             if (method_exists($controller, $actionName)) {
                 // Llama a la acción y espera que devuelva un array con 'view' y 'data'
-                // O null si el controlador maneja una redirección internamente
                 $result = $controller->{$actionName}($id); // Pasa el ID siempre, el controlador decidirá si lo usa
 
                 if (is_array($result) && isset($result['view'])) {
                     $viewData = $result; // Actualiza $viewData con lo que el controlador devolvió
                 } elseif ($result === null) {
-                    // Si el controlador hizo un redirect, no hay nada más que hacer en este script.
-                    // El exit() ya fue llamado dentro del controlador.
-                    return;
+                    // Si el controlador hizo un redirect o renderizó directamente, no hay nada más que hacer.
+                    return; 
                 } else {
                     // Si el controlador no devuelve el formato esperado o algo inesperado
                     http_response_code(500);
-                    $viewData = ['view' => 'error/500', 'data' => ['page_title' => 'Error Interno', 'message' => "Error 500: La acción '" . htmlspecialchars($actionName) . "' del controlador " . htmlspecialchars($controllerName) . " no devolvió un formato de vista válido."]];
+                    $viewData = ['view' => 'error/500', 'data' => ['page_title' => 'Error Interno', 'message' => "Error 500: La acción '" . htmlspecialchars($actionName) . "' del controlador " . htmlspecialchars($controllerName) . " no devolvió un formato de vista válido."]] ;
                 }
             } else {
                 http_response_code(404);
-                $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Acción No Encontrada', 'message' => "Error 404: Acción '" . htmlspecialchars($actionName) . "' no encontrada para el controlador " . htmlspecialchars($controllerName) . "."]];
+                $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Acción No Encontrada', 'message' => "Error 404: Acción '" . htmlspecialchars($actionName) . "' no encontrada para el controlador " . htmlspecialchars($controllerName) . "."]] ;
             }
         }
     } else {
         http_response_code(404);
-        $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Controlador No Encontrado', 'message' => "Error 404: Archivo de controlador '" . htmlspecialchars($controllerName) . "' no encontrado."]];
+        $viewData = ['view' => 'error/404', 'data' => ['page_title' => 'Controlador No Encontrado', 'message' => "Error 404: Archivo de controlador '" . htmlspecialchars($controllerName) . "' no encontrado."]] ;
     }
 
 }
@@ -360,6 +421,25 @@ $page_content = ob_get_clean(); // Captura el HTML de la vista
 
 // Incluye el layout principal, que debe tener una variable $page_content
 // y las variables $success_message, $error_message, $page_title disponibles
-include VIEWS_PATH . 'layouts/admin_layout.php'; // O un layout diferente según el rol/ruta si lo necesitas
+if (isset($_SESSION['id_rol'])) {
+    switch ($_SESSION['id_rol']) {
+        case 1:
+            $layout = 'layouts/admin_layout.php';
+            break;
+        case 2:
+            $layout = 'layouts/subadmin_layout.php';
+            break;
+        case 3:
+            $layout = 'layouts/user_layout.php';
+            break;
+        default:
+            $layout = 'layouts/admin_layout.php';
+            break;
+    }
+} else {
+    // Para login y vistas públicas
+    $layout = 'layouts/login_layout.php';
+}
 
+include VIEWS_PATH . $layout;
 ?>

@@ -11,37 +11,46 @@ class Noticia extends ModelBase {
         $this->primaryKey = 'id_noticia';
     }
 
+    /**
+     * Obtiene todas las noticias, incluyendo el nombre del usuario que las publicó.
+     */
     public function getAllNews(bool $onlyActive = true, array $order = ['column' => 'fecha_publicacion', 'direction' => 'DESC']) {
-        $sql = "SELECT id_noticia, titulo, contenido, imagen_principal, fecha_publicacion, id_usuario_publicador, id_categoria, activo 
-                FROM " . $this->table; // Añadir id_categoria para getAllNews
+    
+        // CORRECCIÓN 1: Usamos 'usuarios' (asumo plural) y 'u.nombre' (la columna que creaste)
+        $sql = "SELECT n.id_noticia, n.titulo, n.contenido, n.imagen_principal, n.fecha_publicacion, 
+                     n.id_usuario, n.id_categoria, n.estado, 
+                     u.username AS nombre_usuario  
+                 FROM " . $this->table . " n
+                 JOIN usuario u ON n.id_usuario = u.id_usuario";
 
         $where_clauses = [];
         $params = [];
         $types = "";
 
         if ($onlyActive) {
-            $where_clauses[] = "activo = ?";
-            $params[] = 1;
-            $types .= "i";
+            // Filtra por estado = 'publicado'
+            $where_clauses[] = "n.estado = ?"; // Especificamos la tabla 'n' por si acaso
+            $params[] = 'publicado';
+            $types .= "s"; // Tipo 's' para string ('publicado')
         }
 
         if (!empty($where_clauses)) {
             $sql .= " WHERE " . implode(' AND ', $where_clauses);
         }
-
+        
         if (!empty($order) && isset($order['column']) && isset($order['direction'])) {
             $order_column = $order['column'];
             $order_direction = strtoupper($order['direction']);
 
-            // Añadir 'id_categoria' a las columnas válidas si se necesita ordenar por ella.
             $valid_columns = ['fecha_publicacion', 'titulo', 'id_noticia', 'id_categoria'];
             if (in_array($order_column, $valid_columns)) {
-                $sql .= " ORDER BY $order_column $order_direction";
+                // Aseguramos que la columna de ordenamiento pertenece a la tabla de noticias (n)
+                $sql .= " ORDER BY n.$order_column $order_direction"; 
             } else {
-                $sql .= " ORDER BY fecha_publicacion DESC"; // Orden por defecto si la columna no es válida
+                $sql .= " ORDER BY n.fecha_publicacion DESC"; // Orden por defecto
             }
         } else {
-            $sql .= " ORDER BY fecha_publicacion DESC";
+            $sql .= " ORDER BY n.fecha_publicacion DESC";
         }
 
         $stmt = $this->conn->prepare($sql);
@@ -52,7 +61,6 @@ class Noticia extends ModelBase {
         }
 
         if (!empty($params)) {
-            // Unpack params for bind_param using a helper function if you don't have it in ModelBase
             $this->bindParams($stmt, $types, $params);
         }
 
@@ -73,23 +81,23 @@ class Noticia extends ModelBase {
     }
 
     /**
-     * Obtiene una noticia por su ID.
-     * @param int $id El ID de la noticia.
-     * @param bool $onlyActive Si es true, solo busca noticias activas.
-     * @return array|false Un array asociativo de la noticia o false si no se encuentra.
+     * Obtiene una noticia por su ID, incluyendo el nombre del usuario.
      */
     public function getNewsById($id, bool $onlyActive = true) {
-        $sql = "SELECT id_noticia, titulo, contenido, imagen_principal, fecha_publicacion, id_usuario_publicador, id_categoria, activo
-                FROM " . $this->table . "
-                WHERE id_noticia = ?";
+        // CORRECCIÓN 2: Incluimos el JOIN para obtener el nombre de usuario
+        $sql = "SELECT n.*, u.username AS nombre_usuario
+                 FROM " . $this->table . " n
+                 JOIN usuario u ON n.id_usuario = u.id_usuario
+                 WHERE n.id_noticia = ?";
 
         $types = "i";
         $params = [$id];
 
         if ($onlyActive) {
-            $sql .= " AND activo = ?";
-            $params[] = 1;
-            $types .= "i";
+            // Filtra por estado = 'publicado'
+            $sql .= " AND n.estado = ?";
+            $params[] = 'publicado';
+            $types .= "s";
         }
 
         $sql .= " LIMIT 1";
@@ -101,7 +109,7 @@ class Noticia extends ModelBase {
             return false;
         }
 
-        $this->bindParams($stmt, $types, $params); // Usar la función helper
+        $this->bindParams($stmt, $types, $params);
 
         $stmt->execute();
         $result = $stmt->get_result();
@@ -120,18 +128,21 @@ class Noticia extends ModelBase {
 
     /**
      * Crea una nueva noticia en la base de datos.
-     * @param array $data Los datos de la noticia a crear.
-     * @return int|false El ID de la nueva noticia o false en caso de error.
      */
     public function createNews(array $data) {
         $titulo = $data['titulo'] ?? null;
         $contenido = $data['contenido'] ?? null;
         $imagen_principal = $data['imagen_principal'] ?? null;
-        $id_usuario_publicador = $data['id_usuario_publicador'] ?? null;
+        $id_usuario = $data['id_usuario'] ?? null; // Debe venir del controlador
         $id_categoria = $data['id_categoria'] ?? null;
-        $activo = $data['activo'] ?? 1;
+        $estado_value = ($data['estado'] ?? 'borrador'); // Por defecto 'borrador'
 
-        $sql = "INSERT INTO " . $this->table . " (titulo, contenido, imagen_principal, id_usuario_publicador, id_categoria, activo, fecha_publicacion)
+        if (is_null($id_usuario)) {
+            error_log("Fallo de integridad: id_usuario es NULL en createNews.");
+            return false; 
+        }
+
+        $sql = "INSERT INTO " . $this->table . " (titulo, contenido, imagen_principal, id_usuario, id_categoria, estado, fecha_publicacion)
                  VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
 
         $stmt = $this->conn->prepare($sql);
@@ -141,10 +152,8 @@ class Noticia extends ModelBase {
             return false;
         }
 
-        // Los tipos de bind_param deben coincidir con los tipos de columna en la DB:
-        // s: string, i: integer, d: double, b: blob
-        // Suponiendo: titulo(s), contenido(s), imagen_principal(s), id_usuario_publicador(i), id_categoria(i), activo(i)
-        $stmt->bind_param("sssiii", $titulo, $contenido, $imagen_principal, $id_usuario_publicador, $id_categoria, $activo);
+        // bind_param: sssiss (titulo, contenido, imagen_principal, id_usuario, id_categoria, estado_value)
+        $stmt->bind_param("sssiss", $titulo, $contenido, $imagen_principal, $id_usuario, $id_categoria, $estado_value);
 
         if ($stmt->execute()) {
             $new_id = $this->conn->insert_id;
@@ -159,9 +168,6 @@ class Noticia extends ModelBase {
 
     /**
      * Actualiza una noticia existente en la base de datos.
-     * @param int $id El ID de la noticia a actualizar.
-     * @param array $data Los datos a actualizar.
-     * @return bool True si la actualización fue exitosa, false de lo contrario.
      */
     public function updateNews(int $id, array $data) {
         if (empty($data)) {
@@ -172,16 +178,29 @@ class Noticia extends ModelBase {
         $params = [];
         $types = "";
 
-        // Definir los tipos de datos esperados para cada campo.
-        // Asegúrate de incluir 'id_categoria' aquí.
+        // Aseguramos la lista de campos permitidos y sus tipos
         $field_types = [
             'titulo' => 's',
             'contenido' => 's',
             'imagen_principal' => 's',
-            'id_usuario_publicador' => 'i',
-            'id_categoria' => 'i', // Agregado
-            'activo' => 'i'
+            'id_usuario' => 'i', 
+            'id_categoria' => 'i',
+            'estado' => 's'
         ];
+        
+        // Maneja la posible traducción de un flag 'activo' (si viniera del formulario) a 'estado'
+        if (isset($data['activo'])) {
+            $data['estado'] = $data['activo'] ? 'publicado' : 'borrador';
+            unset($data['activo']);
+        }
+        
+        // Si no se envió 'estado', y la vista usa 'estado', no es necesario este bloque:
+        /*
+        if (isset($data['estado_select'])) {
+            $data['estado'] = $data['estado_select'];
+            unset($data['estado_select']);
+        }
+        */
 
         foreach ($data as $field => $value) {
             if (array_key_exists($field, $field_types)) {
@@ -192,12 +211,12 @@ class Noticia extends ModelBase {
         }
 
         if (empty($set_clauses)) {
-            return false; // No hay campos válidos para actualizar
+            return false;
         }
 
         $sql = "UPDATE " . $this->table . " SET " . implode(', ', $set_clauses) . " WHERE " . $this->primaryKey . " = ?";
-        $types .= "i"; // El tipo para el id_noticia
-        $params[] = $id; // Añadir el ID al final de los parámetros
+        $types .= "i";
+        $params[] = $id;
 
         $stmt = $this->conn->prepare($sql);
 
@@ -206,12 +225,12 @@ class Noticia extends ModelBase {
             return false;
         }
 
-        $this->bindParams($stmt, $types, $params); // Usar la función helper
+        $this->bindParams($stmt, $types, $params);
 
         if ($stmt->execute()) {
             $rows_affected = $stmt->affected_rows;
             $stmt->close();
-            return $rows_affected > 0; // Retorna true si al menos una fila fue afectada (o ya tenía los mismos datos)
+            return $rows_affected > 0;
         } else {
             error_log("Error al ejecutar updateNews: " . $stmt->error);
             $stmt->close();
@@ -221,18 +240,14 @@ class Noticia extends ModelBase {
 
     /**
      * Realiza una "soft delete" (desactivación) de una noticia.
-     * @param int $id_noticia El ID de la noticia a desactivar.
-     * @return bool True si la operación fue exitosa, false de lo contrario.
      */
     public function softDeleteNews(int $id_noticia) {
-        $data = ['activo' => 0]; // Marcamos la noticia como inactiva
+        $data = ['estado' => 'borrador']; 
         return $this->updateNews($id_noticia, $data);
     }
-
+    
     /**
      * Elimina físicamente una noticia de la base de datos.
-     * @param int $id_noticia El ID de la noticia a eliminar.
-     * @return bool True si la eliminación fue exitosa, false de lo contrario.
      */
     public function deleteNews(int $id_noticia) {
         $query = "DELETE FROM " . $this->table . " WHERE " . $this->primaryKey . " = ?";
@@ -249,7 +264,7 @@ class Noticia extends ModelBase {
         if ($stmt->execute()) {
             $rows_affected = $stmt->affected_rows;
             $stmt->close();
-            return $rows_affected > 0; // Retorna true si al menos una fila fue afectada
+            return $rows_affected > 0;
         }
 
         error_log("Error al ejecutar deleteNews (física): " . $stmt->error);
@@ -259,8 +274,6 @@ class Noticia extends ModelBase {
 
     /**
      * Obtiene el número total de noticias.
-     * @param bool $onlyActive Si es true, solo cuenta noticias activas.
-     * @return int El número total de noticias o 0 en caso de error.
      */
     public function getTotalNoticias(bool $onlyActive = false) {
         $sql = "SELECT COUNT(*) as total FROM " . $this->table;
@@ -269,9 +282,9 @@ class Noticia extends ModelBase {
         $types = "";
 
         if ($onlyActive) {
-            $where_clauses[] = "activo = ?";
-            $params[] = 1;
-            $types .= "i";
+            $where_clauses[] = "estado = ?";
+            $params[] = 'publicado';
+            $types .= "s";
         }
 
         if (!empty($where_clauses)) {
@@ -286,7 +299,7 @@ class Noticia extends ModelBase {
         }
 
         if (!empty($params)) {
-            $this->bindParams($stmt, $types, $params); // Usar la función helper
+            $this->bindParams($stmt, $types, $params);
         }
 
         $stmt->execute();
@@ -301,8 +314,41 @@ class Noticia extends ModelBase {
 
         error_log("Error al obtener el total de noticias: " . $stmt->error);
         $stmt->close();
-        return 0; // En caso de error
+        return 0;
     }
+
+ public function checkIfDataMatches(int $id_noticia, array $new_data): bool {
+    // 1. Obtener la noticia actual desde la DB (sin formateo)
+    $current_news = $this->getNewsById($id_noticia, false); // Asumiendo que getNewsById existe
+
+    if (!$current_news) {
+        return false; // Noticia no existe
+    }
+
+    // 2. Limpiar/formatear los datos actuales para comparar
+    // Es CRÍTICO que los índices y tipos coincidan con $new_data
+    $data_to_compare = [
+        'titulo' => $current_news['titulo'],
+        'contenido' => $current_news['contenido'],
+        'id_categoria' => (int)$current_news['id_categoria'],
+        'id_usuario' => (int)$current_news['id_usuario'],
+        'estado' => $current_news['estado'],
+        'imagen_principal' => $current_news['imagen_principal'],
+    ];
+
+    // 3. Comparar valores
+    foreach ($new_data as $key => $value) {
+        // Ignoramos la comparación si la clave no existe en los datos actuales, aunque no debería pasar.
+        if (!isset($data_to_compare[$key])) continue;
+
+        // Nota: Se usa == en lugar de === para permitir la comparación de "1" (string) con 1 (int)
+        if ($data_to_compare[$key] != $value) {
+            return false; // Se encontró una diferencia, la data NO coincide
+        }
+    }
+
+    return true; // Todos los campos coinciden
+}
 
     protected function bindParams(mysqli_stmt $stmt, string $types, array $params) {
         $bind_names = array_merge([$types], $params);
@@ -312,4 +358,20 @@ class Noticia extends ModelBase {
         }
         call_user_func_array([$stmt, 'bind_param'], $refs);
     }
+
+    public function countPendingReview(): int {
+    // Asume que la columna de estado es 'estado' y el valor de pendiente es 'pendiente'
+    $sql = "SELECT COUNT(*) FROM {$this->table} WHERE estado = 'pendiente'";
+    
+    $stmt = $this->conn->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result && $row = $result->fetch_row()) {
+        $stmt->close();
+        return (int) $row[0];
+    }
+    $stmt->close();
+    return 0;
+}
 }
