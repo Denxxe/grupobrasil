@@ -38,37 +38,37 @@ $is_any_user_management_active = $is_personas_active || $is_usuarios_active;
 <!DOCTYPE html>
 <html lang="es" class="h-full">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?php echo htmlspecialchars($title); ?> | Grupo Brasil</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars($title); ?> | Grupo Brasil</title>
 
-<!-- Actualizado orden de carga y configuración de Tailwind mejorada -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Actualizado orden de carga y configuración de Tailwind mejorada -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = {
-theme: {
-extend: {
-colors: {
-vinotinto: {
-50: '#FDF0F0', 100: '#FAE3E3', 200: '#E6B8B8', 300: '#D28E8E',
-400: '#BE6464', 500: '#A52A2A', 600: '#8F2424', 700: '#6D071A',
-800: '#4D0512', 900: '#2E0309',
-},
-accentgold: '#D4AF37',
-accentcream: '#F5F5DC',
-}
-}
-}
-}
-</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        vinotinto: {
+                            50: '#FDF0F0', 100: '#FAE3E3', 200: '#E6B8B8', 300: '#D28E8E',
+                            400: '#BE6464', 500: '#A52A2A', 600: '#8F2424', 700: '#6D071A',
+                            800: '#4D0512', 900: '#2E0309',
+                        },
+                        accentgold: '#D4AF37',
+                        accentcream: '#F5F5DC',
+                    }
+                }
+            }
+        }
+    </script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link href="./css/admin_styles.css?v=<?php echo time(); ?>" rel="stylesheet"> 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="./css/admin_styles.css?v=<?php echo time(); ?>" rel="stylesheet"> 
 </head>
 <body class="h-full flex"
   data-success-message="<?php echo htmlspecialchars($success_message); ?>"
@@ -114,14 +114,29 @@ accentcream: '#F5F5DC',
 </a>
 </li>
 <li>
-<a href="./index.php?route=admin/users/usuarios" 
-   class="flex items-center px-3 py-2 text-white text-opacity-80 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 text-sm
-   <?php echo $is_usuarios_active ? 'bg-white bg-opacity-10 font-medium text-opacity-100' : ''; ?>">
-<i class="fas fa-user-shield sidebar-icon mr-3 text-sm"></i> 
-<span class="sidebar-text">Líderes</span>
-</a>
+    <a href="./index.php?route=admin/users/usuarios" 
+        class="flex items-center px-3 py-2 text-white text-opacity-80 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 text-sm
+        <?php echo $is_usuarios_active ? 'bg-white bg-opacity-10 font-medium text-opacity-100' : ''; ?>">
+        <i class="fas fa-user-shield sidebar-icon mr-3 text-sm"></i> 
+        <span class="sidebar-text">Jefes de Familias</span>
+    </a>
+</li>
+<li>
+    <a href="./index.php?route=admin/users/usuarios" 
+        class="flex items-center px-3 py-2 text-white text-opacity-80 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 text-sm
+        <?php echo $is_usuarios_active ? 'bg-white bg-opacity-10 font-medium text-opacity-100' : ''; ?>">
+        <i class="fas fa-user-shield sidebar-icon mr-3 text-sm"></i> 
+        <span class="sidebar-text">Líderes</span>
+    </a>
 </li>
 </ul>
+</li>
+
+<li>
+<a href="./index.php?route=admin/vivienda" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
+<i class="fas fa-house sidebar-icon mr-3"></i> 
+<span class="sidebar-text">Viviendas</span>
+</a>
 </li>
 
 <li>

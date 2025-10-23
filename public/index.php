@@ -35,13 +35,15 @@ require_once MODELS_PATH . 'LiderCalle.php';
 require_once MODELS_PATH . 'Habitante.php'; // Added Habitante model
 require_once MODELS_PATH . 'CargaFamiliar.php'; // Added Familia model
 require_once MODELS_PATH . 'Vivienda.php'; // Added Vivienda model
-
+require_once MODELS_PATH . 'Role.php'; // Added Role model
 // --- Carga de controladores ---
 require_once CONTROLLERS_PATH . 'LoginController.php';
 require_once CONTROLLERS_PATH . 'AdminController.php';
 require_once CONTROLLERS_PATH . 'SubadminController.php';
 require_once CONTROLLERS_PATH . 'NoticiaController.php';
 require_once CONTROLLERS_PATH . 'UserController.php';
+require_once CONTROLLERS_PATH . 'CargaFamiliarController.php'; // Added CargaFamiliarController
+require_once CONTROLLERS_PATH . 'RolController.php'; // Added RolController
 require_once UTILS_PATH . 'Validator.php'; // Tu clase de validación
 
 // --- Manejo de Mensajes Flash de Sesión ---
@@ -203,7 +205,47 @@ if (!isset($_SESSION['id_usuario'])) {
                     elseif ($id === 'soft-delete') { $actionName = 'softDeleteNews'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
                     else { $actionName = 'manageNews'; }
                 }
-                
+                // --- Nuevas reglas para la sección admin/viviendas ---
+                elseif ($route === 'admin/viviendas') {
+                    // Asegúrate de que el controlador esté incluido en los require anteriores (ViviendaController.php)
+                    $controller = new ViviendaController();
+                    $action = $_GET['action'] ?? null;
+                    // Si viene una acción y es una llamada API (index/show/store/update/destroy) delegamos al controlador
+                    if ($action) {
+                        // Dejamos que el controlador maneje la respuesta y termine la ejecución
+                        switch ($action) {
+                            case 'index':
+                                $controller->index();
+                                exit;
+                            case 'show':
+                                $controller->show($_GET['id'] ?? null);
+                                exit;
+                            case 'store':
+                                // store espera JSON en php://input
+                                $controller->store();
+                                exit;
+                            case 'update':
+                                $controller->update($_GET['id'] ?? null);
+                                exit;
+                            case 'destroy':
+                                $controller->destroy($_GET['id'] ?? null);
+                                exit;
+                            default:
+                                http_response_code(400);
+                                header('Content-Type: application/json');
+                                echo json_encode(['error' => 'Acción no válida para viviendas.']);
+                                exit;
+                        }
+                    }
+
+                    // Si no es una llamada API, renderizamos la vista dentro del layout admin
+                    $page_title = 'Viviendas';
+                    $content_view = VIEWS_PATH . 'admin/viviendas.php';
+                    // El layout debe incluir $content_view cuando esté listo
+                    require VIEWS_PATH . 'layouts/admin_layout.php';
+                    exit;
+                }
+                                
                 elseif ($actionSegment === 'comments') {
                     if ($id === 'soft-delete') { 
                         $actionName = 'softDeleteComment'; 

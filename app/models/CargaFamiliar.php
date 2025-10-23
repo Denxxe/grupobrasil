@@ -98,6 +98,70 @@ class CargaFamiliar extends ModelBase {
             error_log("[v0] Actualizado jefe a NULL para familias del habitante ID: $habitanteId");
         }
 
-        return true;
+        return true;   
+    }
+
+    /**
+     * Agrega un miembro a un jefe (usa create internamente)
+     *
+     * @param int $jefeId
+     * @param int $habitanteId
+     * @param string|null $parentesco
+     * @return int|false ID creado o false
+     */
+    public function addMemberToJefe(int $jefeId, int $habitanteId, ?string $parentesco = null) {
+        $data = [
+            'id_habitante' => $habitanteId,
+            'id_jefe' => $jefeId,
+            'parentesco' => $parentesco,
+            'activo' => 1
+        ];
+        return $this->create($data);
+    }
+
+     /**
+     * Cuenta la cantidad de miembros a cargo de un jefe
+     *
+     * @param int $jefeId
+     * @return int
+     */
+    public function countByJefe(int $jefeId): int {
+        $sql = "SELECT COUNT(*) AS total FROM {$this->table} WHERE id_jefe = ? AND activo = 1";
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("[v0] Error al preparar countByJefe: " . $this->conn->error);
+            return 0;
+        }
+        $stmt->bind_param("i", $jefeId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $total = 0;
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $total = (int)($row['total'] ?? 0);
+        }
+        $stmt->close();
+        return $total;
+    }
+
+    /**
+     * Devuelve los miembros (filas) cuyo id_jefe = $jefeId
+     *
+     * @param int $jefeId
+     * @return array
+     */
+    public function getByJefeId(int $jefeId): array {
+        $sql = "SELECT * FROM {$this->table} WHERE id_jefe = ? AND activo = 1";
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("[v0] Error al preparar getByJefeId: " . $this->conn->error);
+            return [];
+        }
+        $stmt->bind_param("i", $jefeId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+        $stmt->close();
+        return $data;
     }
 }
