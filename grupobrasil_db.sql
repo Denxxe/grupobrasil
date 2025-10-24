@@ -883,3 +883,28 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+
+-- Migración: Agregar rol secundario a la tabla usuario
+-- Fecha: 2025-10-23
+-- Descripción: Permite que un usuario tenga un rol secundario adicional
+
+-- Agregar columna id_rol_secundario
+ALTER TABLE `usuario` 
+ADD COLUMN `id_rol_secundario` int(10) UNSIGNED DEFAULT NULL COMMENT 'Rol secundario opcional (ej: Líder que también es Jefe de Familia)' 
+AFTER `id_rol`;
+
+-- Agregar foreign key constraint
+ALTER TABLE `usuario`
+ADD CONSTRAINT `fk_usuario_rol_secundario` 
+FOREIGN KEY (`id_rol_secundario`) REFERENCES `rol`(`id_rol`) 
+ON DELETE SET NULL 
+ON UPDATE CASCADE;
+
+-- Comentarios para documentación
+ALTER TABLE `usuario` 
+MODIFY COLUMN `id_rol` int(10) UNSIGNED DEFAULT NULL COMMENT 'Rol principal del usuario';
+
+-- Ejemplo de uso:
+-- UPDATE `usuario` SET `id_rol_secundario` = 3 WHERE `id_usuario` = 4 AND `id_rol` = 2;
+-- Esto haría que el usuario con id_rol=2 (Líder) también tenga permisos de id_rol=3 (Jefe de Familia)

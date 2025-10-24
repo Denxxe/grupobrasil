@@ -164,4 +164,86 @@ class CargaFamiliar extends ModelBase {
         $stmt->close();
         return $data;
     }
+
+    /**
+     * Obtiene la carga familiar de un jefe con información completa de las personas
+     * @param int $jefeId ID del habitante que es jefe de familia
+     * @return array Array con los miembros de la familia y sus datos personales
+     */
+    public function getCargaFamiliarConDatos(int $jefeId): array {
+        $sql = "SELECT 
+                    cf.id_carga,
+                    cf.id_habitante,
+                    cf.id_jefe,
+                    cf.parentesco,
+                    cf.fecha_registro,
+                    h.id_persona,
+                    p.cedula,
+                    p.nombres,
+                    p.apellidos,
+                    CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
+                    p.fecha_nacimiento,
+                    p.sexo,
+                    p.telefono,
+                    TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad
+                FROM {$this->table} cf
+                INNER JOIN habitante h ON cf.id_habitante = h.id_habitante
+                INNER JOIN persona p ON h.id_persona = p.id_persona
+                WHERE cf.id_jefe = ? AND cf.activo = 1
+                ORDER BY p.fecha_nacimiento ASC";
+        
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("Error al preparar getCargaFamiliarConDatos: " . $this->conn->error);
+            return [];
+        }
+        
+        $stmt->bind_param("i", $jefeId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+        $stmt->close();
+        
+        return $data;
+    }
+
+    /**
+     * Obtiene la carga familiar de un usuario (a través de su id_usuario)
+     * Primero busca si el usuario es jefe de familia
+     * @param int $idUsuario ID del usuario
+     * @return array|false Array con los miembros o false si no es jefe de familia
+     */
+    public function getCargaFamiliarPorUsuario(int $idUsuario) {
+        // Primero obtenemos el id_habitante del usuario
+        $sql = "SELECT h.id_habitante, hv.es_jefe_familia
+                FROM usuario u
+                INNER JOIN habitante h ON u.id_persona = h.id_persona
+                LEFT JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante
+                WHERE u.id_usuario = ?
+                LIMIT 1";
+        
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("Error al preparar getCargaFamiliarPorUsuario: " . $this->conn->error);
+            return false;
+        }
+        
+        $stmt->bind_param("i", $idUsuario);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result && $row = $result->fetch_assoc()) {
+            $idHabitante = $row['id_habitante'];
+            $esJefeFamilia = $row['es_jefe_familia'];
+            $stmt->close();
+            
+            // Solo si es jefe de familia, obtener su carga familiar
+            if ($esJefeFamilia == 1) {
+                return $this->getCargaFamiliarConDatos($idHabitante);
+            }
+        }
+        
+        $stmt->close();
+        return false;
+    }
 }

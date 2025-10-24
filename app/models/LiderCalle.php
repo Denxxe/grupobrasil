@@ -171,4 +171,78 @@ $calles[] = (int) $row['id_calle'];
 $stmt->close();
 return $calles;
 }
+
+/**
+ * Obtiene las calles asignadas a un usuario (a través de su id_usuario)
+ * con información completa de la calle
+ * @param int $idUsuario ID del usuario
+ * @return array Array con información de las calles
+ */
+public function getCallesConDetallesPorUsuario(int $idUsuario): array {
+    $sql = "SELECT 
+                lc.id_habitante,
+                lc.id_calle,
+                lc.fecha_designacion,
+                c.nombre AS nombre_calle,
+                c.sector
+            FROM {$this->table} lc
+            INNER JOIN calle c ON lc.id_calle = c.id_calle
+            INNER JOIN habitante h ON lc.id_habitante = h.id_habitante
+            INNER JOIN usuario u ON h.id_persona = u.id_persona
+            WHERE u.id_usuario = ? AND lc.activo = 1
+            ORDER BY c.nombre ASC";
+    
+    $stmt = $this->conn->prepare($sql);
+    if ($stmt === false) {
+        error_log("Error al preparar getCallesConDetallesPorUsuario: " . $this->conn->error);
+        return [];
+    }
+    
+    $stmt->bind_param("i", $idUsuario);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $calles = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $calles[] = $row;
+        }
+    }
+    
+    $stmt->close();
+    return $calles;
+}
+
+/**
+ * Obtiene los IDs de calles asignadas a un usuario
+ * @param int $idUsuario ID del usuario
+ * @return array Array de IDs de calle
+ */
+public function getCallesIdsPorUsuario(int $idUsuario): array {
+    $sql = "SELECT lc.id_calle
+            FROM {$this->table} lc
+            INNER JOIN habitante h ON lc.id_habitante = h.id_habitante
+            INNER JOIN usuario u ON h.id_persona = u.id_persona
+            WHERE u.id_usuario = ? AND lc.activo = 1";
+    
+    $stmt = $this->conn->prepare($sql);
+    if ($stmt === false) {
+        error_log("Error al preparar getCallesIdsPorUsuario: " . $this->conn->error);
+        return [];
+    }
+    
+    $stmt->bind_param("i", $idUsuario);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $calleIds = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $calleIds[] = (int)$row['id_calle'];
+        }
+    }
+    
+    $stmt->close();
+    return $calleIds;
+}
 }

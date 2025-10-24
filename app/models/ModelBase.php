@@ -66,7 +66,21 @@ class ModelBase {
     }
 
     public function create(array $data) {
+        if (empty($data) || !is_array($data)) {
+            error_log("Error en create: data está vacío o no es un array válido");
+            return false;
+        }
+
+        // Excluir campos que se generan automáticamente
+        $autoFields = ['fecha_registro', 'fecha_actualizacion', 'created_at', 'updated_at'];
+        foreach ($autoFields as $field) {
+            if (isset($data[$field])) {
+                unset($data[$field]);
+            }
+        }
+
         if (empty($data)) {
+            error_log("Error en create: todos los campos fueron excluidos");
             return false;
         }
 
@@ -81,6 +95,9 @@ class ModelBase {
         }
 
         $sql = "INSERT INTO " . $this->table . " (" . $columns . ") VALUES (" . $placeholders . ")";
+        error_log("SQL a ejecutar: " . $sql);
+        error_log("Datos: " . print_r($data, true));
+        
         $stmt = $this->conn->prepare($sql);
 
         if ($stmt === false) {

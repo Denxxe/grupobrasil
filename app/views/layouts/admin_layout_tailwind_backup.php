@@ -141,13 +141,6 @@ $is_any_user_management_active = $is_personas_active || $is_jefes_familia_active
 </li>
 
 <li>
-<a href="./index.php?route=admin/carga-familiar" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
-<i class="fas fa-user-friends sidebar-icon mr-3"></i> 
-<span class="sidebar-text">Mi Carga Familiar</span>
-</a>
-</li>
-
-<li>
 <a href="./index.php?route=admin/news" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
 <i class="fas fa-newspaper sidebar-icon mr-3"></i> 
 <span class="sidebar-text">Noticias</span>

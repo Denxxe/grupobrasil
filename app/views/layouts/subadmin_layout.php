@@ -153,11 +153,12 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
     if (isset($content_view_path) && file_exists($content_view_path)) {
         include_once $content_view_path;
     } else {
+        $ruta = $content_view_path ?? 'N/A';
         echo '<div class="alert alert-danger" role="alert">
                 Error: La vista de contenido no se pudo cargar.<br>
-                Ruta: ' . htmlspecialchars($content_view_path ?? 'N/A') . '
+                Ruta: ' . htmlspecialchars($ruta) . '
               </div>';
-        error_log("Error: La vista de contenido '$content_view_path' no existe o no está definida.");
+        error_log("Error: La vista de contenido no existe o no está definida. Ruta: " . $ruta);
     }
     ?>
 </main>

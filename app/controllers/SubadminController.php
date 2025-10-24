@@ -134,41 +134,32 @@ class SubadminController extends AppController {
     }
 
     public function habitantes() {
-        $veredasAsignadas = $this->getAssignedVeredas();
+        $idUsuario = $_SESSION['id_usuario'] ?? 0;
         
-        if (empty($veredasAsignadas)) {
-            $this->setFlash('error', 'No tienes veredas asignadas.');
+        // Obtener calles asignadas al líder
+        $callesAsignadas = $this->liderCalleModel->getCallesConDetallesPorUsuario($idUsuario);
+        $calleIds = $this->liderCalleModel->getCallesIdsPorUsuario($idUsuario);
+        
+        if (empty($calleIds)) {
+            $this->setFlash('error', 'No tienes calles asignadas.');
             $habitantes = [];
+            $totalHabitantes = 0;
         } else {
-            // Get all habitantes in assigned veredas with their details
-            $sql = "SELECT h.*, p.*, c.nombre as nombre_vereda, v.numero as numero_casa
-                     FROM habitante h
-                     INNER JOIN persona p ON h.id_persona = p.id_persona
-                     LEFT JOIN calle c ON p.id_calle = c.id_calle
-                     LEFT JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante
-                     LEFT JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
-                     WHERE p.id_calle IN (" . implode(',', array_map('intval', $veredasAsignadas)) . ")
-                     AND h.activo = 1
-                     ORDER BY c.nombre, p.numero_casa, p.apellidos, p.nombres";
-            
-            // USO DEL NUEVO rawQuery()
-            $result = $this->habitanteModel->rawQuery($sql); 
-            $habitantes = [];
-            if ($result) {
-                while ($row = $result->fetch_assoc()) {
-                    $habitantes[] = $row;
-                }
-            }
+            // Obtener habitantes filtrados por las calles del líder
+            $habitantes = $this->habitanteModel->getHabitantesPorCalles($calleIds);
+            $totalHabitantes = $this->habitanteModel->contarPorCalles($calleIds);
         }
         
-        // Get all veredas for the dropdown
+        // Get all calles for the dropdown
         $todasVeredas = $this->calleModel->getAll();
         
         $data = [
-            'page_title' => 'Habitantes de Mi Vereda',
+            'page_title' => 'Habitantes de Mis Calles',
             'habitantes' => $habitantes,
-            'veredasAsignadas' => $veredasAsignadas,
-            'todasVeredas' => $todasVeredas
+            'calles_asignadas' => $callesAsignadas,
+            'veredasAsignadas' => $calleIds,  // Para compatibilidad con la vista
+            'todasVeredas' => $todasVeredas,  // Para compatibilidad con la vista
+            'total_habitantes' => $totalHabitantes
         ];
         
         $this->loadView('subadmin/habitantes/index', $data);
@@ -180,12 +171,40 @@ class SubadminController extends AppController {
             exit();
         }
         
-        $veredasAsignadas = $this->getAssignedVeredas();
+        $idUsuario = $_SESSION['id_usuario'] ?? 0;
+        $calleIds = $this->liderCalleModel->getCallesIdsPorUsuario($idUsuario);
         $idCalle = (int)($_POST['id_calle'] ?? 0);
+        $idVivienda = (int)($_POST['id_vivienda'] ?? 0);
+        $cedula = trim($_POST['cedula'] ?? '');
         
-        // Verify the vereda is assigned to this lider
-        if (!in_array($idCalle, $veredasAsignadas)) {
-            $this->setFlash('error', 'No tienes permiso para agregar habitantes a esta vereda.');
+        // Validaciones
+        $errores = [];
+        
+        // Verificar que la calle esté asignada al líder
+        if (!in_array($idCalle, $calleIds)) {
+            $errores[] = 'No tienes permiso para agregar habitantes a esta calle. Solo puedes registrar en tus calles asignadas.';
+        }
+        
+        // Validar campos requeridos
+        if (empty($_POST['nombres'])) {
+            $errores[] = 'El nombre es obligatorio.';
+        }
+        
+        if (empty($_POST['apellidos'])) {
+            $errores[] = 'Los apellidos son obligatorios.';
+        }
+        
+        // Verificar si la cédula ya existe (si se proporcionó)
+        if (!empty($cedula)) {
+            $personaExistente = $this->personaModel->buscarPorCI($cedula);
+            if ($personaExistente) {
+                $errores[] = 'La cédula ' . htmlspecialchars($cedula) . ' ya está registrada en el sistema.';
+            }
+        }
+        
+        // Si hay errores, mostrarlos y redirigir
+        if (!empty($errores)) {
+            $_SESSION['flash_error'] = implode('<br>', $errores);
             header('Location:./index.php?route=subadmin/habitantes');
             exit();
         }
@@ -199,11 +218,12 @@ class SubadminController extends AppController {
             'sexo' => $_POST['sexo'] ?? '',
             'telefono' => $_POST['telefono'] ?? '',
             'direccion' => $_POST['direccion'] ?? '',
-            'id_calle' => $idCalle,
-            'numero_casa' => $_POST['numero_casa'] ?? '',
             'correo' => $_POST['correo'] ?? null,
+            'id_calle' => $idCalle,
             'activo' => 1
         ];
+        
+        error_log("Datos de persona a crear: " . print_r($personaData, true));
         
         $idPersona = $this->personaModel->create($personaData);
         
@@ -219,12 +239,32 @@ class SubadminController extends AppController {
             $idHabitante = $this->habitanteModel->create($habitanteData);
             
             if ($idHabitante) {
-                $this->setFlash('success', 'Habitante agregado exitosamente.');
+                // Asignar a vivienda si se seleccionó
+                if ($idVivienda > 0) {
+                    $esJefeFamilia = isset($_POST['es_jefe_familia']) ? 1 : 0;
+                    $habitanteViviendaData = [
+                        'id_habitante' => (int)$idHabitante,
+                        'id_vivienda' => (int)$idVivienda,
+                        'es_jefe_familia' => (int)$esJefeFamilia,
+                        'fecha_ingreso' => date('Y-m-d'),
+                        'activo' => 1
+                    ];
+                    
+                    error_log("Intentando crear habitante_vivienda: " . print_r($habitanteViviendaData, true));
+                    
+                    $resultado = $this->habitanteViviendaModel->create($habitanteViviendaData);
+                    
+                    if (!$resultado) {
+                        error_log("Error al crear habitante_vivienda");
+                    }
+                }
+                
+                $_SESSION['flash_success'] = 'Habitante agregado exitosamente.';
             } else {
-                $this->setFlash('error', 'Error al crear el habitante.');
+                $_SESSION['flash_error'] = 'Error al crear el habitante.';
             }
         } else {
-            $this->setFlash('error', 'Error al crear la persona.');
+            $_SESSION['flash_error'] = 'Error al crear la persona.';
         }
         
         header('Location:./index.php?route=subadmin/habitantes');
@@ -479,46 +519,32 @@ class SubadminController extends AppController {
     }
 
     public function viviendas() {
-        $veredasAsignadas = $this->getAssignedVeredas();
+        $idUsuario = $_SESSION['id_usuario'] ?? 0;
         
-        if (empty($veredasAsignadas)) {
-            $this->setFlash('error', 'No tienes veredas asignadas.');
+        // Obtener calles asignadas al líder con detalles
+        $callesAsignadas = $this->liderCalleModel->getCallesConDetallesPorUsuario($idUsuario);
+        $calleIds = $this->liderCalleModel->getCallesIdsPorUsuario($idUsuario);
+        
+        if (empty($calleIds)) {
+            $this->setFlash('error', 'No tienes calles asignadas.');
             $viviendas = [];
+            $totalViviendas = 0;
         } else {
-            // Get all viviendas in assigned veredas
-            $sql = "SELECT v.*, c.nombre as nombre_vereda,
-                     (SELECT COUNT(DISTINCT hv.id_habitante) 
-                       FROM habitante_vivienda hv 
-                       INNER JOIN habitante h ON hv.id_habitante = h.id_habitante
-                       WHERE hv.id_vivienda = v.id_vivienda AND h.activo = 1) as total_habitantes,
-                     (SELECT COUNT(DISTINCT cf.id_jefe)
-                       FROM habitante_vivienda hv
-                       INNER JOIN habitante h ON hv.id_habitante = h.id_habitante
-                       INNER JOIN carga_familiar cf ON h.id_habitante = cf.id_jefe
-                       WHERE hv.id_vivienda = v.id_vivienda AND h.activo = 1 AND cf.activo = 1) as total_familias
-                     FROM vivienda v
-                     LEFT JOIN calle c ON v.id_calle = c.id_calle
-                     WHERE v.id_calle IN (" . implode(',', array_map('intval', $veredasAsignadas)) . ")
-                     AND v.activo = 1
-                     ORDER BY c.nombre, v.numero";
-            
-            // USO DEL NUEVO rawQuery()
-            $result = $this->viviendaModel->rawQuery($sql);
-            $viviendas = [];
-            if ($result) {
-                while ($row = $result->fetch_assoc()) {
-                    $viviendas[] = $row;
-                }
-            }
+            // Obtener viviendas filtradas por las calles del líder
+            $viviendas = $this->viviendaModel->getViviendasPorCalles($calleIds);
+            $totalViviendas = $this->viviendaModel->contarPorCalles($calleIds);
         }
         
+        // Obtener todas las calles para el dropdown
         $todasVeredas = $this->calleModel->getAll();
         
         $data = [
-            'page_title' => 'Viviendas de Mi Vereda',
+            'page_title' => 'Viviendas de Mis Calles',
             'viviendas' => $viviendas,
-            'veredasAsignadas' => $veredasAsignadas,
-            'todasVeredas' => $todasVeredas
+            'calles_asignadas' => $callesAsignadas,
+            'veredasAsignadas' => $calleIds,  // Para compatibilidad con la vista
+            'todasVeredas' => $todasVeredas,  // Para compatibilidad con la vista
+            'total_viviendas' => $totalViviendas
         ];
         
         $this->loadView('subadmin/viviendas/index', $data);

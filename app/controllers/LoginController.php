@@ -41,6 +41,9 @@ class LoginController {
                 $_SESSION['ci_usuario'] = $user['ci_usuario'];
                 $_SESSION['nombre_completo'] = $user['nombre'] . ' ' . $user['apellido'];
                 $_SESSION['id_rol'] = $user['id_rol'];
+                $_SESSION['id_rol_secundario'] = $user['id_rol_secundario'] ?? null;
+                $_SESSION['nombre_rol'] = $user['nombre_rol'] ?? 'Usuario';
+                $_SESSION['nombre_rol_secundario'] = $user['nombre_rol_secundario'] ?? null;
                 $_SESSION['activo'] = $user['activo'];
 
                 // Verificar si el usuario está activo

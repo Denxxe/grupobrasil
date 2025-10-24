@@ -12,6 +12,8 @@ require_once __DIR__ . '/../models/Calle.php';
 require_once __DIR__ . '/../models/LiderCalle.php';
 require_once __DIR__ . '/../models/Role.php';
 require_once __DIR__ . '/../models/Habitante.php';
+require_once __DIR__ . '/../models/Vivienda.php';
+require_once __DIR__ . '/../models/CargaFamiliar.php';
 require_once __DIR__ . '/AppController.php';
 
 class AdminController extends AppController{
@@ -25,6 +27,8 @@ class AdminController extends AppController{
     private $liderCalleModel;
     private $roleModel;
     private $habitanteModel;
+    private $viviendaModel;
+    private $cargaFamiliarModel;
 
     public function __construct(
         Usuario $usuarioModel,
@@ -36,7 +40,9 @@ class AdminController extends AppController{
         LiderCalle $liderCalleModel,
         Categoria $categoriaModel,
         Role $roleModel,
-        Habitante $habitanteModel
+        Habitante $habitanteModel,
+        Vivienda $viviendaModel,
+        CargaFamiliar $cargaFamiliarModel
     ) {
         $this->usuarioModel = $usuarioModel;
         $this->personaModel = $personaModel;
@@ -48,6 +54,8 @@ class AdminController extends AppController{
         $this->categoriaModel = $categoriaModel;
         $this->roleModel = $roleModel;
         $this->habitanteModel = $habitanteModel;
+        $this->viviendaModel = $viviendaModel;
+        $this->cargaFamiliarModel = $cargaFamiliarModel;
 
         // Lógica de seguridad y redirección (asume que rol 1 es Administrador)
         if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 1) {
@@ -328,7 +336,75 @@ class AdminController extends AppController{
 
 
     // -------------------------------------------------------------------------
-    // GESTIÓN DE USUARIOS CON ACCESO (Líderes)
+    // GESTIÓN DE JEFES DE FAMILIA (Rol 3)
+    // -------------------------------------------------------------------------
+    public function jefesFamilia()
+    {
+        // 1. Obtener parámetros de búsqueda
+        $search = $_GET['search'] ?? '';
+        $activo = $_GET['activo'] ?? 'all';
+
+        // 2. Preparar los filtros - Solo usuarios con rol 3 (Jefe de Familia)
+        $filters = ['id_rol' => 3];
+        if (!empty($search)) {
+            $filters['search'] = $search;
+        }
+        if ($activo !== 'all') {
+            $filters['activo'] = (int)$activo;
+        }
+
+        // 3. Obtener datos del Modelo Usuario
+        $usuarios = $this->usuarioModel->getAllFiltered($filters);
+
+        // 4. Preparar los datos para la vista
+        $data = [
+            'page_title' => 'Gestión de Jefes de Familia',
+            'usuarios' => $usuarios,
+            'current_search' => $search,
+            'current_activo' => $activo,
+            'tipo_usuario' => 'jefes-familia'
+        ];
+
+        // 5. Renderizar la vista específica
+        $this->renderAdminView('users/jefes_familia', $data);
+    }
+
+    // -------------------------------------------------------------------------
+    // GESTIÓN DE LÍDERES (Rol 2)
+    // -------------------------------------------------------------------------
+    public function lideres()
+    {
+        // 1. Obtener parámetros de búsqueda
+        $search = $_GET['search'] ?? '';
+        $activo = $_GET['activo'] ?? 'all';
+
+        // 2. Preparar los filtros - Solo usuarios con rol 2 (Líder)
+        $filters = ['id_rol' => 2];
+        if (!empty($search)) {
+            $filters['search'] = $search;
+        }
+        if ($activo !== 'all') {
+            $filters['activo'] = (int)$activo;
+        }
+
+        // 3. Obtener datos del Modelo Usuario
+        $usuarios = $this->usuarioModel->getAllFiltered($filters);
+
+        // 4. Preparar los datos para la vista
+        $data = [
+            'page_title' => 'Gestión de Líderes',
+            'usuarios' => $usuarios,
+            'current_search' => $search,
+            'current_activo' => $activo,
+            'tipo_usuario' => 'lideres'
+        ];
+
+        // 5. Renderizar la vista específica
+        $this->renderAdminView('users/lideres', $data);
+    }
+
+    // -------------------------------------------------------------------------
+    // GESTIÓN DE USUARIOS CON ACCESO (Todos los roles con acceso)
     // -------------------------------------------------------------------------
     public function usuarios()
     {
@@ -354,7 +430,7 @@ class AdminController extends AppController{
 
         // 4. Preparar los datos para la vista
         $data = [
-            'page_title' => 'Gestión de Usuarios (Líderes)',
+            'page_title' => 'Gestión de Usuarios (Todos)',
             'usuarios' => $usuarios,
             'current_search' => $search,
             'current_rol' => $rol,
@@ -1486,6 +1562,168 @@ public function reports() {
     ];
 
     $this->renderAdminView('reports', $data);
+}
+
+// ==================== GESTIÓN DE VIVIENDAS ====================
+
+public function viviendas() {
+    // Obtener todas las calles para el selector
+    $calles = $this->calleModel->findAll();
+    
+    // Renderizar la vista principal de viviendas
+    $data = [
+        'title' => 'Gestión de Viviendas',
+        'page_title' => 'Gestión de Viviendas',
+        'calles' => $calles
+    ];
+    $this->renderAdminView('vivienda/index', $data);
+}
+
+// API endpoints para viviendas (llamados vía AJAX)
+public function viviendasIndex() {
+    header('Content-Type: application/json');
+    try {
+        $viviendas = $this->viviendaModel->getAllWithCalle();
+        echo json_encode($viviendas);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Error al obtener viviendas: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+public function viviendasShow($id) {
+    header('Content-Type: application/json');
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(['error' => 'ID requerido']);
+        exit;
+    }
+    $vivienda = $this->viviendaModel->getById($id);
+    if (!$vivienda) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Vivienda no encontrada']);
+        exit;
+    }
+    echo json_encode($vivienda);
+    exit;
+}
+
+public function viviendasStore() {
+    header('Content-Type: application/json');
+    $input = json_decode(file_get_contents('php://input'), true);
+    
+    if (!$input || empty($input['numero']) || empty($input['tipo'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Datos incompletos']);
+        exit;
+    }
+    
+    $data = [
+        'numero' => $input['numero'],
+        'tipo' => $input['tipo'],
+        'estado' => $input['estado'] ?? 'Activo',
+        'activo' => 1
+    ];
+    
+    // Campos opcionales
+    if (!empty($input['id_calle'])) $data['id_calle'] = $input['id_calle'];
+    
+    $id = $this->viviendaModel->createVivienda($data);
+    
+    if ($id) {
+        echo json_encode(['message' => 'Vivienda creada exitosamente', 'id_vivienda' => $id]);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'Error al crear vivienda']);
+    }
+    exit;
+}
+
+public function viviendasUpdate($id) {
+    header('Content-Type: application/json');
+    
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(['error' => 'ID requerido']);
+        exit;
+    }
+    
+    $input = json_decode(file_get_contents('php://input'), true);
+    
+    if (!$input) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Datos inválidos']);
+        exit;
+    }
+    
+    $data = [];
+    if (isset($input['numero'])) $data['numero'] = $input['numero'];
+    if (isset($input['tipo'])) $data['tipo'] = $input['tipo'];
+    if (isset($input['estado'])) $data['estado'] = $input['estado'];
+    if (isset($input['id_calle'])) $data['id_calle'] = $input['id_calle'];
+    
+    $result = $this->viviendaModel->updateVivienda($id, $data);
+    
+    if ($result) {
+        echo json_encode(['message' => 'Vivienda actualizada exitosamente']);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'Error al actualizar vivienda']);
+    }
+    exit;
+}
+
+public function viviendasDestroy($id) {
+    header('Content-Type: application/json');
+    
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(['error' => 'ID requerido']);
+        exit;
+    }
+    
+    // Soft delete
+    $result = $this->viviendaModel->softDelete($id);
+    
+    if ($result) {
+        echo json_encode(['message' => 'Vivienda eliminada exitosamente']);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'Error al eliminar vivienda']);
+    }
+    exit;
+}
+
+// ==================== GESTIÓN DE CARGA FAMILIAR ====================
+
+/**
+ * Muestra la carga familiar del usuario actual
+ * Solo disponible si el usuario es jefe de familia
+ */
+public function cargaFamiliar() {
+    $idUsuario = $_SESSION['id_usuario'] ?? null;
+    
+    if (!$idUsuario) {
+        $_SESSION['error_message'] = 'Usuario no autenticado';
+        header('Location: ./index.php?route=login');
+        exit();
+    }
+    
+    // Obtener carga familiar del usuario
+    $cargaFamiliar = $this->cargaFamiliarModel->getCargaFamiliarPorUsuario($idUsuario);
+    
+    // Verificar si es jefe de familia
+    $esJefeFamilia = $cargaFamiliar !== false;
+    
+    $data = [
+        'page_title' => 'Mi Carga Familiar',
+        'carga_familiar' => $cargaFamiliar ?: [],
+        'es_jefe_familia' => $esJefeFamilia,
+        'total_miembros' => $esJefeFamilia ? count($cargaFamiliar) : 0
+    ];
+    
+    $this->renderAdminView('carga_familiar/index', $data);
 }
 
 }

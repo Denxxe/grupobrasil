@@ -33,17 +33,14 @@ require_once MODELS_PATH . 'Categoria.php';
 require_once MODELS_PATH . 'Calle.php'; 
 require_once MODELS_PATH . 'LiderCalle.php';
 require_once MODELS_PATH . 'Habitante.php'; // Added Habitante model
-require_once MODELS_PATH . 'CargaFamiliar.php'; // Added Familia model
 require_once MODELS_PATH . 'Vivienda.php'; // Added Vivienda model
-require_once MODELS_PATH . 'Role.php'; // Added Role model
+
 // --- Carga de controladores ---
 require_once CONTROLLERS_PATH . 'LoginController.php';
 require_once CONTROLLERS_PATH . 'AdminController.php';
 require_once CONTROLLERS_PATH . 'SubadminController.php';
 require_once CONTROLLERS_PATH . 'NoticiaController.php';
 require_once CONTROLLERS_PATH . 'UserController.php';
-require_once CONTROLLERS_PATH . 'CargaFamiliarController.php'; // Added CargaFamiliarController
-require_once CONTROLLERS_PATH . 'RolController.php'; // Added RolController
 require_once UTILS_PATH . 'Validator.php'; // Tu clase de validación
 
 // --- Manejo de Mensajes Flash de Sesión ---
@@ -139,6 +136,12 @@ if (!isset($_SESSION['id_usuario'])) {
                     if ($subSegment === 'personas') {
                         $actionName = 'personas'; 
                     } 
+                    elseif ($subSegment === 'jefes-familia') {
+                        $actionName = 'jefesFamilia'; 
+                    }
+                    elseif ($subSegment === 'lideres') {
+                        $actionName = 'lideres'; 
+                    }
                     elseif ($subSegment === 'usuarios') {
                         $actionName = 'usuarios'; 
                     }
@@ -196,6 +199,30 @@ if (!isset($_SESSION['id_usuario'])) {
                 }
                 
                 // Resto de la lógica de Admin
+                elseif ($actionSegment === 'viviendas' || $actionSegment === 'vivienda') {
+                    // Manejo de API para viviendas
+                    $action = $_GET['action'] ?? null;
+                    if ($action === 'index') {
+                        $actionName = 'viviendasIndex';
+                    } elseif ($action === 'show') {
+                        $actionName = 'viviendasShow';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } elseif ($action === 'store') {
+                        $actionName = 'viviendasStore';
+                    } elseif ($action === 'update') {
+                        $actionName = 'viviendasUpdate';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } elseif ($action === 'destroy') {
+                        $actionName = 'viviendasDestroy';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } else {
+                        // Vista principal
+                        $actionName = 'viviendas';
+                    }
+                }
+                elseif ($actionSegment === 'carga-familiar') {
+                    $actionName = 'cargaFamiliar';
+                }
                 elseif ($actionSegment === 'news') {
                     if ($id === 'create') { $actionName = 'createNews'; }
                     elseif ($id === 'store' && $_SERVER['REQUEST_METHOD'] === 'POST') { $actionName = 'storeNews'; $id = null; }
@@ -205,47 +232,7 @@ if (!isset($_SESSION['id_usuario'])) {
                     elseif ($id === 'soft-delete') { $actionName = 'softDeleteNews'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
                     else { $actionName = 'manageNews'; }
                 }
-                // --- Nuevas reglas para la sección admin/viviendas ---
-                elseif ($route === 'admin/viviendas') {
-                    // Asegúrate de que el controlador esté incluido en los require anteriores (ViviendaController.php)
-                    $controller = new ViviendaController();
-                    $action = $_GET['action'] ?? null;
-                    // Si viene una acción y es una llamada API (index/show/store/update/destroy) delegamos al controlador
-                    if ($action) {
-                        // Dejamos que el controlador maneje la respuesta y termine la ejecución
-                        switch ($action) {
-                            case 'index':
-                                $controller->index();
-                                exit;
-                            case 'show':
-                                $controller->show($_GET['id'] ?? null);
-                                exit;
-                            case 'store':
-                                // store espera JSON en php://input
-                                $controller->store();
-                                exit;
-                            case 'update':
-                                $controller->update($_GET['id'] ?? null);
-                                exit;
-                            case 'destroy':
-                                $controller->destroy($_GET['id'] ?? null);
-                                exit;
-                            default:
-                                http_response_code(400);
-                                header('Content-Type: application/json');
-                                echo json_encode(['error' => 'Acción no válida para viviendas.']);
-                                exit;
-                        }
-                    }
-
-                    // Si no es una llamada API, renderizamos la vista dentro del layout admin
-                    $page_title = 'Viviendas';
-                    $content_view = VIEWS_PATH . 'admin/viviendas.php';
-                    // El layout debe incluir $content_view cuando esté listo
-                    require VIEWS_PATH . 'layouts/admin_layout.php';
-                    exit;
-                }
-                                
+                
                 elseif ($actionSegment === 'comments') {
                     if ($id === 'soft-delete') { 
                         $actionName = 'softDeleteComment'; 
@@ -286,48 +273,7 @@ if (!isset($_SESSION['id_usuario'])) {
                     exit();
                 }
                 $controllerName = 'SubadminController';
-                
-                if ($actionSegment === 'habitantes') {
-                    if ($id === 'edit') {
-                        $actionName = 'editHabitante';
-                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
-                    } elseif ($id === 'delete') {
-                        $actionName = 'deleteHabitante';
-                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
-                    } elseif ($id === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-                        $actionName = 'addHabitante';
-                        $id = null;
-                    } elseif ($id === 'asignar-lider-familia') {
-                        $actionName = 'asignarLiderFamilia';
-                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
-                    } else {
-                        $actionName = 'habitantes';
-                    }
-                } elseif ($actionSegment === 'familias') {
-                    if ($id === 'ver') {
-                        $actionName = 'verFamilia';
-                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
-                    } else {
-                        $actionName = 'familias';
-                    }
-                } elseif ($actionSegment === 'viviendas') {
-                    $actionName = 'viviendas';
-                } elseif ($actionSegment === 'editHabitante') {
-                    $actionName = 'editHabitante';
-                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
-                } elseif ($actionSegment === 'deleteHabitante') {
-                    $actionName = 'deleteHabitante';
-                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
-                } elseif ($actionSegment === 'addHabitante' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-                    $actionName = 'addHabitante';
-                } elseif ($actionSegment === 'asignarLiderFamilia') {
-                    $actionName = 'asignarLiderFamilia';
-                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
-                } elseif ($actionSegment === 'verFamilia') {
-                    $actionName = 'verFamilia';
-                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
-                }
-                elseif ($actionSegment === 'news') {
+                if ($actionSegment === 'news') {
                     if ($id === 'soft-delete') { 
                         $actionName = 'requestSoftDeleteNews'; 
                         $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
@@ -351,11 +297,49 @@ if (!isset($_SESSION['id_usuario'])) {
                     $actionName = 'reports';
                 } elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
                     $actionName = 'dashboard';
+                } elseif ($actionSegment === 'habitantes') {
+                    $actionName = 'habitantes';
+                } elseif ($actionSegment === 'addHabitante') {
+                    $actionName = 'addHabitante';
+                    $id = null;
+                } elseif ($actionSegment === 'editHabitante') {
+                    $actionName = 'editHabitante';
+                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                } elseif ($actionSegment === 'deleteHabitante') {
+                    $actionName = 'deleteHabitante';
+                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                } elseif ($actionSegment === 'viviendas') {
+                    $actionName = 'viviendas';
+                } elseif ($actionSegment === 'familias') {
+                    if ($id === 'ver') {
+                        $actionName = 'verFamilia';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } else {
+                        $actionName = 'familias';
+                    }
                 } elseif ($actionSegment === 'notifications') {
                     if ($id === 'mark-read') { $actionName = 'markNotificationRead'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
                     elseif ($id === 'mark-all-read') { $actionName = 'markAllNotificationsRead'; $id = null; }
                     elseif ($id === 'delete') { $actionName = 'deleteNotification'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
                     else { $actionName = 'manageNotifications'; }
+                }
+                break;
+
+            case 'api':
+                // API endpoints para AJAX
+                if ($actionSegment === 'viviendas-por-calle') {
+                    header('Content-Type: application/json');
+                    require_once __DIR__ . '/../app/models/Vivienda.php';
+                    $viviendaModel = new Vivienda();
+                    $idCalle = filter_input(INPUT_GET, 'id_calle', FILTER_SANITIZE_NUMBER_INT);
+                    
+                    if ($idCalle) {
+                        $viviendas = $viviendaModel->getViviendasPorCalle($idCalle);
+                        echo json_encode(['success' => true, 'viviendas' => $viviendas]);
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'ID de calle no válido']);
+                    }
+                    exit();
                 }
                 break;
 
@@ -434,7 +418,6 @@ if ($controllerName) {
             $liderCalleModel = new LiderCalle();
             $roleModel = new Role();
             $habitanteModel = new Habitante(); // Added Habitante model instantiation
-            $familiaModel = new CargaFamiliar(); // Added Familia model instantiation
             $viviendaModel = new Vivienda(); // Added Vivienda model instantiation
             $validator = new Validator();
 
@@ -444,10 +427,11 @@ if ($controllerName) {
                     $controller = new LoginController($usuarioModel);
                     break;
                 case 'AdminController':
-                    $controller = new AdminController($usuarioModel, $personaModel, $noticiaModel, $comentarioModel, $notificacionModel, $calleModel, $liderCalleModel, $categoriaModel, $roleModel, $habitanteModel, $familiaModel, $viviendaModel); 
+                    $cargaFamiliarModel = new CargaFamiliar();
+                    $controller = new AdminController($usuarioModel, $personaModel, $noticiaModel, $comentarioModel, $notificacionModel, $calleModel, $liderCalleModel, $categoriaModel, $roleModel, $habitanteModel, $viviendaModel, $cargaFamiliarModel); 
                     break;
                 case 'SubadminController':
-                    $controller = new SubadminController($usuarioModel, $personaModel, $noticiaModel, $comentarioModel, $notificacionModel, $calleModel, $liderCalleModel, $categoriaModel, $roleModel, $habitanteModel, $familiaModel, $viviendaModel);
+                    $controller = new SubadminController();
                     break;
                 case 'NoticiaController':
                     $controller = new NoticiaController($noticiaModel, $comentarioModel, $likeModel); // Pasa solo los necesarios

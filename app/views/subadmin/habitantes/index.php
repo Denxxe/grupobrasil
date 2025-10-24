@@ -134,7 +134,7 @@
                             <input type="text" class="form-control" id="telefono" name="telefono">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="id_calle" class="form-label">Vereda *</label>
+                            <label for="id_calle" class="form-label">Calle *</label>
                             <select class="form-select" id="id_calle" name="id_calle" required>
                                 <option value="">Seleccionar...</option>
                                 <?php foreach ($todasVeredas as $vereda): ?>
@@ -147,8 +147,10 @@
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="numero_casa" class="form-label">Número de Casa</label>
-                            <input type="text" class="form-control" id="numero_casa" name="numero_casa">
+                            <label for="id_vivienda" class="form-label">Vivienda</label>
+                            <select class="form-select" id="id_vivienda" name="id_vivienda">
+                                <option value="">Seleccionar calle primero...</option>
+                            </select>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="correo" class="form-label">Correo Electrónico</label>
@@ -161,6 +163,14 @@
                                 <option value="Visitante">Visitante</option>
                                 <option value="Temporal">Temporal</option>
                             </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="es_jefe_familia" name="es_jefe_familia" value="1">
+                                <label class="form-check-label" for="es_jefe_familia">
+                                    <strong>Es Jefe de Familia</strong>
+                                </label>
+                            </div>
                         </div>
                         <div class="col-12 mb-3">
                             <label for="direccion" class="form-label">Dirección</label>
@@ -176,3 +186,34 @@
         </div>
     </div>
 </div>
+
+<script>
+function cargarViviendas(idCalle) {
+    const selectVivienda = document.getElementById('id_vivienda');
+    selectVivienda.innerHTML = '<option value="">Cargando...</option>';
+    
+    if (!idCalle) {
+        selectVivienda.innerHTML = '<option value="">Seleccionar calle primero...</option>';
+        return;
+    }
+    
+    // Hacer petición AJAX para obtener viviendas de la calle
+    fetch(`./index.php?route=api/viviendas-por-calle&id_calle=${idCalle}`)
+        .then(response => response.json())
+        .then(data => {
+            selectVivienda.innerHTML = '<option value="">Sin vivienda</option>';
+            if (data.success && data.viviendas.length > 0) {
+                data.viviendas.forEach(vivienda => {
+                    const option = document.createElement('option');
+                    option.value = vivienda.id_vivienda;
+                    option.textContent = `Casa #${vivienda.numero}`;
+                    selectVivienda.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            selectVivienda.innerHTML = '<option value="">Error al cargar viviendas</option>';
+        });
+}
+</script>

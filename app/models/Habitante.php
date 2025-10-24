@@ -200,4 +200,99 @@ class Habitante extends ModelBase {
 
         return $habitanteId;
     }
+
+    /**
+     * Obtiene habitantes filtrados por calles específicas
+     * @param array $calleIds Array de IDs de calles
+     * @return array Array de habitantes con sus datos personales
+     */
+    public function getHabitantesPorCalles(array $calleIds): array {
+        if (empty($calleIds)) {
+            return [];
+        }
+        
+        $placeholders = implode(',', array_fill(0, count($calleIds), '?'));
+        $sql = "SELECT DISTINCT
+                    h.id_habitante,
+                    h.id_persona,
+                    h.fecha_ingreso,
+                    h.condicion,
+                    p.cedula,
+                    p.nombres,
+                    p.apellidos,
+                    CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
+                    p.fecha_nacimiento,
+                    p.sexo,
+                    p.telefono,
+                    p.correo,
+                    v.numero as numero_vivienda,
+                    c.nombre as nombre_calle,
+                    COALESCE(hv.es_jefe_familia, 0) as es_jefe_familia,
+                    TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad
+                FROM {$this->table} h
+                INNER JOIN persona p ON h.id_persona = p.id_persona
+                INNER JOIN calle c ON p.id_calle = c.id_calle
+                LEFT JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante
+                LEFT JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
+                WHERE h.activo = 1 AND p.id_calle IN ($placeholders)
+                ORDER BY c.nombre ASC, COALESCE(v.numero, 999) ASC, p.nombres ASC";
+        
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("Error al preparar getHabitantesPorCalles: " . $this->conn->error);
+            return [];
+        }
+        
+        $types = str_repeat('i', count($calleIds));
+        $stmt->bind_param($types, ...$calleIds);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $data = [];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $data[] = $row;
+            }
+        }
+        
+        $stmt->close();
+        return $data;
+    }
+
+    /**
+     * Cuenta habitantes por calles específicas
+     * @param array $calleIds Array de IDs de calles
+     * @return int Total de habitantes
+     */
+    public function contarPorCalles(array $calleIds): int {
+        if (empty($calleIds)) {
+            return 0;
+        }
+        
+        $placeholders = implode(',', array_fill(0, count($calleIds), '?'));
+        $sql = "SELECT COUNT(DISTINCT h.id_habitante) as total
+                FROM {$this->table} h
+                INNER JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante
+                INNER JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
+                WHERE h.activo = 1 AND v.id_calle IN ($placeholders)";
+        
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("Error al preparar contarPorCalles: " . $this->conn->error);
+            return 0;
+        }
+        
+        $types = str_repeat('i', count($calleIds));
+        $stmt->bind_param($types, ...$calleIds);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $total = 0;
+        if ($result && $row = $result->fetch_assoc()) {
+            $total = (int)$row['total'];
+        }
+        
+        $stmt->close();
+        return $total;
+    }
 }

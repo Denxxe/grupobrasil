@@ -21,9 +21,14 @@ class Usuario extends ModelBase {
         return "SELECT 
              u.*, 
              p.cedula, p.nombres, p.apellidos, p.fecha_nacimiento, p.sexo, p.telefono, p.direccion, 
-             p.correo AS persona_correo
+             p.correo AS persona_correo,
+             CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
+             r1.nombre AS nombre_rol,
+             r2.nombre AS nombre_rol_secundario
              FROM " . $this->table . " u
-             INNER JOIN persona p ON u.id_persona = p.id_persona";
+             INNER JOIN persona p ON u.id_persona = p.id_persona
+             LEFT JOIN rol r1 ON u.id_rol = r1.id_rol
+             LEFT JOIN rol r2 ON u.id_rol_secundario = r2.id_rol";
     }
 
     /**
@@ -515,5 +520,89 @@ public function countActiveLeaders(): int {
     $stmt->close();
     return 0;
 }
+
+    /**
+     * Verifica si un usuario tiene un rol específico (primario o secundario)
+     * @param int $id_usuario ID del usuario
+     * @param int $id_rol ID del rol a verificar
+     * @return bool True si el usuario tiene ese rol (primario o secundario)
+     */
+    public function tieneRol(int $id_usuario, int $id_rol): bool {
+        $sql = "SELECT COUNT(*) as count FROM {$this->table} 
+                WHERE id_usuario = ? 
+                AND (id_rol = ? OR id_rol_secundario = ?)";
+        
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("Error al preparar consulta tieneRol: " . $this->conn->error);
+            return false;
+        }
+        
+        $stmt->bind_param("iii", $id_usuario, $id_rol, $id_rol);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result && $row = $result->fetch_assoc()) {
+            $stmt->close();
+            return (int)$row['count'] > 0;
+        }
+        
+        $stmt->close();
+        return false;
+    }
+
+    /**
+     * Obtiene todos los roles de un usuario (primario y secundario)
+     * @param int $id_usuario ID del usuario
+     * @return array Array con los IDs de roles del usuario
+     */
+    public function getRolesUsuario(int $id_usuario): array {
+        $sql = "SELECT id_rol, id_rol_secundario FROM {$this->table} WHERE id_usuario = ?";
+        
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("Error al preparar consulta getRolesUsuario: " . $this->conn->error);
+            return [];
+        }
+        
+        $stmt->bind_param("i", $id_usuario);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $roles = [];
+        if ($result && $row = $result->fetch_assoc()) {
+            if (!empty($row['id_rol'])) {
+                $roles[] = (int)$row['id_rol'];
+            }
+            if (!empty($row['id_rol_secundario'])) {
+                $roles[] = (int)$row['id_rol_secundario'];
+            }
+        }
+        
+        $stmt->close();
+        return $roles;
+    }
+
+    /**
+     * Asigna un rol secundario a un usuario
+     * @param int $id_usuario ID del usuario
+     * @param int|null $id_rol_secundario ID del rol secundario (null para remover)
+     * @return bool True si se actualizó correctamente
+     */
+    public function asignarRolSecundario(int $id_usuario, ?int $id_rol_secundario): bool {
+        $sql = "UPDATE {$this->table} SET id_rol_secundario = ? WHERE id_usuario = ?";
+        
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("Error al preparar consulta asignarRolSecundario: " . $this->conn->error);
+            return false;
+        }
+        
+        $stmt->bind_param("ii", $id_rol_secundario, $id_usuario);
+        $success = $stmt->execute();
+        $stmt->close();
+        
+        return $success;
+    }
     
 }
