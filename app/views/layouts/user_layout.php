@@ -77,6 +77,18 @@ $page_title = $page_title ?? 'Mi Perfil';
                         <i class="fas fa-bell mr-3 sidebar-icon"></i> <span class="sidebar-text">Mis Notificaciones</span>
                     </a>
                 </li>
+                <?php if (isset($_SESSION['id_rol']) && $_SESSION['id_rol'] == 3): ?>
+                <li>
+                    <a href="./index.php?route=user/carga_familiar" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                        <i class="fas fa-users mr-3 sidebar-icon"></i> <span class="sidebar-text">Mi Carga Familiar</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="./index.php?route=user/vivienda_details" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                        <i class="fas fa-house-user mr-3 sidebar-icon"></i> <span class="sidebar-text">Detalles de Vivienda</span>
+                    </a>
+                </li>
+                <?php endif; ?>
                 <?php 
                 if (isset($_SESSION['available_roles']) && count($_SESSION['available_roles']) > 1): 
                 ?>

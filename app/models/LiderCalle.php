@@ -54,6 +54,14 @@ error_log("LiderCalle::create - Falta id_habitante o id_calle en los datos.");
 return false;
 }
 
+// Enforce business rule: máximo 2 veredas por habitante. Si la calle ya
+// está asignada, el ON DUPLICATE KEY se encargará de reactivar/actualizar.
+$existingCalles = $this->getCallesIdsByHabitanteId((int)$idHabitante);
+if (count($existingCalles) >= 2 && !in_array((int)$idCalle, $existingCalles, true)) {
+    error_log("LiderCalle::create - Rechazado asignación: el habitante {$idHabitante} ya tiene 2 veredas asignadas.");
+    return false;
+}
+
 // Usamos ON DUPLICATE KEY UPDATE para asegurar que si la asignación ya existe,
 // simplemente se actualiza a 'activo' y se refresca la fecha.
 $sql = "
@@ -178,11 +186,13 @@ return $calles;
  * @param int $idUsuario ID del usuario
  * @return array Array con información de las calles
  */
-public function getCallesConDetallesPorUsuario(int $idUsuario): array {
+    public function getCallesConDetallesPorUsuario(int $idUsuario): array {
+    // Retornamos tanto 'nombre' como 'nombre_calle' para compatibilidad con vistas existentes
     $sql = "SELECT 
                 lc.id_habitante,
                 lc.id_calle,
                 lc.fecha_designacion,
+                c.nombre AS nombre,
                 c.nombre AS nombre_calle,
                 c.sector
             FROM {$this->table} lc

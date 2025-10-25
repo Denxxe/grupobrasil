@@ -171,4 +171,37 @@ class Vivienda extends ModelBase {
         $stmt->close();
         return $data;
     }
+
+    /**
+     * Verifica si existe un número de vivienda en una calle específica.
+     * @param string|int $numero
+     * @param int $idCalle
+     * @param int|null $excludeId id_vivienda a excluir (útil en update)
+     * @return bool
+     */
+    public function existsNumeroEnCalle($numero, int $idCalle, ?int $excludeId = null): bool {
+        $sql = "SELECT COUNT(*) as total FROM " . $this->table . " WHERE activo = 1 AND numero = ? AND id_calle = ?";
+        if ($excludeId) $sql .= " AND id_vivienda != ?";
+
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("Error al preparar existsNumeroEnCalle: " . $this->conn->error);
+            return false;
+        }
+
+        if ($excludeId) {
+            $stmt->bind_param('sii', $numero, $idCalle, $excludeId);
+        } else {
+            $stmt->bind_param('si', $numero, $idCalle);
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $exists = false;
+        if ($result && $row = $result->fetch_assoc()) {
+            $exists = ((int)($row['total'] ?? 0) > 0);
+        }
+        $stmt->close();
+        return $exists;
+    }
 }

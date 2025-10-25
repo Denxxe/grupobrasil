@@ -90,6 +90,21 @@ $callesDirigidas = $calles_dirigidas ?? [];
                                 </label>
                                 <p class="small text-muted mb-0">Esta persona es el jefe de familia y gestiona la información de su núcleo.</p>
                             </div>
+                            <div id="vivienda_assignment" style="<?= $isLiderFamilia ? 'display: block;' : 'display: none;' ?>" class="mt-3 p-3 bg-light rounded">
+                                <label class="font-weight-bold">Asignar Vivienda (Opcional)</label>
+                                <?php if (!empty($viviendas) && is_array($viviendas)): ?>
+                                    <select name="id_vivienda" class="form-control">
+                                        <option value="">-- Seleccionar vivienda --</option>
+                                        <?php foreach ($viviendas as $vv): ?>
+                                            <?php $label = htmlspecialchars(($vv['nombre_calle'] ?? $vv['nombre'] ?? '')) . ' - Nº ' . htmlspecialchars($vv['numero'] ?? ''); ?>
+                                            <option value="<?= (int)$vv['id_vivienda'] ?>"><?= $label ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="small text-muted mt-2">Si seleccionas vivienda, esta persona será marcada como jefe de familia en esa vivienda.</p>
+                                <?php else: ?>
+                                    <div class="alert alert-warning">No hay viviendas disponibles para asignar desde tu cuenta.</div>
+                                <?php endif; ?>
+                            </div>
                         </div>
 
                         <div class="form-group mb-4 p-3 border rounded shadow-sm">
@@ -165,6 +180,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Asegurar que el estado inicial del div de manejo de veredas sea correcto al cargar la página
     if (liderVeredaCheckbox.checked) {
         veredaManagementDiv.style.display = 'block';
+    }
+
+    // Limitar selección de veredas a máximo 2
+    const veredaCheckboxes = veredaManagementDiv.querySelectorAll('input[type="checkbox"][name="calles_liderazgo[]"]');
+    function limitVeredas(e) {
+        const checked = veredaManagementDiv.querySelectorAll('input[type="checkbox"][name="calles_liderazgo[]"]:checked');
+        if (checked.length > 2) {
+            // Desmarcar la casilla recién marcada
+            e.target.checked = false;
+            alert('Solo puedes asignar un máximo de 2 veredas a un Líder de Vereda.');
+        }
+    }
+    veredaCheckboxes.forEach(cb => cb.addEventListener('change', limitVeredas));
+    // Toggle vivienda assignment visibility
+    const liderFamiliaCheckbox = document.getElementById('is_lider_familia');
+    const viviendaAssignmentDiv = document.getElementById('vivienda_assignment');
+    if (liderFamiliaCheckbox) {
+        liderFamiliaCheckbox.addEventListener('change', function() {
+            if (this.checked) viviendaAssignmentDiv.style.display = 'block';
+            else viviendaAssignmentDiv.style.display = 'none';
+        });
+        // Estado inicial
+        if (liderFamiliaCheckbox.checked) viviendaAssignmentDiv.style.display = 'block';
     }
 });
 </script>

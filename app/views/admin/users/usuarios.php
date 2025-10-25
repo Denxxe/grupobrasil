@@ -147,6 +147,20 @@ $current_activo = $data['current_activo'] ?? 'all';
                                                     <i class="fas fa-edit"></i>
                                                 </a>
 
+                                                <!-- Editar roles / veredas -->
+                                                <a href="./index.php?route=admin/users/create-user-role&person_id=<?= htmlspecialchars($usuario['id_persona'] ?? '') ?>" 
+                                                   title="Editar roles / veredas"
+                                                   class="btn btn-secondary btn-sm">
+                                                    <i class="fas fa-user-cog"></i>
+                                                </a>
+
+                                                <!-- Revocar rol -->
+                                                <button onclick="confirmRevokeRole('<?= htmlspecialchars($usuario['id_persona'] ?? '') ?>', '<?= htmlspecialchars($usuario['nombre_completo'] ?? '') ?>')"
+                                                        title="Revocar rol"
+                                                        class="btn btn-warning btn-sm">
+                                                    <i class="fas fa-user-times"></i>
+                                                </button>
+
                                                 <?php $action_status = ($usuario['activo'] ?? 0) ? 0 : 1; ?>
                                                 <button onclick="confirmToggleStatus('<?= htmlspecialchars($usuario['id_usuario'] ?? '') ?>', '<?= htmlspecialchars($usuario['nombre_usuario'] ?? '') ?>', <?= $action_status ?>)"
                                                         title="<?= $action_status == 1 ? 'Activar Usuario' : 'Inactivar Usuario' ?>"
@@ -175,6 +189,11 @@ $current_activo = $data['current_activo'] ?? 'all';
             // NOTA: Debes implementar esta ruta en AdminController.php
             window.location.href = `./index.php?route=admin/users/toggle_status&id=${id}&status=${status}`;
         }
+    }
+
+    function confirmRevokeRole(personId, personName) {
+        if (!confirm(`¿Seguro que deseas revocar el rol de ${personName}? Esto liberará veredas y/o removerá cargas familiares asociadas.`)) return;
+        window.location.href = `./index.php?route=admin/users/revoke-role&person_id=${personId}`;
     }
 
     // Inicializar DataTables

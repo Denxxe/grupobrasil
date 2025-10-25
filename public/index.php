@@ -1,14 +1,38 @@
 <?php
 // grupobrasil/public/index.php
 ob_start(); 
+// --- Seguridad de sesión: configurar cookies antes de iniciar sesión ---
+$appEnv = getenv('APP_ENV') ?: ($_SERVER['APP_ENV'] ?? 'production');
+$secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+$cookieParams = [
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => $_SERVER['HTTP_HOST'] ?? '',
+    'secure' => $secure,
+    'httponly' => true,
+    'samesite' => 'Lax'
+];
+// session_start() requiere parámetros de cookie vía session_set_cookie_params en PHP < 7.3
+if (PHP_VERSION_ID < 70300) {
+    session_set_cookie_params($cookieParams['lifetime'], $cookieParams['path'], $cookieParams['domain'], $cookieParams['secure'], $cookieParams['httponly']);
+} else {
+    session_set_cookie_params($cookieParams);
+}
+
 // Inicia la sesión al principio de todo si aún no está iniciada
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-// Configuración de errores para desarrollo
+// Configuración de errores según entorno (desactivar display en producción)
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+if ($appEnv === 'development') {
+    ini_set('display_errors', 1);
+    ini_set('log_errors', 0);
+} else {
+    ini_set('display_errors', 0);
+    ini_set('log_errors', 1);
+}
 
 // --- Definición de Constantes de Ruta ---
 define('APP_ROOT', __DIR__ . '/../');
@@ -175,6 +199,11 @@ if (!isset($_SESSION['id_usuario'])) {
                         $actionName = 'createUserRole'; 
                         $id = filter_input(INPUT_GET, 'person_id', FILTER_SANITIZE_NUMBER_INT); 
                     }
+                    elseif ($subSegment === 'revoke-role') {
+                        // RUTA: admin/users/revoke-role?person_id=X
+                        $actionName = 'revokeUserRole';
+                        $id = filter_input(INPUT_GET, 'person_id', FILTER_SANITIZE_NUMBER_INT);
+                    }
                     elseif ($subSegment === 'store-user-role' && $_SERVER['REQUEST_METHOD'] === 'POST') { 
                         // RUTA: admin/users/store-user-role
                         $actionName = 'storeUserRole'; 
@@ -204,6 +233,19 @@ if (!isset($_SESSION['id_usuario'])) {
                     $action = $_GET['action'] ?? null;
                     if ($action === 'index') {
                         $actionName = 'viviendasIndex';
+                    
+                    } elseif ($action === 'byCalle') {
+                        // API: listar viviendas por id_calle con conteo de familias
+                        $actionName = 'viviendasByCalle';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } elseif ($action === 'familiasPorVivienda') {
+                        // API: listar familias por id_vivienda
+                        $actionName = 'familiasPorVivienda';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } elseif ($action === 'familiasPorViviendaByJefe') {
+                        // API: listar miembros por id_jefe (usado en cargas familiares)
+                        $actionName = 'familiasPorViviendaByJefe';
+                        // parámetro 'jefe' será leído por el controlador
                     } elseif ($action === 'show') {
                         $actionName = 'viviendasShow';
                         $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
@@ -221,7 +263,13 @@ if (!isset($_SESSION['id_usuario'])) {
                     }
                 }
                 elseif ($actionSegment === 'carga-familiar') {
-                    $actionName = 'cargaFamiliar';
+                    // Permitir a admin ver todas las cargas familiares usando ?action=all
+                    $action = $_GET['action'] ?? null;
+                    if ($action === 'all') {
+                        $actionName = 'cargasFamiliaresAll';
+                    } else {
+                        $actionName = 'cargaFamiliar';
+                    }
                 }
                 elseif ($actionSegment === 'news') {
                     if ($id === 'create') { $actionName = 'createNews'; }
@@ -309,9 +357,33 @@ if (!isset($_SESSION['id_usuario'])) {
                     $actionName = 'deleteHabitante';
                     $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
                 } elseif ($actionSegment === 'viviendas') {
-                    $actionName = 'viviendas';
+                    // Manejo de API para viviendas en subadmin (líder de vereda)
+                    $action = $_GET['action'] ?? null;
+                    if ($action === 'byCalle') {
+                        $actionName = 'viviendasByCalle';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } elseif ($action === 'familiasPorVivienda') {
+                        $actionName = 'familiasPorVivienda';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } elseif ($action === 'show') {
+                        $actionName = 'viviendasShow';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } elseif ($action === 'store' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $actionName = 'viviendasStore';
+                    } elseif ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $actionName = 'viviendasUpdate';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } elseif ($action === 'destroy' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $actionName = 'viviendasDestroy';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } else {
+                        $actionName = 'viviendas';
+                    }
                 } elseif ($actionSegment === 'familias') {
-                    if ($id === 'ver') {
+                    $subaction = $_GET['action'] ?? null;
+                    if ($subaction === 'miembros') {
+                        $actionName = 'miembrosFamilia';
+                    } elseif ($id === 'ver') {
                         $actionName = 'verFamilia';
                         $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
                     } else {
@@ -350,6 +422,10 @@ if (!isset($_SESSION['id_usuario'])) {
                     $id = filter_var($id, FILTER_SANITIZE_NUMBER_INT);
                 } elseif ($actionSegment === 'add-comment' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     $actionName = 'addComment'; $id = null;
+                } elseif ($actionSegment === 'edit-comment' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                    $actionName = 'editComment'; $id = null;
+                } elseif ($actionSegment === 'delete-comment' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                    $actionName = 'deleteComment'; $id = null;
                 } elseif ($actionSegment === 'toggle-like' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     $actionName = 'toggleLike'; $id = null;
                 } else {
@@ -381,6 +457,19 @@ if (!isset($_SESSION['id_usuario'])) {
                 }
                 elseif ($actionSegment === 'updateProfile' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     $actionName = 'updateProfile';
+                }
+                // Rutas para Jefe de Familia: carga familiar y detalles de vivienda
+                elseif ($actionSegment === 'carga_familiar') {
+                    $actionName = 'cargaFamiliar';
+                } elseif ($actionSegment === 'addMember' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                    $actionName = 'addMember';
+                } elseif ($actionSegment === 'deleteMember' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                    $actionName = 'deleteMember';
+                }
+                elseif ($actionSegment === 'vivienda_details') {
+                    $actionName = 'viviendaDetails';
+                } elseif ($actionSegment === 'updateViviendaDetails' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                    $actionName = 'updateViviendaDetails';
                 }
                 
                 break;

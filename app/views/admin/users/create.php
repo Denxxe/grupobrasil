@@ -250,6 +250,17 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleUserFields(createAccountCheckbox.checked);
     toggleVeredaManagement();
 
+    // Limitar selección de veredas a máximo 2 en el formulario de creación
+    const veredaCheckboxesCreate = veredaManagementDiv.querySelectorAll('input[type="checkbox"][name="calles_liderazgo[]"]');
+    function limitVeredasCreate(e) {
+        const checked = document.querySelectorAll('input[type="checkbox"][name="calles_liderazgo[]"]:checked');
+        if (checked.length > 2) {
+            e.target.checked = false;
+            alert('Solo puedes asignar un máximo de 2 veredas a un Líder de Vereda.');
+        }
+    }
+    veredaCheckboxesCreate.forEach(cb => cb.addEventListener('change', limitVeredasCreate));
+
     // === 3. VALIDACIÓN FINAL ANTES DE ENVIAR (submit) ===
     form.addEventListener('submit', function(event) {
         if (createAccountCheckbox.checked) {

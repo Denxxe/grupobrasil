@@ -62,10 +62,9 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <a href="./index.php?route=subadmin/verFamilia&id=<?php echo $familia['id_jefe']; ?>" 
-                                           class="btn btn-sm btn-info" title="Ver Detalles">
+                                        <button class="btn btn-sm btn-info btn-view-family" data-jefe="<?= htmlspecialchars($familia['id_jefe']) ?>">
                                             <i class="fas fa-eye"></i> Ver Familia
-                                        </a>
+                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -76,3 +75,31 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.btn-view-family').forEach(b => b.addEventListener('click', async (e) => {
+        const jefeId = e.currentTarget.dataset.jefe;
+        try {
+            const res = await fetch('./index.php?route=subadmin/familias&action=miembros&jefe=' + encodeURIComponent(jefeId), { credentials: 'same-origin' });
+            if (!res.ok) { alert('Error al cargar la familia'); return; }
+            const data = await res.json();
+            let html = '';
+            if (!Array.isArray(data) || data.length === 0) html = '<p>No hay miembros.</p>'; else {
+                html = '<h5>Miembros</h5><ul>';
+                data.forEach(m => { html += '<li>' + (m.nombres||'') + ' ' + (m.apellidos||'') + ' - ' + (m.parentesco||'') + '</li>'; });
+                html += '</ul>';
+            }
+            // mostrar en modal simple
+            let modal = document.getElementById('subadminFamilyModal');
+            if (!modal) {
+                modal = document.createElement('div'); modal.id = 'subadminFamilyModal'; modal.className = 'modal fade'; modal.tabIndex = -1;
+                modal.innerHTML = `<div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Detalles de Familia</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="subadminFamilyContent"></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div></div></div>`;
+                document.body.appendChild(modal);
+            }
+            document.getElementById('subadminFamilyContent').innerHTML = html;
+            const bsModal = new bootstrap.Modal(document.getElementById('subadminFamilyModal'));
+            bsModal.show();
+        } catch (err) { console.error(err); alert('Error al cargar familia'); }
+    }));
+});
+</script>

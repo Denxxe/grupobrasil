@@ -552,13 +552,35 @@ class AdminController extends AppController{
                 $successMessage .= " | Cuenta de Líder (Rol ID: {$rolLiderId}) creada exitosamente.";
 
                 // 5. ASIGNAR LIDERAZGOS DE CALLE (Solo si es Líder de Vereda)
-                if ((int)$rolLiderId === 2 && !empty($callesDirigidas)) {
-                    foreach ($callesDirigidas as $calleId) {
-                        $this->liderCalleModel->create(['id_usuario' => $userId, 'id_calle' => (int)$calleId]);
+                if ((int)$rolLiderId === 2) {
+                    // Asegurarse de tener un registro en habitante para enlazar con lider_calle
+                    $habitanteId = $this->habitanteModel->createFromPersona($personaId);
+
+                    if (!$habitanteId) {
+                        // No bloqueamos la creación del usuario, pero avisamos
+                        $successMessage .= " | Advertencia: No se pudo crear/obtener registro de habitante para asignaciones de vereda.";
+                    } else {
+                        if (!empty($callesDirigidas)) {
+                            // Validación server-side: máximo 2 veredas por líder
+                            $existing = $this->liderCalleModel->getCallesIdsByHabitanteId($habitanteId);
+                            $totalAfter = count($existing) + count($callesDirigidas);
+                            if ($totalAfter > 2) {
+                                $_SESSION['error_message'] = "No se pueden asignar más de 2 veredas a un Líder de Vereda. (Actual: " . count($existing) . ", intentadas: " . count($callesDirigidas) . ")";
+                                // Revertir creando usuario si lo deseas; por ahora detenemos y devolvemos el formulario
+                                header('Location: ./index.php?route=admin/users/create');
+                                return;
+                            }
+
+                            $assigned = 0;
+                            foreach ($callesDirigidas as $calleId) {
+                                $res = $this->liderCalleModel->create(['id_habitante' => $habitanteId, 'id_calle' => (int)$calleId]);
+                                if ($res) $assigned++;
+                            }
+                            $successMessage .= " | Asignado a " . $assigned . " vereda(s).";
+                        } else {
+                            $successMessage .= " | Advertencia: Rol Líder de Vereda asignado, pero sin calles seleccionadas.";
+                        }
                     }
-                    $successMessage .= " | Asignado a " . count($callesDirigidas) . " vereda(s).";
-                } elseif ((int)$rolLiderId === 2 && empty($callesDirigidas)) {
-                     $successMessage .= " | Advertencia: Rol Líder de Vereda asignado, pero sin calles seleccionadas.";
                 }
 
             } else {
@@ -807,7 +829,14 @@ class AdminController extends AppController{
         }
 
         // Opcional: Eliminar las asignaciones de calle antes de eliminar el usuario
-        $this->liderCalleModel->deleteByHabitanteId($id);
+        // Convertir id_usuario -> id_habitante si existe
+        $personData = $this->usuarioModel->getPersonData($id);
+        if (!empty($personData) && isset($personData['id_persona'])) {
+            $habitante = $this->habitanteModel->findByPersonaId($personData['id_persona']);
+            if ($habitante && isset($habitante['id_habitante'])) {
+                $this->liderCalleModel->deleteByHabitanteId($habitante['id_habitante']);
+            }
+        }
 
         $success = $this->usuarioModel->delete($id);
 
@@ -865,12 +894,28 @@ class AdminController extends AppController{
         // 4. Obtener datos para la vista
         $calles = $this->calleModel->findAll();
 
+        // 4.b Obtener viviendas disponibles según el rol del usuario que está realizando la asignación
+        $currentUserRole = $_SESSION['id_rol'] ?? null;
+        $currentUserId = $_SESSION['id_usuario'] ?? null;
+        $viviendas = [];
+        if ($currentUserRole == 1) {
+            // Administrador: puede ver todas las viviendas
+            $viviendas = $this->viviendaModel->getAllWithCalle();
+        } elseif ($currentUserRole == 2 && $currentUserId) {
+            // Líder de vereda: solo viviendas en sus veredas asignadas
+            $calleIdsForLeader = $this->liderCalleModel->getCallesIdsPorUsuario($currentUserId);
+            if (!empty($calleIdsForLeader)) {
+                $viviendas = $this->viviendaModel->getViviendasPorCalles($calleIdsForLeader);
+            }
+        }
+
         $data = [
             'page_title' => 'Asignar Usuario y Roles de Liderazgo',
             'persona' => $persona,
             'usuario' => $usuarioExistente,
             'calles' => $calles,
             'calles_dirigidas' => $callesDirigidas, // Se agrega para preselección en la vista
+            'viviendas' => $viviendas,
             'success_message' => $_SESSION['success_message'] ?? null,
             'error_message' => $_SESSION['error_message'] ?? null,
         ];
@@ -1008,8 +1053,117 @@ class AdminController extends AppController{
             }
         }
 
+        // 6. ASIGNAR VIVIENDA SI SE MARCA COMO Jefe de Familia (rol 3)
+        // Permitimos asignar una vivienda al habitante que será marcado como jefe de familia.
+        if ($habitanteId && $rolPrincipal === 3) {
+            $idVivienda = (int)($_POST['id_vivienda'] ?? 0);
+            if ($idVivienda > 0) {
+                // Validar que la vivienda exista
+                $v = $this->viviendaModel->getById($idVivienda);
+                if (!$v) {
+                    $_SESSION['error_message'] = 'La vivienda seleccionada no existe.';
+                    header('Location: ./index.php?route=admin/users/create-user-role&person_id=' . $personId);
+                    return;
+                }
+
+                // Validar permisos: si el asignador es Líder de Vereda (rol 2), la vivienda debe pertenecer a una de sus veredas
+                $currentUserRole = $_SESSION['id_rol'] ?? null;
+                $currentUserId = $_SESSION['id_usuario'] ?? null;
+                if ($currentUserRole == 2 && $currentUserId) {
+                    $allowedCalles = $this->liderCalleModel->getCallesIdsPorUsuario($currentUserId);
+                    if (!in_array((int)$v['id_calle'], $allowedCalles, true)) {
+                        $_SESSION['error_message'] = 'No tienes permiso para asignar esa vivienda (no pertenece a tus veredas).';
+                        header('Location: ./index.php?route=admin/users/create-user-role&person_id=' . $personId);
+                        return;
+                    }
+                }
+
+                // Crear/actualizar habitante_vivienda: eliminamos asociaciones previas y creamos la nueva con es_jefe_familia = 1
+                require_once __DIR__ . '/../models/HabitanteVivienda.php';
+                $hvModel = new HabitanteVivienda();
+                // Eliminar asociaciones viejas para este habitante (si existen)
+                $hvModel->deleteByHabitanteId($habitanteId);
+
+                $hvData = [
+                    'id_habitante' => (int)$habitanteId,
+                    'id_vivienda' => (int)$idVivienda,
+                    'es_jefe_familia' => 1,
+                    'fecha_ingreso' => date('Y-m-d'),
+                    'activo' => 1
+                ];
+
+                $hvCreate = $hvModel->create($hvData);
+                if ($hvCreate) {
+                    $successMessage .= ' Y vivienda asignada como domicilio del jefe.';
+                } else {
+                    error_log('[v0] Error al crear habitante_vivienda para jefe de familia.');
+                    $_SESSION['error_message'] = 'No fue posible asignar la vivienda seleccionada.';
+                    header('Location: ./index.php?route=admin/users/create-user-role&person_id=' . $personId);
+                    return;
+                }
+            }
+        }
+
         error_log("[v0] storeUserRole completed successfully");
         $_SESSION['success_message'] = "{$successMessage} para {$persona['nombres']} {$persona['apellidos']}.";
+        header('Location: ./index.php?route=admin/users/personas');
+        return;
+    }
+
+    /**
+     * Revoca el rol de un usuario (por person_id).
+     * - Si era Líder de Vereda (rol 2): libera/veredas (deleteByHabitanteId)
+     * - Si era Jefe de Familia (rol 3): elimina las cargas familiares asociadas al jefe (solo filas de carga_familiar)
+     * - Finalmente actualiza el usuario para quitarle el rol (id_rol = NULL)
+     */
+    public function revokeUserRole() {
+        $personId = filter_input(INPUT_GET, 'person_id', FILTER_VALIDATE_INT);
+        if (empty($personId)) {
+            $_SESSION['error_message'] = 'ID de persona no especificado para revocar rol.';
+            header('Location: ./index.php?route=admin/users/personas');
+            return;
+        }
+
+        $usuario = $this->usuarioModel->findByPersonId($personId);
+        if (!$usuario) {
+            $_SESSION['error_message'] = 'No se encontró una cuenta de usuario asociada a esa persona.';
+            header('Location: ./index.php?route=admin/users/personas');
+            return;
+        }
+
+        $usuarioId = $usuario['id_usuario'];
+        $rolActual = (int)($usuario['id_rol'] ?? 0);
+
+        // Obtener habitante si existe
+        $habitante = $this->habitanteModel->findByPersonaId($personId);
+        $habitanteId = $habitante ? $habitante['id_habitante'] : null;
+
+        // Si era líder de vereda, liberar veredas
+        if ($rolActual === 2 && $habitanteId) {
+            $this->liderCalleModel->deleteByHabitanteId($habitanteId);
+        }
+
+        // Si era jefe de familia, eliminar cargas familiares donde fue jefe (solo registros de carga_familiar)
+        if ($rolActual === 3 && $habitanteId) {
+            // Usar consulta preparada por seguridad
+            $sql = "DELETE FROM carga_familiar WHERE id_jefe = ?";
+            $stmt = $this->cargaFamiliarModel->getConnection()->prepare($sql);
+            if ($stmt) {
+                $stmt->bind_param('i', $habitanteId);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+
+        // Finalmente quitar el rol del usuario (establecer NULL)
+        $updateResult = $this->usuarioModel->update($usuarioId, ['id_rol' => null]);
+
+        if ($updateResult) {
+            $_SESSION['success_message'] = 'Rol revocado correctamente.';
+        } else {
+            $_SESSION['error_message'] = 'Ocurrió un error al intentar revocar el rol.';
+        }
+
         header('Location: ./index.php?route=admin/users/personas');
         return;
     }
@@ -1592,6 +1746,105 @@ public function viviendasIndex() {
     exit;
 }
 
+/**
+ * Devuelve viviendas de una vereda (calle) con el conteo de familias por vivienda.
+ * Acción accesible vía AJAX: ?route=admin/viviendas&action=byCalle&id=X
+ */
+public function viviendasByCalle() {
+    header('Content-Type: application/json');
+    $idCalle = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    if ($idCalle <= 0) {
+        http_response_code(400);
+        echo json_encode(['error' => 'ID de calle inválido']);
+        exit;
+    }
+
+    $sql = "SELECT v.id_vivienda, v.numero, v.tipo, v.estado, v.activo,
+                   COALESCE( (
+                       SELECT COUNT(DISTINCT cf.id_jefe)
+                       FROM carga_familiar cf
+                       INNER JOIN habitante h ON cf.id_jefe = h.id_habitante
+                       INNER JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante
+                       WHERE hv.id_vivienda = v.id_vivienda AND cf.activo = 1
+                   ), 0) AS total_familias
+            FROM vivienda v
+            WHERE v.id_calle = ? AND v.activo = 1
+            ORDER BY v.numero ASC";
+
+    $stmt = $this->viviendaModel->getConnection()->prepare($sql);
+    if ($stmt === false) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Error al preparar la consulta']);
+        exit;
+    }
+
+    $stmt->bind_param('i', $idCalle);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $data = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+        $result->free();
+    }
+    $stmt->close();
+
+    echo json_encode($data);
+    exit;
+}
+
+/**
+ * Devuelve las familias (y sus miembros) que residen en una vivienda.
+ * Parámetro: id (id_vivienda)
+ * Acción accesible vía AJAX: ?route=admin/viviendas&action=familiasPorVivienda&id=X
+ */
+public function familiasPorVivienda() {
+    header('Content-Type: application/json');
+    $idVivienda = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    if ($idVivienda <= 0) {
+        http_response_code(400);
+        echo json_encode(['error' => 'ID de vivienda inválido']);
+        exit;
+    }
+
+    // Obtener los jefes de familia que viven en esta vivienda
+    $sql = "SELECT DISTINCT cf.id_jefe
+            FROM carga_familiar cf
+            INNER JOIN habitante h ON cf.id_jefe = h.id_habitante
+            INNER JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante
+            WHERE hv.id_vivienda = ? AND cf.activo = 1";
+
+    $db = $this->cargaFamiliarModel->getConnection();
+    $stmt = $db->prepare($sql);
+    if ($stmt === false) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Error al preparar consulta de familias']);
+        exit;
+    }
+    $stmt->bind_param('i', $idVivienda);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $jefes = [];
+    while ($r = $res->fetch_assoc()) {
+        $jefes[] = (int)$r['id_jefe'];
+    }
+    $stmt->close();
+
+    $familias = [];
+    foreach ($jefes as $jefeId) {
+        // Reutilizar el método del modelo para obtener los miembros de la familia
+        $miembros = $this->cargaFamiliarModel->getCargaFamiliarConDatos($jefeId);
+        $familias[] = [
+            'id_jefe' => $jefeId,
+            'miembros' => $miembros
+        ];
+    }
+
+    echo json_encode($familias);
+    exit;
+}
+
 public function viviendasShow($id) {
     header('Content-Type: application/json');
     if (!$id) {
@@ -1619,15 +1872,33 @@ public function viviendasStore() {
         exit;
     }
     
+    // Validaciones: numero numeric y hasta 3 dígitos
+    $numero = trim((string)$input['numero']);
+    if (!preg_match('/^\d{1,3}$/', $numero)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'El número debe ser numérico y tener máximo 3 dígitos.']);
+        exit;
+    }
+
     $data = [
-        'numero' => $input['numero'],
+        'numero' => $numero,
         'tipo' => $input['tipo'],
         'estado' => $input['estado'] ?? 'Activo',
         'activo' => 1
     ];
     
     // Campos opcionales
-    if (!empty($input['id_calle'])) $data['id_calle'] = $input['id_calle'];
+    if (!empty($input['id_calle'])) $data['id_calle'] = (int)$input['id_calle'];
+
+    // Verificar unicidad por calle
+    if (!empty($data['id_calle'])) {
+        $exists = $this->viviendaModel->existsNumeroEnCalle($data['numero'], (int)$data['id_calle']);
+        if ($exists) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Ya existe una vivienda con ese número en la vereda seleccionada.']);
+            exit;
+        }
+    }
     
     $id = $this->viviendaModel->createVivienda($data);
     
@@ -1658,11 +1929,31 @@ public function viviendasUpdate($id) {
     }
     
     $data = [];
-    if (isset($input['numero'])) $data['numero'] = $input['numero'];
+    if (isset($input['numero'])) {
+        $numero = trim((string)$input['numero']);
+        if (!preg_match('/^\d{1,3}$/', $numero)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El número debe ser numérico y tener máximo 3 dígitos.']);
+            exit;
+        }
+        $data['numero'] = $numero;
+    }
     if (isset($input['tipo'])) $data['tipo'] = $input['tipo'];
     if (isset($input['estado'])) $data['estado'] = $input['estado'];
     if (isset($input['id_calle'])) $data['id_calle'] = $input['id_calle'];
-    
+
+    // Si se actualiza número o calle, verificar unicidad
+    $checkNumero = $data['numero'] ?? null;
+    $checkCalle = isset($data['id_calle']) ? (int)$data['id_calle'] : (int)$this->viviendaModel->getById($id)['id_calle'];
+    if ($checkNumero !== null) {
+        $exists = $this->viviendaModel->existsNumeroEnCalle($checkNumero, $checkCalle, (int)$id);
+        if ($exists) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Ya existe una vivienda con ese número en la vereda seleccionada.']);
+            exit;
+        }
+    }
+
     $result = $this->viviendaModel->updateVivienda($id, $data);
     
     if ($result) {
@@ -1724,6 +2015,60 @@ public function cargaFamiliar() {
     ];
     
     $this->renderAdminView('carga_familiar/index', $data);
+}
+
+/**
+ * Página para el administrador: ver todas las cargas familiares de la comunidad
+ */
+public function cargasFamiliaresAll() {
+    // Consulta para obtener familias con info de casa y vereda
+    $sql = "SELECT cf.id_carga, cf.id_jefe, h.id_persona, p.cedula, p.nombres, p.apellidos,
+                   v.id_vivienda, v.numero AS numero_casa, c.id_calle, c.nombre AS nombre_vereda
+            FROM carga_familiar cf
+            INNER JOIN habitante h ON cf.id_jefe = h.id_habitante
+            LEFT JOIN persona p ON h.id_persona = p.id_persona
+            LEFT JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante AND hv.es_jefe_familia = 1
+            LEFT JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
+            LEFT JOIN calle c ON v.id_calle = c.id_calle
+            WHERE cf.activo = 1
+            ORDER BY c.nombre ASC, v.numero ASC";
+
+    $db = $this->cargaFamiliarModel->getConnection();
+    $stmt = $db->prepare($sql);
+    $familias = [];
+    if ($stmt) {
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($row = $res->fetch_assoc()) {
+            $familias[] = $row;
+        }
+        $stmt->close();
+    }
+
+    $data = [
+        'page_title' => 'Todas las Cargas Familiares',
+        'familias' => $familias
+    ];
+
+    $this->renderAdminView('carga_familiar/all', $data);
+}
+
+/**
+ * Devuelve miembros de familia por id de jefe (para AJAX desde la vista de admin)
+ * Parámetro: jefe
+ */
+public function familiasPorViviendaByJefe() {
+    header('Content-Type: application/json');
+    $jefe = isset($_GET['jefe']) ? (int)$_GET['jefe'] : 0;
+    if ($jefe <= 0) {
+        http_response_code(400);
+        echo json_encode([]);
+        exit;
+    }
+
+    $miembros = $this->cargaFamiliarModel->getCargaFamiliarConDatos($jefe);
+    echo json_encode($miembros ?: []);
+    exit;
 }
 
 }

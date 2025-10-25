@@ -68,5 +68,29 @@ error_log("[v0] requires_setup: " . ($_SESSION['requires_setup'] ?? 'no definido
             <h3 class="text-lg font-semibold text-gray-800">Notificaciones</h3>
             <p class="text-sm text-gray-600 text-center mt-2">Consulta tus alertas y mensajes importantes.</p>
         </a>
+
+        <!-- Carga Familiar (Jefe) -->
+        <a href="./index.php?route=user/carga_familiar" 
+           class="bg-white shadow-md rounded-lg p-6 flex flex-col items-center hover:shadow-lg transition">
+            <svg class="w-12 h-12 text-green-600 mb-4" xmlns="http://www.w3.org/2000/svg" 
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M5 13l4 4L19 7" />
+            </svg>
+            <h3 class="text-lg font-semibold text-gray-800">Mi Carga Familiar</h3>
+            <p class="text-sm text-gray-600 text-center mt-2">Ver y gestionar los miembros de tu hogar.</p>
+        </a>
+
+        <!-- Detalles de Vivienda -->
+        <a href="./index.php?route=user/vivienda_details" 
+           class="bg-white shadow-md rounded-lg p-6 flex flex-col items-center hover:shadow-lg transition">
+            <svg class="w-12 h-12 text-teal-600 mb-4" xmlns="http://www.w3.org/2000/svg" 
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M3 10l9-7 9 7v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8z" />
+            </svg>
+            <h3 class="text-lg font-semibold text-gray-800">Detalles de Vivienda</h3>
+            <p class="text-sm text-gray-600 text-center mt-2">Agregar o editar información de tu vivienda.</p>
+        </a>
     </div>
 </div>

@@ -92,6 +92,14 @@
                                            class="btn btn-sm btn-info" title="Editar">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        <a href="./index.php?route=admin/users/create-user-role&person_id=<?= $usuario['id_persona'] ?? '' ?>" 
+                                           class="btn btn-sm btn-secondary" title="Editar roles/veredas">
+                                            <i class="fas fa-user-cog"></i>
+                                        </a>
+                                        <button onclick="if(confirm('¿Revocar rol de esta persona?')){ window.location='./index.php?route=admin/users/revoke-role&person_id=<?= $usuario['id_persona'] ?? '' ?>'; }"
+                                                class="btn btn-sm btn-warning" title="Revocar rol">
+                                            <i class="fas fa-user-times"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

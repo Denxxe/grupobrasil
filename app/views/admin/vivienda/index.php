@@ -21,7 +21,7 @@
                         <?php if (isset($calles) && is_array($calles)): ?>
                             <?php foreach ($calles as $calle): ?>
                                 <option value="<?php echo htmlspecialchars($calle['id_calle']); ?>">
-                                    <?php echo htmlspecialchars($calle['nombre']); ?>
+                                    <?php echo htmlspecialchars($calle['nombre'] ?? $calle['nombre_calle'] ?? ''); ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -29,14 +29,13 @@
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Número</label>
-                    <input type="text" id="numero" name="numero" class="form-control" required>
+                    <input type="text" id="numero" name="numero" class="form-control" required maxlength="3" inputmode="numeric" pattern="\d{1,3}" title="Sólo números, máximo 3 dígitos">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Tipo</label>
                     <select id="tipo" name="tipo" class="form-select" required>
                         <option value="">-- Seleccionar --</option>
                         <option value="Casa">Casa</option>
-                        <option value="Apartamento">Apartamento</option>
                         <option value="Local">Local</option>
                     </select>
                 </div>
@@ -58,23 +57,45 @@
     </div>
 
     <!-- Tabla de viviendas -->
-    <div class="table-responsive">
-        <table class="table table-striped" id="viviendasTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Calle</th>
-                    <th>Número</th>
-                    <th>Tipo</th>
-                    <th>Estado</th>
-                    <th>Activo</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="viviendasBody">
-                <!-- llenado por JS -->
-            </tbody>
-        </table>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card p-3 mb-4">
+                <h5>Veredas / Calles</h5>
+                <ul class="list-group" id="callesList">
+                    <?php if (!empty($calles) && is_array($calles)): ?>
+                        <?php foreach ($calles as $calle): ?>
+                            <li class="list-group-item calle-item" data-id="<?= htmlspecialchars($calle['id_calle']) ?>">
+                                <?= htmlspecialchars($calle['nombre'] ?? $calle['nombre_calle'] ?? '') ?>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <li class="list-group-item">No hay veredas registradas.</li>
+                    <?php endif; ?>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card p-3 mb-4">
+                <h5 id="selectedCalleTitle">Seleccione una vereda para ver sus viviendas</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped" id="viviendasTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Número</th>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                                <th># Familias</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="viviendasBody">
+                            <!-- llenado por JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -111,9 +132,14 @@ document.addEventListener('DOMContentLoaded', function() {
     btnCancel.addEventListener('click', function(){ hideForm(); });
 
     async function loadViviendas() {
-        body.innerHTML = '<tr><td colspan="7">Cargando...</td></tr>';
+        body.innerHTML = '<tr><td colspan="6">Selecciona una vereda...</td></tr>';
+    }
+
+    async function loadViviendasByCalle(idCalle, nombreCalle) {
+        body.innerHTML = '<tr><td colspan="6">Cargando viviendas...</td></tr>';
+        document.getElementById('selectedCalleTitle').textContent = 'Viviendas en: ' + nombreCalle;
         try {
-            const res = await fetch(baseUrl + '&action=index', { credentials: 'same-origin' });
+            const res = await fetch(baseUrl + '&action=byCalle&id=' + encodeURIComponent(idCalle), { credentials: 'same-origin' });
             
             // Debug: verificar respuesta
             console.log('Response status:', res.status);
@@ -134,8 +160,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Data is not an array:', data);
                 return;
             }
-            if (data.length === 0) {
-                body.innerHTML = '<tr><td colspan="7">No hay viviendas registradas.</td></tr>';
+            if (!Array.isArray(data) || data.length === 0) {
+                body.innerHTML = '<tr><td colspan="6">No hay viviendas registradas en esta vereda.</td></tr>';
                 return;
             }
             body.innerHTML = '';
@@ -143,38 +169,69 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${v.id_vivienda ?? ''}</td>
-                    <td>${escapeHtml(v.nombre_calle ?? 'Sin calle')}</td>
                     <td>${escapeHtml(v.numero ?? '')}</td>
                     <td>${escapeHtml(v.tipo ?? '')}</td>
                     <td>${escapeHtml(v.estado ?? '')}</td>
-                    <td>${(v.activo == 1 || v.activo === '1' || v.activo === true) ? 'Sí' : 'No'}</td>
+                    <td>${escapeHtml(v.total_familias ?? 0)}</td>
                     <td>
-                        <button class="btn btn-sm btn-info btn-edit" data-id="${v.id_vivienda}">Editar</button>
+                        <button class="btn btn-sm btn-secondary btn-edit" data-id="${v.id_vivienda}">Editar</button>
+                        <button class="btn btn-sm btn-primary btn-details" data-id="${v.id_vivienda}">Ver detalles</button>
                         <button class="btn btn-sm btn-danger btn-delete" data-id="${v.id_vivienda}">Eliminar</button>
                     </td>`;
                 body.appendChild(tr);
             });
 
-            // attach events
+            // attach events for details, edit and delete
             document.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', async (e) => {
                 const id = e.currentTarget.dataset.id;
-                const res = await fetch(baseUrl + '&action=show&id=' + encodeURIComponent(id), { credentials: 'same-origin' });
-                const data = await res.json();
-                showForm(data);
+                // cargar datos de la vivienda y abrir el formulario en modo edición
+                try {
+                    const r = await fetch(baseUrl + '&action=show&id=' + encodeURIComponent(id), { credentials: 'same-origin' });
+                    if (!r.ok) throw new Error('Error cargando vivienda');
+                    const data = await r.json();
+                    showForm({
+                        id_vivienda: data.id_vivienda || data.id || id,
+                        id_calle: data.id_calle || data.idCalle || '',
+                        numero: data.numero || '',
+                        tipo: data.tipo || '',
+                        estado: data.estado || 'Activo'
+                    });
+                } catch (err) {
+                    console.error(err);
+                    showToast('Error al cargar datos de la vivienda', 'error');
+                }
             }));
+
+            document.querySelectorAll('.btn-details').forEach(b => b.addEventListener('click', async (e) => {
+                const id = e.currentTarget.dataset.id;
+                // Mostrar modal con detalles de familias
+                try {
+                    const r = await fetch(baseUrl + '&action=familiasPorVivienda&id=' + encodeURIComponent(id), { credentials: 'same-origin' });
+                    const payload = await r.json();
+                    showViviendaFamiliesModal(payload, id);
+                } catch (err) {
+                    console.error(err);
+                    showToast('Error al cargar detalles', 'error');
+                }
+            }));
+
             document.querySelectorAll('.btn-delete').forEach(b => b.addEventListener('click', async (e) => {
                 const id = e.currentTarget.dataset.id;
-                if (!confirm('¿Eliminar vivienda #' + id + '?')) return;
-                const res = await fetch(baseUrl + '&action=destroy&id=' + encodeURIComponent(id), {
-                    method: 'GET',
-                    credentials: 'same-origin'
-                });
-                const r = await res.json();
-                if (r.message) {
-                    showToast('Eliminado exitosamente', 'success');
-                    loadViviendas();
-                } else {
-                    showToast(r.error || 'Error al eliminar', 'error');
+                if (!confirm('¿Seguro que deseas eliminar esta vivienda? Esto solo eliminará la vivienda; las cargas familiares asociadas permanecerán esperando reasignación.')) return;
+                try {
+                    const r = await fetch(baseUrl + '&action=destroy&id=' + encodeURIComponent(id), { method: 'POST', credentials: 'same-origin' });
+                    const res = await r.json();
+                    if (r.ok) {
+                        showToast(res.message || 'Vivienda eliminada', 'success');
+                        // refrescar la lista de la vereda seleccionada
+                        if (window.currentCalleId) loadViviendasByCalle(window.currentCalleId, window.currentCalleName);
+                        else loadViviendas();
+                    } else {
+                        showToast(res.error || 'Error al eliminar', 'error');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast('Error en la petición', 'error');
                 }
             }));
 
@@ -199,6 +256,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
+            // Validación cliente: número solo dígitos y máximo 3
+            const numeroVal = document.getElementById('numero').value.trim();
+            if (!/^\d{1,3}$/.test(numeroVal)) { showToast('El número debe ser numérico y tener máximo 3 dígitos', 'error'); return; }
             const url = id ? (baseUrl + '&action=update&id=' + encodeURIComponent(id)) : (baseUrl + '&action=store');
             const res = await fetch(url, {
                 method: 'POST',
@@ -210,7 +270,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (res.ok && (r.message || r.id_vivienda)) {
                 showToast(r.message || 'Guardado exitosamente', 'success');
                 hideForm();
-                loadViviendas();
+                if (window.currentCalleId) loadViviendasByCalle(window.currentCalleId, window.currentCalleName);
+                else loadViviendas();
             } else {
                 showToast(r.error || 'Error al guardar', 'error');
             }
@@ -246,7 +307,66 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // inicializar
-    loadViviendas();
+    // Inicializar: attach click en lista de calles
+    document.querySelectorAll('.calle-item').forEach(li => li.addEventListener('click', function(){
+        const id = this.dataset.id;
+        const nombre = this.textContent.trim();
+        // Guardar vereda seleccionada para refrescos posteriores
+        window.currentCalleId = id;
+        window.currentCalleName = nombre;
+        loadViviendasByCalle(id, nombre);
+    }));
+
+    // modal HTML para detalles
+    function showViviendaFamiliesModal(payload, viviendaId) {
+        let html = '';
+        if (!Array.isArray(payload) || payload.length === 0) {
+            html = '<p>No se encontraron familias en esta vivienda.</p>';
+        } else {
+            payload.forEach(f => {
+                html += `<div class="card mb-2"><div class="card-body"><h6>Jefe ID: ${f.id_jefe}</h6>`;
+                if (Array.isArray(f.miembros) && f.miembros.length>0) {
+                    html += '<ul>';
+                    f.miembros.forEach(m => {
+                        html += `<li>${escapeHtml(m.nombres || '')} ${escapeHtml(m.apellidos || '')} - ${escapeHtml(m.parentesco || '')}</li>`;
+                    });
+                    html += '</ul>';
+                }
+                html += '</div></div>';
+            });
+        }
+        // Reutiliza un modal simple (crear si no existe)
+        let modal = document.getElementById('viviendaFamiliesModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'viviendaFamiliesModal';
+            modal.className = 'modal fade';
+            modal.tabIndex = -1;
+            modal.innerHTML = `
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header"><h5 class="modal-title">Detalles de la vivienda ${viviendaId}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                        <div class="modal-body" id="viviendaFamiliesContent"></div>
+                        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+        }
+        document.getElementById('viviendaFamiliesContent').innerHTML = html;
+        const bsModal = new bootstrap.Modal(document.getElementById('viviendaFamiliesModal'));
+        bsModal.show();
+    }
+
+    // No se cargan todas las viviendas por defecto; el admin selecciona una vereda
 });
+
+// Forzar solo dígitos en el campo número mientras el usuario escribe
+const numeroInput = document.getElementById('numero');
+if (numeroInput) {
+    numeroInput.addEventListener('input', function (e) {
+        // eliminar todo lo que no sea dígito y limitar a 3
+        this.value = this.value.replace(/\D/g, '').slice(0,3);
+    });
+}
 </script>

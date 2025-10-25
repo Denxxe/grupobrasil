@@ -37,6 +37,8 @@ class LoginController {
             $user = $this->usuarioModel->buscarPorCI($ci_usuario);
 
             if ($user && password_verify($password, $user['password'])) {
+                // Prevención de fijación de sesión: regenerar id tras autenticación
+                session_regenerate_id(true);
                 $_SESSION['id_usuario'] = $user['id_usuario'];
                 $_SESSION['ci_usuario'] = $user['ci_usuario'];
                 $_SESSION['nombre_completo'] = $user['nombre'] . ' ' . $user['apellido'];

@@ -6,6 +6,11 @@ require_once __DIR__ . '/../models/Usuario.php';
 require_once __DIR__ . '/../models/Persona.php'; // NUEVO: Incluir el modelo Persona
 require_once __DIR__ . '/../utils/Validator.php';
 require_once __DIR__ . '/../models/Notificacion.php';
+require_once __DIR__ . '/../models/CargaFamiliar.php';
+require_once __DIR__ . '/../models/Habitante.php';
+require_once __DIR__ . '/../models/HabitanteVivienda.php';
+require_once __DIR__ . '/../models/Vivienda.php';
+require_once __DIR__ . '/../models/ViviendaDetalle.php';
 
 // Hereda de AppController para usar loadView y redirect
 class UserController extends AppController {
@@ -13,6 +18,11 @@ class UserController extends AppController {
     private $personaModel; // NUEVO: Propiedad para el modelo Persona
     private $noticiaModel;
     private $notificacionModel;
+    private $cargaFamiliarModel;
+    private $habitanteModel;
+    private $habitanteViviendaModel;
+    private $viviendaModel;
+    private $viviendaDetalleModel;
 
     /**
      * @param Usuario $usuarioModel 
@@ -27,11 +37,136 @@ class UserController extends AppController {
         $this->noticiaModel = $noticiaModel;
         $this->notificacionModel = $notificacionModel;
         $this->personaModel = $personaModel; // NUEVO: Asignar el modelo Persona
+
+    // Modelos adicionales para funcionalidades de Jefe de Familia
+    $this->cargaFamiliarModel = new CargaFamiliar();
+    $this->habitanteModel = new Habitante();
+    $this->habitanteViviendaModel = new HabitanteVivienda();
+    $this->viviendaModel = new Vivienda();
+    $this->viviendaDetalleModel = new ViviendaDetalle();
         
         // Restricción de acceso general (se asume que AppController maneja el setupProfile)
         if (!isset($_SESSION['id_rol']) || ($_SESSION['id_rol'] != 3 && $_SESSION['id_rol'] != 2)) {
              $this->redirect('login', ['error' => 'acceso_denegado']);
         }
+    }
+
+    private function getCurrentHabitanteId() {
+        $idUsuario = $_SESSION['id_usuario'] ?? 0;
+        $usuario = $this->usuarioModel->find($idUsuario);
+        if (!$usuario) return null;
+        $habitante = $this->habitanteModel->findByPersonaId($usuario['id_persona']);
+        return $habitante ? $habitante['id_habitante'] : null;
+    }
+
+    // Mostrar la carga familiar del usuario (si es jefe)
+    public function cargaFamiliar() {
+        $idUsuario = $_SESSION['id_usuario'] ?? 0;
+        $carga = $this->cargaFamiliarModel->getCargaFamiliarPorUsuario($idUsuario);
+        $data = [
+            'page_title' => 'Mi Carga Familiar',
+            'carga_familiar' => $carga ?: []
+        ];
+        return $this->loadView('user/carga_familiar/index', $data);
+    }
+
+    // Agregar miembro a la carga (POST)
+    public function addMember() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { $this->redirect('user/carga-familiar'); }
+        $idUsuario = $_SESSION['id_usuario'] ?? 0;
+        $idHabitanteJefe = $this->getCurrentHabitanteId();
+        if (!$idHabitanteJefe) { $this->setErrorMessage('No se pudo determinar tu registro como habitante.'); $this->redirect('user/carga-familiar'); }
+
+        // Posibles flujos: agregar por id_habitante existente o crear persona+habitante
+        $existingHabitanteId = (int)($_POST['existing_habitante_id'] ?? 0);
+        $parentesco = trim($_POST['parentesco'] ?? null);
+
+        if ($existingHabitanteId > 0) {
+            $newId = $this->cargaFamiliarModel->addMemberToJefe($idHabitanteJefe, $existingHabitanteId, $parentesco);
+            if ($newId) { $this->setSuccessMessage('Miembro agregado.'); } else { $this->setErrorMessage('Error al agregar miembro.'); }
+            $this->redirect('user/carga-familiar');
+        }
+
+        // Crear persona y habitante
+        $cedula = trim($_POST['cedula'] ?? '');
+        $nombres = trim($_POST['nombres'] ?? '');
+        $apellidos = trim($_POST['apellidos'] ?? '');
+        if (empty($nombres) || empty($apellidos)) { $this->setErrorMessage('Nombres y apellidos son obligatorios.'); $this->redirect('user/carga-familiar'); }
+
+        $personaData = ['cedula' => $cedula ?: null, 'nombres' => $nombres, 'apellidos' => $apellidos, 'activo' => 1];
+        $idPersona = $this->personaModel->create($personaData);
+        if (!$idPersona) { $this->setErrorMessage('Error al crear persona.'); $this->redirect('user/carga-familiar'); }
+
+        $habitanteData = ['id_persona' => $idPersona, 'fecha_ingreso' => date('Y-m-d'), 'condicion' => 'Miembro', 'activo' => 1];
+        $idHabitante = $this->habitanteModel->create($habitanteData);
+        if (!$idHabitante) { $this->setErrorMessage('Error al crear habitante.'); $this->redirect('user/carga-familiar'); }
+
+        $newId = $this->cargaFamiliarModel->addMemberToJefe($idHabitanteJefe, $idHabitante, $parentesco);
+        if ($newId) $this->setSuccessMessage('Miembro agregado.'); else $this->setErrorMessage('Error al agregar miembro.');
+        $this->redirect('user/carga-familiar');
+    }
+
+    // Eliminar miembro (POST)
+    public function deleteMember() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { $this->redirect('user/carga-familiar'); }
+        $id_comun = (int)($_POST['id_carga'] ?? 0);
+        $idUsuario = $_SESSION['id_usuario'] ?? 0;
+        $idHabitanteJefe = $this->getCurrentHabitanteId();
+        if (!$idHabitanteJefe) { $this->setErrorMessage('No autorizado'); $this->redirect('user/carga-familiar'); }
+
+        // Verificar que el registro pertenezca al jefe (simple comprobación buscando registro)
+        $reg = $this->cargaFamiliarModel->getById($id_comun);
+        if (!$reg || (int)$reg['id_jefe'] !== (int)$idHabitanteJefe) { $this->setErrorMessage('No tienes permiso para eliminar este miembro.'); $this->redirect('user/carga-familiar'); }
+
+        if ($this->cargaFamiliarModel->delete($id_comun)) $this->setSuccessMessage('Miembro eliminado.'); else $this->setErrorMessage('Error al eliminar miembro.');
+        $this->redirect('user/carga-familiar');
+    }
+
+    // Mostrar/editar detalles de la vivienda del usuario
+    public function viviendaDetails() {
+        $idUsuario = $_SESSION['id_usuario'] ?? 0;
+        $usuario = $this->usuarioModel->find($idUsuario);
+        if (!$usuario) { $this->setErrorMessage('Usuario no encontrado'); $this->redirect('user/dashboard'); }
+
+        // Obtener habitante y vivienda
+        $habitante = $this->habitanteModel->findByPersonaId($usuario['id_persona']);
+        $detalle = false;
+        $vivienda = false;
+        if ($habitante) {
+            // buscar vivienda asignada al habitante
+            $sql = "SELECT hv.id_vivienda FROM habitante_vivienda hv WHERE hv.id_habitante = ? AND hv.es_jefe_familia = 1 LIMIT 1";
+            $stmt = $this->habitanteViviendaModel->getConnection()->prepare($sql);
+            if ($stmt) {
+                $stmt->bind_param('i', $habitante['id_habitante']);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($res && $row = $res->fetch_assoc()) {
+                    $idVivienda = (int)$row['id_vivienda'];
+                    $vivienda = $this->viviendaModel->getById($idVivienda);
+                    $detalle = $this->viviendaDetalleModel->getByViviendaId($idVivienda);
+                }
+                $stmt->close();
+            }
+        }
+
+        $data = ['page_title' => 'Detalles de mi Vivienda', 'vivienda' => $vivienda, 'detalle' => $detalle];
+        return $this->loadView('user/vivienda/details', $data);
+    }
+
+    public function updateViviendaDetails() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { $this->redirect('user/vivienda'); }
+        $idVivienda = (int)($_POST['id_vivienda'] ?? 0);
+        if ($idVivienda <= 0) { $this->setErrorMessage('Vivienda inválida'); $this->redirect('user/vivienda'); }
+
+        $data = [
+            'habitaciones' => (int)($_POST['habitaciones'] ?? 0),
+            'banos' => (int)($_POST['banos'] ?? 0),
+            'servicios' => trim($_POST['servicios'] ?? '')
+        ];
+
+        $ok = $this->viviendaDetalleModel->createOrUpdateByVivienda($idVivienda, $data);
+        if ($ok) $this->setSuccessMessage('Detalles actualizados.'); else $this->setErrorMessage('Error al guardar detalles.');
+        $this->redirect('user/vivienda');
     }
 
     public function dashboard() {

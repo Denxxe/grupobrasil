@@ -186,6 +186,22 @@ class Comentario extends ModelBase {
         return $this->update($id_comentario, $data); // Usamos el método update de ModelBase
     }
 
+    /**
+     * Actualiza el contenido de un comentario existente.
+     * @param int $id_comentario
+     * @param string $nuevoContenido
+     * @return bool
+     */
+    public function updateComentario(int $id_comentario, string $nuevoContenido): bool {
+        if (empty($nuevoContenido)) {
+            error_log('Comentario::updateComentario - contenido vacío');
+            return false;
+        }
+
+        $data = ['contenido' => $nuevoContenido];
+        return $this->update($id_comentario, $data);
+    }
+
     public function deleteComentario(int $id_comentario) {
         // Usamos el método delete de ModelBase
         return $this->delete($id_comentario);

@@ -6,6 +6,7 @@ require_once __DIR__ . '/../models/Noticia.php';
 require_once __DIR__ . '/../models/Comentario.php';
 require_once __DIR__ . '/../models/Like.php';
 require_once __DIR__ . '/../models/Usuario.php';
+require_once __DIR__ . '/../helpers/CsrfHelper.php';
 
 class NoticiaController extends AppController {
     private $noticiaModel;
@@ -73,12 +74,21 @@ class NoticiaController extends AppController {
             $this->redirect('noticias');
         }
 
+        // Verificar token CSRF
+        $csrf = $_POST['csrf_token'] ?? null;
+        if (!\CsrfHelper::validateToken($csrf)) {
+            $this->setErrorMessage('Token CSRF inválido. Por favor actualiza la página e intenta de nuevo.');
+            $this->redirect('noticias');
+        }
+
         $id_noticia = (int)($_POST['id_noticia'] ?? 0);
         $contenido  = trim($_POST['contenido'] ?? '');
         $usuario_id = $_SESSION['id_usuario'] ?? null;
 
-        if ($id_noticia <= 0 || !$usuario_id || empty($contenido)) {
-            $this->setErrorMessage("Datos inválidos para el comentario.");
+        // Validaciones de contenido: mínimo 3 caracteres, máximo 1000
+        $len = mb_strlen($contenido);
+        if ($id_noticia <= 0 || !$usuario_id || $len < 3 || $len > 1000) {
+            $this->setErrorMessage("El comentario debe tener entre 3 y 1000 caracteres.");
             $this->redirect('noticias/show/' . $id_noticia);
         }
 
@@ -101,6 +111,13 @@ class NoticiaController extends AppController {
 
     public function toggleLike() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('noticias');
+        }
+
+        // Verificar token CSRF
+        $csrf = $_POST['csrf_token'] ?? null;
+        if (!\CsrfHelper::validateToken($csrf)) {
+            $this->setErrorMessage('Token CSRF inválido. Por favor actualiza la página e intenta de nuevo.');
             $this->redirect('noticias');
         }
 
@@ -130,6 +147,139 @@ class NoticiaController extends AppController {
             }
         }
 
+        $this->redirect('noticias/show/' . $id_noticia);
+    }
+
+    /**
+     * Editar un comentario (solo autor) - POST
+     * Ruta esperada: ?route=noticias/edit-comment (POST)
+     */
+    public function editComment() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('noticias');
+        }
+
+        $csrf = $_POST['csrf_token'] ?? null;
+        if (!\CsrfHelper::validateToken($csrf)) {
+            $this->setErrorMessage('Token CSRF inválido.');
+            $this->redirect('noticias');
+        }
+
+        $id_comentario = (int)($_POST['id_comentario'] ?? 0);
+        $contenido = trim($_POST['contenido'] ?? '');
+        $usuario_id = $_SESSION['id_usuario'] ?? null;
+        $id_noticia = (int)($_POST['id_noticia'] ?? 0);
+
+        if ($id_comentario <= 0 || !$usuario_id || $id_noticia <= 0) {
+            $this->setErrorMessage('Datos inválidos para editar el comentario.');
+            $this->redirect('noticias/show/' . $id_noticia);
+        }
+
+        $comentario = $this->comentarioModel->obtenerComentariosPorNoticia($id_noticia, true);
+        // Obtener el comentario especifico para verificar autor
+        $found = null;
+        foreach ($comentario as $c) { if ((int)$c['id_comentario'] === $id_comentario) { $found = $c; break; } }
+
+        if (!$found) {
+            $this->setErrorMessage('Comentario no encontrado o ya no está activo.');
+            $this->redirect('noticias/show/' . $id_noticia);
+        }
+
+        if ((int)$found['id_usuario'] !== (int)$usuario_id) {
+            $this->setErrorMessage('No tienes permiso para editar este comentario.');
+            $this->redirect('noticias/show/' . $id_noticia);
+        }
+
+        // Validación de longitud: 3..1000
+        $len = mb_strlen($contenido);
+        if ($len < 3 || $len > 1000) {
+            // Si es AJAX responder JSON con error
+            $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'El comentario debe tener entre 3 y 1000 caracteres.']);
+                exit;
+            }
+            $this->setErrorMessage('El comentario debe tener entre 3 y 1000 caracteres.');
+            $this->redirect('noticias/show/' . $id_noticia);
+        }
+
+        $ok = $this->comentarioModel->updateComentario($id_comentario, $contenido);
+
+        // Detectar petición AJAX
+        $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            if ($ok) {
+                echo json_encode(['success' => true, 'message' => 'Comentario actualizado.', 'id_comentario' => $id_comentario, 'contenido' => $contenido]);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Error al actualizar el comentario.']);
+            }
+            exit;
+        }
+
+        if ($ok) $this->setSuccessMessage('Comentario actualizado.'); else $this->setErrorMessage('Error al actualizar el comentario.');
+        $this->redirect('noticias/show/' . $id_noticia);
+    }
+
+    /**
+     * Eliminar (soft-delete) un comentario (solo autor) - POST
+     * Ruta: ?route=noticias/delete-comment (POST)
+     */
+    public function deleteComment() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('noticias');
+        }
+        $csrf = $_POST['csrf_token'] ?? null;
+        if (!\CsrfHelper::validateToken($csrf)) {
+            $this->setErrorMessage('Token CSRF inválido.');
+            $this->redirect('noticias');
+        }
+
+        $id_comentario = (int)($_POST['id_comentario'] ?? 0);
+        $usuario_id = $_SESSION['id_usuario'] ?? null;
+        $id_noticia = (int)($_POST['id_noticia'] ?? 0);
+
+        if ($id_comentario <= 0 || !$usuario_id || $id_noticia <= 0) {
+            $this->setErrorMessage('Datos inválidos para eliminar el comentario.');
+            $this->redirect('noticias/show/' . $id_noticia);
+        }
+
+        // Verificar autor
+        $comentarios = $this->comentarioModel->obtenerComentariosPorNoticia($id_noticia, true);
+        $found = null;
+        foreach ($comentarios as $c) { if ((int)$c['id_comentario'] === $id_comentario) { $found = $c; break; } }
+
+        if (!$found) {
+            $this->setErrorMessage('Comentario no encontrado o ya inactivo.');
+            $this->redirect('noticias/show/' . $id_noticia);
+        }
+
+        if ((int)$found['id_usuario'] !== (int)$usuario_id) {
+            $this->setErrorMessage('No tienes permiso para eliminar este comentario.');
+            $this->redirect('noticias/show/' . $id_noticia);
+        }
+
+        $ok = $this->comentarioModel->softDeleteComentario($id_comentario);
+
+        // Detectar petición AJAX
+        $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            if ($ok) {
+                echo json_encode(['success' => true, 'message' => 'Comentario eliminado.', 'id_comentario' => $id_comentario]);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Error al eliminar el comentario.']);
+            }
+            exit;
+        }
+
+        if ($ok) $this->setSuccessMessage('Comentario eliminado.'); else $this->setErrorMessage('Error al eliminar el comentario.');
         $this->redirect('noticias/show/' . $id_noticia);
     }
 
