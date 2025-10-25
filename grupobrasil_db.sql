@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 22-10-2025 a las 20:32:18
+-- Tiempo de generación: 25-10-2025 a las 22:00:14
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -157,7 +157,8 @@ CREATE TABLE `habitante` (
 --
 
 INSERT INTO `habitante` (`id_habitante`, `id_persona`, `fecha_ingreso`, `condicion`, `activo`, `fecha_registro`, `fecha_actualizacion`) VALUES
-(1, 7, '2025-10-22', 'Residente', 1, '2025-10-21 20:34:19', '2025-10-21 20:34:19');
+(3, 8, '2025-10-25', 'Residente', 1, '2025-10-24 21:05:42', '2025-10-24 21:05:42'),
+(4, 7, '2025-10-25', 'Residente', 1, '2025-10-24 21:35:33', '2025-10-24 21:35:33');
 
 -- --------------------------------------------------------
 
@@ -211,7 +212,9 @@ CREATE TABLE `lider_calle` (
 --
 
 INSERT INTO `lider_calle` (`id_habitante`, `id_calle`, `fecha_designacion`, `activo`, `fecha_registro`, `fecha_actualizacion`) VALUES
-(1, 1, '2025-10-22', 1, '2025-10-22 14:26:56', '2025-10-22 14:26:56');
+(3, 1, '2025-10-24', 1, '2025-10-24 21:05:42', '2025-10-24 21:05:42'),
+(3, 2, '2025-10-24', 1, '2025-10-24 21:05:42', '2025-10-24 21:05:42'),
+(4, 1, '2025-10-24', 1, '2025-10-24 21:35:33', '2025-10-24 21:35:33');
 
 -- --------------------------------------------------------
 
@@ -376,7 +379,8 @@ CREATE TABLE `persona` (
 INSERT INTO `persona` (`id_persona`, `cedula`, `nombres`, `apellidos`, `fecha_nacimiento`, `sexo`, `telefono`, `direccion`, `id_calle`, `numero_casa`, `correo`, `estado`, `activo`, `fecha_registro`, `fecha_actualizacion`) VALUES
 (3, '12345678', 'Lider', 'Comunidad', '1980-01-01', 'F', '0987654321', 'Oficina Central', 1, '2', 'admin@grupobrasil.com', NULL, 1, '2025-10-20 23:29:39', '2025-10-21 07:52:21'),
 (6, '31044092', 'Cristian Jesus', 'Correa Pinto', '0000-00-00', '', '12345678', 'Urbanización Brasil', 3, '6', 'cristiancorreaxd@gmail.com', 'Residente', 1, '2025-10-21 04:48:38', '2025-10-21 07:52:54'),
-(7, '87654321', 'Luis', 'Arredondo', NULL, NULL, '04147852753', '', 1, '', '', 'Residente', 1, '2025-10-21 20:33:17', '2025-10-21 20:33:17');
+(7, '87654321', 'Luis', 'Arredondo', NULL, NULL, '04147852753', '', 1, '', '', 'Residente', 1, '2025-10-21 20:33:17', '2025-10-21 20:33:17'),
+(8, '30000000', 'Jesus', 'Alberto', NULL, NULL, '04126785678', '', 3, '', '', 'Residente', 1, '2025-10-24 21:05:09', '2025-10-24 21:05:09');
 
 -- --------------------------------------------------------
 
@@ -432,7 +436,8 @@ INSERT INTO `tipos_beneficio` (`id_tipo_beneficio`, `nombre`, `descripcion`) VAL
 CREATE TABLE `usuario` (
   `id_usuario` int(10) UNSIGNED NOT NULL,
   `id_persona` int(10) UNSIGNED DEFAULT NULL,
-  `id_rol` int(10) UNSIGNED DEFAULT NULL,
+  `id_rol` int(10) UNSIGNED DEFAULT NULL COMMENT 'Rol principal del usuario',
+  `id_rol_secundario` int(10) UNSIGNED DEFAULT NULL COMMENT 'Rol secundario opcional (ej: Líder que también es Jefe de Familia)',
   `password` varchar(255) NOT NULL,
   `email` varchar(100) DEFAULT NULL,
   `fecha_registro` datetime DEFAULT current_timestamp(),
@@ -446,10 +451,11 @@ CREATE TABLE `usuario` (
 -- Volcado de datos para la tabla `usuario`
 --
 
-INSERT INTO `usuario` (`id_usuario`, `id_persona`, `id_rol`, `password`, `email`, `fecha_registro`, `estado`, `activo`, `fecha_actualizacion`, `username`) VALUES
-(2, 3, 1, '$2y$10$6OPuIKDZ12i0vwqYqf0pwevZS9hkghvPzKrfcAZrxtlxUgvv4TQcu', NULL, '2025-10-20 23:29:39', 'activo', 1, '2025-10-21 05:55:07', 'Admin'),
-(3, 6, 3, '$2y$10$kqO8xp6ijfL.yMNsd7n8vO2RyrxZndg8wUsi5n2y4JJUPQymWhHMW', 'cristiancorreaxd@gmail.com', '2025-10-21 07:19:28', NULL, 1, '2025-10-21 07:19:28', 'Usuario'),
-(4, 7, 2, '$2y$10$q7LKe3E9j6cfLYiFzn/VG.FhuJFYJjHkCeunqDMq/M57cxLZmBt1S', 'lfarredondot14@gmail.com', '2025-10-21 20:34:19', NULL, 1, '2025-10-22 14:26:56', 'Usuario');
+INSERT INTO `usuario` (`id_usuario`, `id_persona`, `id_rol`, `id_rol_secundario`, `password`, `email`, `fecha_registro`, `estado`, `activo`, `fecha_actualizacion`, `username`) VALUES
+(2, 3, 1, NULL, '$2y$10$6OPuIKDZ12i0vwqYqf0pwevZS9hkghvPzKrfcAZrxtlxUgvv4TQcu', NULL, '2025-10-20 23:29:39', 'activo', 1, '2025-10-21 05:55:07', 'Admin'),
+(3, 6, 3, NULL, '$2y$10$kqO8xp6ijfL.yMNsd7n8vO2RyrxZndg8wUsi5n2y4JJUPQymWhHMW', 'cristiancorreaxd@gmail.com', '2025-10-21 07:19:28', NULL, 1, '2025-10-21 07:19:28', 'Usuario'),
+(5, 7, 2, NULL, '$2y$10$JgfZpa2Gb7INj.zhWNDHDeb7bPMAITJKHjZGbEzt6Ll4rIhQ1CLYm', 'lfarredondot14@gmail.com', '2025-10-22 15:02:39', NULL, 1, '2025-10-22 15:02:39', 'Usuario'),
+(6, 8, 2, NULL, '$2y$10$smcuW8bFwB13iqGzuJrJeeRkolTt/xQu7261hVquxw6vr5IbK5WeG', 'jesuslapara@gmail.com', '2025-10-24 21:05:42', NULL, 1, '2025-10-24 21:05:42', 'Usuario');
 
 -- --------------------------------------------------------
 
@@ -466,6 +472,22 @@ CREATE TABLE `vivienda` (
   `activo` tinyint(1) DEFAULT 1,
   `fecha_registro` datetime DEFAULT current_timestamp(),
   `fecha_actualizacion` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `vivienda_detalle`
+--
+
+CREATE TABLE `vivienda_detalle` (
+  `id_vivienda_detalle` int(10) UNSIGNED NOT NULL,
+  `id_vivienda` int(10) UNSIGNED NOT NULL,
+  `habitaciones` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
+  `banos` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
+  `servicios` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -630,7 +652,8 @@ ALTER TABLE `tipos_beneficio`
 ALTER TABLE `usuario`
   ADD PRIMARY KEY (`id_usuario`),
   ADD UNIQUE KEY `id_persona` (`id_persona`),
-  ADD KEY `usuario_id_rol_fkey` (`id_rol`);
+  ADD KEY `usuario_id_rol_fkey` (`id_rol`),
+  ADD KEY `fk_usuario_rol_secundario` (`id_rol_secundario`);
 
 --
 -- Indices de la tabla `vivienda`
@@ -638,6 +661,13 @@ ALTER TABLE `usuario`
 ALTER TABLE `vivienda`
   ADD PRIMARY KEY (`id_vivienda`),
   ADD KEY `vivienda_id_calle_fkey` (`id_calle`);
+
+--
+-- Indices de la tabla `vivienda_detalle`
+--
+ALTER TABLE `vivienda_detalle`
+  ADD PRIMARY KEY (`id_vivienda_detalle`),
+  ADD UNIQUE KEY `uq_vivienda_detalle_id_vivienda` (`id_vivienda`);
 
 --
 -- AUTO_INCREMENT de las tablas volcadas
@@ -683,7 +713,7 @@ ALTER TABLE `evento`
 -- AUTO_INCREMENT de la tabla `habitante`
 --
 ALTER TABLE `habitante`
-  MODIFY `id_habitante` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_habitante` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `indicador_gestion`
@@ -737,7 +767,7 @@ ALTER TABLE `participacion_evento`
 -- AUTO_INCREMENT de la tabla `persona`
 --
 ALTER TABLE `persona`
-  MODIFY `id_persona` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id_persona` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `rol`
@@ -755,13 +785,19 @@ ALTER TABLE `tipos_beneficio`
 -- AUTO_INCREMENT de la tabla `usuario`
 --
 ALTER TABLE `usuario`
-  MODIFY `id_usuario` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_usuario` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `vivienda`
 --
 ALTER TABLE `vivienda`
-  MODIFY `id_vivienda` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id_vivienda` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT de la tabla `vivienda_detalle`
+--
+ALTER TABLE `vivienda_detalle`
+  MODIFY `id_vivienda_detalle` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- Restricciones para tablas volcadas
@@ -870,6 +906,7 @@ ALTER TABLE `persona`
 -- Filtros para la tabla `usuario`
 --
 ALTER TABLE `usuario`
+  ADD CONSTRAINT `fk_usuario_rol_secundario` FOREIGN KEY (`id_rol_secundario`) REFERENCES `rol` (`id_rol`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `usuario_id_persona_fkey` FOREIGN KEY (`id_persona`) REFERENCES `persona` (`id_persona`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `usuario_id_rol_fkey` FOREIGN KEY (`id_rol`) REFERENCES `rol` (`id_rol`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
@@ -878,33 +915,14 @@ ALTER TABLE `usuario`
 --
 ALTER TABLE `vivienda`
   ADD CONSTRAINT `vivienda_id_calle_fkey` FOREIGN KEY (`id_calle`) REFERENCES `calle` (`id_calle`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Filtros para la tabla `vivienda_detalle`
+--
+ALTER TABLE `vivienda_detalle`
+  ADD CONSTRAINT `fk_vivienda_detalle_vivienda` FOREIGN KEY (`id_vivienda`) REFERENCES `vivienda` (`id_vivienda`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
-
--- Migración: Agregar rol secundario a la tabla usuario
--- Fecha: 2025-10-23
--- Descripción: Permite que un usuario tenga un rol secundario adicional
-
--- Agregar columna id_rol_secundario
-ALTER TABLE `usuario` 
-ADD COLUMN `id_rol_secundario` int(10) UNSIGNED DEFAULT NULL COMMENT 'Rol secundario opcional (ej: Líder que también es Jefe de Familia)' 
-AFTER `id_rol`;
-
--- Agregar foreign key constraint
-ALTER TABLE `usuario`
-ADD CONSTRAINT `fk_usuario_rol_secundario` 
-FOREIGN KEY (`id_rol_secundario`) REFERENCES `rol`(`id_rol`) 
-ON DELETE SET NULL 
-ON UPDATE CASCADE;
-
--- Comentarios para documentación
-ALTER TABLE `usuario` 
-MODIFY COLUMN `id_rol` int(10) UNSIGNED DEFAULT NULL COMMENT 'Rol principal del usuario';
-
--- Ejemplo de uso:
--- UPDATE `usuario` SET `id_rol_secundario` = 3 WHERE `id_usuario` = 4 AND `id_rol` = 2;
--- Esto haría que el usuario con id_rol=2 (Líder) también tenga permisos de id_rol=3 (Jefe de Familia)
