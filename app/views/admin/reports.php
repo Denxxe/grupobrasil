@@ -1,218 +1,159 @@
 <?php
-// NOTA: Este archivo asume que $usuarios, $noticias, y $page_title
-// están definidos y cargados en el scope de la vista.
-
-// Definición de colores base para la marca "Grupo Brasil" (Rojo Oscuro y Dorado/Amarillo)
-$primaryColor = '#800000';  // Rojo Oscuro (Bordeaux)
-$secondaryColor = '#FFC107'; // Amarillo/Dorado
-$neutralColor = '#495057';  // Gris para el resto
+// Vista Principal de Reportes - Grupo Brasil
 ?>
 
 <div class="container mx-auto p-4 md:p-8">
     <h1 class="text-4xl font-extrabold text-gray-900 mb-8 border-b-4 border-red-700 pb-2">
-       Reportes
+        📊 Reportes del Sistema
     </h1>
 
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <!-- Tarjeta de Resumen 1: Total de Usuarios -->
-        <div class="bg-white shadow-xl rounded-2xl p-6 border-l-8 border-red-700 transition duration-300 hover:shadow-2xl">
-            <div class="flex items-center">
-                <span class="text-4xl text-red-700 mr-4">👥</span>
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Total de Usuarios</p>
-                    <p class="text-3xl font-bold text-gray-900" id="totalUsuarios"><?php echo count($usuarios); ?></p>
-                </div>
-            </div>
+    <!-- Estadísticas Generales -->
+    <div id="estadisticasGenerales" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 text-center">
+            <p class="text-3xl font-bold text-red-700" id="totalHabitantes">-</p>
+            <p class="text-sm text-gray-600">Habitantes</p>
         </div>
-        
-        <!-- Tarjeta de Resumen 2: Total de Noticias -->
-        <div class="bg-white shadow-xl rounded-2xl p-6 border-l-8 border-yellow-500 transition duration-300 hover:shadow-2xl">
-            <div class="flex items-center">
-                <span class="text-4xl text-yellow-500 mr-4">📰</span>
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Noticias Publicadas</p>
-                    <p class="text-3xl font-bold text-gray-900" id="totalNoticias"><?php echo count($noticias); ?></p>
-                </div>
-            </div>
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center">
+            <p class="text-3xl font-bold text-blue-700" id="totalViviendas">-</p>
+            <p class="text-sm text-gray-600">Viviendas</p>
         </div>
-
-        <!-- Tarjeta de Resumen 3: Total de Roles Únicos -->
-        <?php
-            // Calcular roles únicos para el resumen
-            $rolesUnicos = array_unique(array_column($usuarios, 'id_rol'));
-        ?>
-        <div class="bg-white shadow-xl rounded-2xl p-6 border-l-8 border-gray-500 transition duration-300 hover:shadow-2xl">
-            <div class="flex items-center">
-                <span class="text-4xl text-gray-500 mr-4">🔑</span>
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Roles Activos</p>
-                    <p class="text-3xl font-bold text-gray-900"><?php echo count($rolesUnicos); ?></p>
-                </div>
-            </div>
+        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center">
+            <p class="text-3xl font-bold text-green-700" id="totalFamilias">-</p>
+            <p class="text-sm text-gray-600">Familias</p>
+        </div>
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 text-center">
+            <p class="text-3xl font-bold text-purple-700" id="totalCalles">-</p>
+            <p class="text-sm text-gray-600">Calles</p>
+        </div>
+        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 text-center">
+            <p class="text-3xl font-bold text-yellow-700" id="totalUsuarios">-</p>
+            <p class="text-sm text-gray-600">Usuarios</p>
+        </div>
+        <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-4 text-center">
+            <p class="text-3xl font-bold text-indigo-700" id="totalLideres">-</p>
+            <p class="text-sm text-gray-600">Líderes</p>
         </div>
     </div>
 
-    <!-- Sección de Gráficos -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-        <!-- Gráfico 1: Distribución de Roles (Torta/Dona) -->
-        <div class="bg-white shadow-2xl rounded-2xl p-6 transition duration-300 hover:shadow-3xl">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">Distribución de Roles</h2>
-            <div class="h-80 flex items-center justify-center">
-                <canvas id="rolesChart"></canvas>
+    <!-- Opciones de Reportes -->
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">📋 Reportes Disponibles</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        
+        <!-- Reporte de Habitantes -->
+        <div class="bg-white shadow-lg rounded-xl p-6 border-l-4 border-red-700 hover:shadow-2xl transition duration-300">
+            <div class="flex items-center mb-4">
+                <span class="text-4xl mr-3">👥</span>
+                <h3 class="text-xl font-bold text-gray-800">Habitantes</h3>
             </div>
-            <p class="text-xs text-gray-500 mt-4">Proporción actual de la base de usuarios por nivel de permiso.</p>
+            <p class="text-gray-600 mb-4 text-sm">Lista completa de todos los habitantes con información personal, vivienda, calle y edad.</p>
+            <button onclick="navegarA('habitantes')" class="block w-full bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 text-center cursor-pointer">
+                Ver Reporte
+            </button>
         </div>
 
-        <!-- Gráfico 2: Noticias por Mes (Barras) -->
-        <div class="bg-white shadow-2xl rounded-2xl p-6 transition duration-300 hover:shadow-3xl">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">Noticias Publicadas por Mes</h2>
-            <div class="h-80">
-                <canvas id="newsChart"></canvas>
+        <!-- Reporte de Viviendas -->
+        <div class="bg-white shadow-lg rounded-xl p-6 border-l-4 border-blue-600 hover:shadow-2xl transition duration-300">
+            <div class="flex items-center mb-4">
+                <span class="text-4xl mr-3">🏠</span>
+                <h3 class="text-xl font-bold text-gray-800">Viviendas</h3>
             </div>
-            <p class="text-xs text-gray-500 mt-4">Tendencia de publicaciones en los últimos 12 meses (si los datos lo permiten).</p>
+            <p class="text-gray-600 mb-4 text-sm">Información de todas las viviendas, ubicación, tipo y cantidad de habitantes.</p>
+            <button onclick="navegarA('viviendas')" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 text-center cursor-pointer">
+                Ver Reporte
+            </button>
         </div>
+
+        <!-- Reporte de Familias -->
+        <div class="bg-white shadow-lg rounded-xl p-6 border-l-4 border-green-600 hover:shadow-2xl transition duration-300">
+            <div class="flex items-center mb-4">
+                <span class="text-4xl mr-3">👨‍👩‍👧‍👦</span>
+                <h3 class="text-xl font-bold text-gray-800">Familias</h3>
+            </div>
+            <p class="text-gray-600 mb-4 text-sm">Reporte de familias con jefes de hogar y todos sus miembros.</p>
+            <button onclick="navegarA('familias')" class="block w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 text-center cursor-pointer">
+                Ver Reporte
+            </button>
+        </div>
+
+        <!-- Reporte de Usuarios -->
+        <div class="bg-white shadow-lg rounded-xl p-6 border-l-4 border-purple-600 hover:shadow-2xl transition duration-300">
+            <div class="flex items-center mb-4">
+                <span class="text-4xl mr-3">🔐</span>
+                <h3 class="text-xl font-bold text-gray-800">Usuarios</h3>
+            </div>
+            <p class="text-gray-600 mb-4 text-sm">Usuarios del sistema con roles, permisos y último acceso.</p>
+            <button onclick="navegarA('usuarios')" class="block w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 text-center cursor-pointer">
+                Ver Reporte
+            </button>
+        </div>
+
+        <!-- Reporte de Líderes de Calle -->
+        <div class="bg-white shadow-lg rounded-xl p-6 border-l-4 border-yellow-600 hover:shadow-2xl transition duration-300">
+            <div class="flex items-center mb-4">
+                <span class="text-4xl mr-3">⭐</span>
+                <h3 class="text-xl font-bold text-gray-800">Líderes de Calle</h3>
+            </div>
+            <p class="text-gray-600 mb-4 text-sm">Líderes asignados a cada calle con sus datos de contacto.</p>
+            <button onclick="navegarA('lideres')" class="block w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 text-center cursor-pointer">
+                Ver Reporte
+            </button>
+        </div>
+
+        <!-- Reporte por Calle -->
+        <div class="bg-white shadow-lg rounded-xl p-6 border-l-4 border-indigo-600 hover:shadow-2xl transition duration-300">
+            <div class="flex items-center mb-4">
+                <span class="text-4xl mr-3">🛣️</span>
+                <h3 class="text-xl font-bold text-gray-800">Por Calle</h3>
+            </div>
+            <p class="text-gray-600 mb-4 text-sm">Habitantes de una calle específica.</p>
+            <button onclick="navegarA('por-calle')" class="block w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 text-center cursor-pointer">
+                Ver Reporte
+            </button>
+        </div>
+
     </div>
 
 </div>
 
-<!-- Carga de Chart.js y Script de Gráficos -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
-    // Colores basados en la marca
-    const PRIMARY_COLOR = '<?php echo $primaryColor; ?>';
-    const SECONDARY_COLOR = '<?php echo $secondaryColor; ?>';
-    const NEUTRAL_COLOR = '<?php echo $neutralColor; ?>';
+// Función para navegar a los reportes
+function navegarA(reporte) {
+    console.log('Navegando a:', reporte);
+    const url = 'index.php?route=admin/reportes/' + reporte;
+    console.log('URL completa:', url);
+    window.location.href = url;
+}
 
-    // === Datos PHP → JS ===
-    const usuarios = <?php echo json_encode($usuarios); ?>;
-    const noticias = <?php echo json_encode($noticias); ?>;
+// Cargar estadísticas generales al inicio
+document.addEventListener('DOMContentLoaded', function() {
+    cargarEstadisticas();
+});
 
-    /**
-     * Procesa los datos de usuarios para la distribución de roles.
-     * @returns {object} {labels: string[], data: number[], colors: string[]}
-     */
-    function processRolesData(users) {
-        let counts = {};
-        users.forEach(u => {
-            let roleName;
-            switch (parseInt(u.id_rol)) {
-                case 1: roleName = 'Administrador'; break;
-                case 2: roleName = 'Líder (Vereda/Familia)'; break;
-                default: roleName = 'Habitante Comunitario'; break; // Asumo rol 3 o default
+function cargarEstadisticas() {
+    console.log('Iniciando carga de estadísticas...');
+    fetch('index.php?route=admin/reporteEstadisticas')
+        .then(res => {
+            console.log('Respuesta recibida, status:', res.status);
+            if (!res.ok) {
+                throw new Error('Error HTTP: ' + res.status);
             }
-            counts[roleName] = (counts[roleName] || 0) + 1;
-        });
-
-        const labels = Object.keys(counts);
-        const data = Object.values(counts);
-        
-        // Asigna colores de marca (Administrador/Líder) y neutral (Habitante)
-        const colors = labels.map(label => {
-            if (label === 'Administrador') return PRIMARY_COLOR;
-            if (label.includes('Líder')) return SECONDARY_COLOR;
-            return NEUTRAL_COLOR;
-        });
-
-        return { labels, data, colors };
-    }
-
-    /**
-     * Procesa los datos de noticias para la publicación mensual.
-     * @returns {object} {labels: string[], data: number[]}
-     */
-    function processNewsData(news) {
-        let newsByMonth = {};
-        
-        // 1. Contar las noticias por mes
-        news.forEach(n => {
-            // Aseguramos que la fecha sea válida antes de intentar formatear
-            const date = new Date(n.fecha_publicacion);
-            if (!isNaN(date)) {
-                // Formato 'MMM' (ej: 'ene', 'feb'). Usamos 'es-ES' para español
-                let mes = date.toLocaleString('es-ES', { month: 'short', year: 'numeric' });
-                newsByMonth[mes] = (newsByMonth[mes] || 0) + 1;
+            return res.json();
+        })
+        .then(data => {
+            console.log('Estadísticas cargadas:', data);
+            if (data.error) {
+                console.error('Error del servidor:', data.error);
+                return;
             }
+            document.getElementById('totalHabitantes').textContent = data.total_habitantes || 0;
+            document.getElementById('totalViviendas').textContent = data.total_viviendas || 0;
+            document.getElementById('totalFamilias').textContent = data.total_familias || 0;
+            document.getElementById('totalCalles').textContent = data.total_calles || 0;
+            document.getElementById('totalUsuarios').textContent = data.total_usuarios || 0;
+            document.getElementById('totalLideres').textContent = data.total_lideres || 0;
+        })
+        .catch(err => {
+            console.error('Error al cargar estadísticas:', err);
         });
-        
-        // 2. Ordenar los meses cronológicamente (opcional pero recomendado)
-        // Por simplicidad en este ejemplo, mantenemos el orden de aparición, 
-        // pero en un entorno real deberías ordenar por año/mes.
-
-        const labels = Object.keys(newsByMonth);
-        const data = Object.values(newsByMonth);
-        
-        return { labels, data };
-    }
-
-    // Ejecución y Dibujo de Gráficos
-    document.addEventListener('DOMContentLoaded', function() {
-        const roleData = processRolesData(usuarios);
-        const newsData = processNewsData(noticias);
-
-        // === Chart 1: Roles (Torta/Dona) ===
-        new Chart(document.getElementById('rolesChart'), {
-            type: 'doughnut', // Cambiado a dona para mejor estética
-            data: {
-                labels: roleData.labels,
-                datasets: [{
-                    label: 'Usuarios por Rol',
-                    data: roleData.data,
-                    backgroundColor: roleData.colors,
-                    borderColor: '#ffffff', // Borde blanco para separar las secciones
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right', // Leyenda a la derecha
-                    },
-                    title: {
-                        display: false
-                    }
-                }
-            }
-        });
-
-        // === Chart 2: Noticias (Barras) ===
-        new Chart(document.getElementById('newsChart'), {
-            type: 'bar',
-            data: {
-                labels: newsData.labels,
-                datasets: [{
-                    label: 'Noticias Publicadas',
-                    data: newsData.data,
-                    backgroundColor: PRIMARY_COLOR,
-                    borderRadius: 4, // Bordes redondeados
-                    maxBarThickness: 50 // Limita el ancho de la barra
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    title: { display: false }
-                },
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0 // Asegura que las etiquetas del eje Y sean enteros
-                        },
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
-        });
-    });
+}
 </script>

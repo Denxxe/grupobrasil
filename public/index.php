@@ -308,6 +308,47 @@ if (!isset($_SESSION['id_usuario'])) {
                 elseif ($actionSegment === 'reports') {
                     $actionName = 'reports';
                 }
+                // Rutas para reportes específicos
+                elseif ($actionSegment === 'reportes') {
+                    $subSegment = $routeParts[2] ?? null;
+                    if ($subSegment === 'habitantes') {
+                        $actionName = 'vistaReporteHabitantes';
+                    } elseif ($subSegment === 'viviendas') {
+                        $actionName = 'vistaReporteViviendas';
+                    } elseif ($subSegment === 'familias') {
+                        $actionName = 'vistaReporteFamilias';
+                    } elseif ($subSegment === 'usuarios') {
+                        $actionName = 'vistaReporteUsuarios';
+                    } elseif ($subSegment === 'lideres') {
+                        $actionName = 'vistaReporteLideres';
+                    } elseif ($subSegment === 'por-calle') {
+                        $actionName = 'vistaReportePorCalle';
+                    } else {
+                        $actionName = 'reports';
+                    }
+                }
+                // APIs de reportes (JSON)
+                elseif ($actionSegment === 'reporteHabitantes') {
+                    $actionName = 'reporteHabitantes';
+                }
+                elseif ($actionSegment === 'reporteHabitantesPorCalle') {
+                    $actionName = 'reporteHabitantesPorCalle';
+                }
+                elseif ($actionSegment === 'reporteViviendas') {
+                    $actionName = 'reporteViviendas';
+                }
+                elseif ($actionSegment === 'reporteFamilias') {
+                    $actionName = 'reporteFamilias';
+                }
+                elseif ($actionSegment === 'reporteUsuarios') {
+                    $actionName = 'reporteUsuarios';
+                }
+                elseif ($actionSegment === 'reporteLideresCalle') {
+                    $actionName = 'reporteLideresCalle';
+                }
+                elseif ($actionSegment === 'reporteEstadisticas') {
+                    $actionName = 'reporteEstadisticas';
+                }
 
                 elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
                     $actionName = 'dashboard';

@@ -2079,4 +2079,558 @@ public function familiasPorViviendaByJefe() {
     exit;
 }
 
+// ==================== REPORTES DETALLADOS - APIs JSON ====================
+
+/**
+ * Reporte completo de habitantes con toda su información relacionada
+ */
+public function reporteHabitantes() {
+    header('Content-Type: application/json');
+
+    $sql = "SELECT
+                h.id_habitante,
+                h.condicion,
+                h.ocupacion,
+                h.nivel_educativo,
+                h.estado_civil,
+                h.fecha_registro AS habitante_fecha_registro,
+                p.id_persona,
+                p.cedula,
+                p.nombres,
+                p.apellidos,
+                CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
+                p.fecha_nacimiento,
+                TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad,
+                p.sexo,
+                p.telefono,
+                p.correo,
+                p.direccion,
+                c.id_calle,
+                c.nombre AS calle_nombre,
+                c.sector AS calle_sector,
+                v.id_vivienda,
+                v.numero AS vivienda_numero,
+                v.tipo AS vivienda_tipo,
+                v.estado AS vivienda_estado,
+                hv.es_jefe_familia,
+                hv.fecha_asignacion AS fecha_asignacion_vivienda,
+                u.id_usuario,
+                u.email AS usuario_email,
+                u.fecha_creacion AS usuario_fecha_creacion,
+                u.ultimo_acceso AS usuario_ultimo_acceso,
+                r.id_rol,
+                r.nombre AS rol_nombre,
+                (SELECT COUNT(*) FROM carga_familiar cf WHERE cf.id_jefe = h.id_habitante AND cf.activo = 1) AS total_familiares,
+                (SELECT GROUP_CONCAT(CONCAT(pl.nombres, ' ', pl.apellidos) SEPARATOR ', ')
+                 FROM lider_calle lc
+                 INNER JOIN usuario ul ON lc.id_usuario = ul.id_usuario
+                 INNER JOIN persona pl ON ul.id_persona = pl.id_persona
+                 WHERE lc.id_calle = c.id_calle AND lc.activo = 1) AS lideres_calle
+            FROM habitante h
+            INNER JOIN persona p ON h.id_persona = p.id_persona
+            LEFT JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante
+            LEFT JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
+            LEFT JOIN calle c ON v.id_calle = c.id_calle
+            LEFT JOIN usuario u ON p.id_persona = u.id_persona
+            LEFT JOIN rol r ON u.id_rol = r.id_rol
+            WHERE h.activo = 1 AND p.activo = 1
+            ORDER BY c.nombre ASC, v.numero ASC, p.apellidos ASC, p.nombres ASC";
+
+    $result = $this->habitanteModel->getConnection()->query($sql);
+    $habitantes = [];
+
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $habitantes[] = $row;
+        }
+        $result->free();
+    }
+
+    echo json_encode($habitantes);
+    exit;
+}
+
+/**
+ * Reporte de habitantes por calle específica
+ */
+public function reporteHabitantesPorCalle() {
+    header('Content-Type: application/json');
+
+    $idCalle = isset($_GET['id_calle']) ? (int)$_GET['id_calle'] : 0;
+
+    if ($idCalle <= 0) {
+        http_response_code(400);
+        echo json_encode(['error' => 'ID de calle requerido']);
+        exit;
+    }
+
+    $sql = "SELECT
+                h.id_habitante,
+                h.condicion,
+                h.ocupacion,
+                h.nivel_educativo,
+                h.estado_civil,
+                p.cedula,
+                p.nombres,
+                p.apellidos,
+                CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
+                p.fecha_nacimiento,
+                TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad,
+                p.sexo,
+                p.telefono,
+                p.correo,
+                c.nombre AS calle_nombre,
+                c.sector AS calle_sector,
+                v.numero AS vivienda_numero,
+                v.tipo AS vivienda_tipo,
+                v.estado AS vivienda_estado,
+                hv.es_jefe_familia,
+                (SELECT COUNT(*) FROM carga_familiar cf WHERE cf.id_jefe = h.id_habitante AND cf.activo = 1) AS total_familiares,
+                (SELECT GROUP_CONCAT(CONCAT(pl.nombres, ' ', pl.apellidos) SEPARATOR ', ')
+                 FROM lider_calle lc
+                 INNER JOIN usuario ul ON lc.id_usuario = ul.id_usuario
+                 INNER JOIN persona pl ON ul.id_persona = pl.id_persona
+                 WHERE lc.id_calle = c.id_calle AND lc.activo = 1) AS lideres_calle
+            FROM habitante h
+            INNER JOIN persona p ON h.id_persona = p.id_persona
+            INNER JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante
+            INNER JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
+            INNER JOIN calle c ON v.id_calle = c.id_calle
+            WHERE h.activo = 1 AND p.activo = 1 AND c.id_calle = ?
+            ORDER BY v.numero ASC, p.apellidos ASC, p.nombres ASC";
+
+    $stmt = $this->habitanteModel->getConnection()->prepare($sql);
+    if ($stmt === false) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Error al preparar la consulta']);
+        exit;
+    }
+
+    $stmt->bind_param('i', $idCalle);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $habitantes = [];
+
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $habitantes[] = $row;
+        }
+        $result->free();
+    }
+    $stmt->close();
+
+    echo json_encode($habitantes);
+    exit;
+}
+
+/**
+ * Reporte de viviendas con información completa
+ */
+public function reporteViviendas() {
+    header('Content-Type: application/json');
+
+    $sql = "SELECT
+                v.id_vivienda,
+                v.numero,
+                v.tipo,
+                v.estado,
+                v.fecha_registro AS vivienda_fecha_registro,
+                c.id_calle,
+                c.nombre AS calle_nombre,
+                c.sector AS calle_sector,
+                c.descripcion AS calle_descripcion,
+                (SELECT COUNT(*) FROM habitante_vivienda hv WHERE hv.id_vivienda = v.id_vivienda) AS total_habitantes,
+                (SELECT COUNT(DISTINCT cf.id_jefe)
+                 FROM carga_familiar cf
+                 INNER JOIN habitante h ON cf.id_jefe = h.id_habitante
+                 INNER JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante
+                 WHERE hv.id_vivienda = v.id_vivienda AND cf.activo = 1) AS total_familias,
+                (SELECT GROUP_CONCAT(CONCAT(p.nombres, ' ', p.apellidos) SEPARATOR ', ')
+                 FROM habitante_vivienda hv
+                 INNER JOIN habitante h ON hv.id_habitante = h.id_habitante
+                 INNER JOIN persona p ON h.id_persona = p.id_persona
+                 WHERE hv.id_vivienda = v.id_vivienda AND hv.es_jefe_familia = 1) AS jefes_familia,
+                (SELECT GROUP_CONCAT(CONCAT(pl.nombres, ' ', pl.apellidos) SEPARATOR ', ')
+                 FROM lider_calle lc
+                 INNER JOIN usuario ul ON lc.id_usuario = ul.id_usuario
+                 INNER JOIN persona pl ON ul.id_persona = pl.id_persona
+                 WHERE lc.id_calle = c.id_calle AND lc.activo = 1) AS lideres_calle,
+                vd.habitaciones,
+                vd.banos,
+                vd.servicios,
+                vd.observaciones AS vivienda_observaciones
+            FROM vivienda v
+            INNER JOIN calle c ON v.id_calle = c.id_calle
+            LEFT JOIN vivienda_detalle vd ON v.id_vivienda = vd.id_vivienda
+            WHERE v.activo = 1
+            ORDER BY c.nombre ASC, v.numero ASC";
+
+    $result = $this->viviendaModel->getConnection()->query($sql);
+    $viviendas = [];
+
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $viviendas[] = $row;
+        }
+        $result->free();
+    }
+
+    echo json_encode($viviendas);
+    exit;
+}
+
+/**
+ * Reporte de familias con todos sus miembros
+ */
+public function reporteFamilias() {
+    header('Content-Type: application/json');
+
+    $sql = "SELECT DISTINCT
+                cf.id_jefe,
+                pj.id_persona AS jefe_id_persona,
+                pj.cedula AS jefe_cedula,
+                pj.nombres AS jefe_nombres,
+                pj.apellidos AS jefe_apellidos,
+                CONCAT(pj.nombres, ' ', pj.apellidos) AS jefe_nombre_completo,
+                TIMESTAMPDIFF(YEAR, pj.fecha_nacimiento, CURDATE()) AS jefe_edad,
+                pj.telefono AS jefe_telefono,
+                pj.correo AS jefe_correo,
+                pj.sexo AS jefe_sexo,
+                hj.ocupacion AS jefe_ocupacion,
+                hj.nivel_educativo AS jefe_nivel_educativo,
+                c.id_calle,
+                c.nombre AS calle_nombre,
+                c.sector AS calle_sector,
+                v.id_vivienda,
+                v.numero AS vivienda_numero,
+                v.tipo AS vivienda_tipo,
+                v.estado AS vivienda_estado,
+                (SELECT COUNT(*) FROM carga_familiar cf2 WHERE cf2.id_jefe = cf.id_jefe AND cf2.activo = 1) AS total_miembros,
+                (SELECT GROUP_CONCAT(CONCAT(pl.nombres, ' ', pl.apellidos) SEPARATOR ', ')
+                 FROM lider_calle lc
+                 INNER JOIN usuario ul ON lc.id_usuario = ul.id_usuario
+                 INNER JOIN persona pl ON ul.id_persona = pl.id_persona
+                 WHERE lc.id_calle = c.id_calle AND lc.activo = 1) AS lideres_calle
+            FROM carga_familiar cf
+            INNER JOIN habitante hj ON cf.id_jefe = hj.id_habitante
+            INNER JOIN persona pj ON hj.id_persona = pj.id_persona
+            LEFT JOIN habitante_vivienda hv ON hj.id_habitante = hv.id_habitante AND hv.es_jefe_familia = 1
+            LEFT JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
+            LEFT JOIN calle c ON v.id_calle = c.id_calle
+            WHERE cf.activo = 1
+            GROUP BY cf.id_jefe
+            ORDER BY c.nombre ASC, v.numero ASC, pj.apellidos ASC";
+
+    $result = $this->cargaFamiliarModel->getConnection()->query($sql);
+    $familias = [];
+
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $idJefe = $row['id_jefe'];
+            
+            // Obtener miembros de la familia
+            $sqlMiembros = "SELECT
+                                cf.id_carga,
+                                cf.parentesco,
+                                p.cedula,
+                                p.nombres,
+                                p.apellidos,
+                                CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
+                                TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad,
+                                p.sexo,
+                                p.telefono,
+                                p.correo,
+                                h.ocupacion,
+                                h.nivel_educativo,
+                                h.estado_civil
+                            FROM carga_familiar cf
+                            INNER JOIN habitante h ON cf.id_miembro = h.id_habitante
+                            INNER JOIN persona p ON h.id_persona = p.id_persona
+                            WHERE cf.id_jefe = ? AND cf.activo = 1
+                            ORDER BY p.apellidos ASC, p.nombres ASC";
+            
+            $stmtMiembros = $this->cargaFamiliarModel->getConnection()->prepare($sqlMiembros);
+            $stmtMiembros->bind_param('i', $idJefe);
+            $stmtMiembros->execute();
+            $resultMiembros = $stmtMiembros->get_result();
+            
+            $miembros = [];
+            while ($miembro = $resultMiembros->fetch_assoc()) {
+                $miembros[] = $miembro;
+            }
+            $stmtMiembros->close();
+            
+            $row['miembros'] = $miembros;
+            $familias[] = $row;
+        }
+        $result->free();
+    }
+
+    echo json_encode($familias);
+    exit;
+}
+
+/**
+ * Reporte de usuarios del sistema con información completa
+ */
+public function reporteUsuarios() {
+    header('Content-Type: application/json');
+
+    $sql = "SELECT
+                u.id_usuario,
+                u.email,
+                u.fecha_creacion,
+                u.ultimo_acceso,
+                u.activo AS usuario_activo,
+                p.id_persona,
+                p.cedula,
+                p.nombres,
+                p.apellidos,
+                CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
+                p.fecha_nacimiento,
+                TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad,
+                p.sexo,
+                p.telefono,
+                p.correo AS correo_personal,
+                p.direccion,
+                r.id_rol,
+                r.nombre AS rol_nombre,
+                r.descripcion AS rol_descripcion,
+                h.id_habitante,
+                h.ocupacion,
+                h.nivel_educativo,
+                h.estado_civil,
+                c.id_calle,
+                c.nombre AS calle_nombre,
+                c.sector AS calle_sector,
+                v.id_vivienda,
+                v.numero AS vivienda_numero,
+                v.tipo AS vivienda_tipo,
+                hv.es_jefe_familia,
+                (SELECT GROUP_CONCAT(CONCAT(ca.nombre, ' - ', ca.sector) SEPARATOR ', ')
+                 FROM lider_calle lc
+                 INNER JOIN calle ca ON lc.id_calle = ca.id_calle
+                 WHERE lc.id_usuario = u.id_usuario AND lc.activo = 1) AS calles_asignadas,
+                (SELECT COUNT(*) FROM lider_calle lc WHERE lc.id_usuario = u.id_usuario AND lc.activo = 1) AS total_calles_asignadas
+            FROM usuario u
+            INNER JOIN persona p ON u.id_persona = p.id_persona
+            LEFT JOIN rol r ON u.id_rol = r.id_rol
+            LEFT JOIN habitante h ON p.id_persona = h.id_persona
+            LEFT JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante
+            LEFT JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
+            LEFT JOIN calle c ON v.id_calle = c.id_calle
+            WHERE u.activo = 1
+            ORDER BY r.id_rol ASC, p.apellidos ASC, p.nombres ASC";
+
+    $result = $this->usuarioModel->getConnection()->query($sql);
+    $usuarios = [];
+
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $usuarios[] = $row;
+        }
+        $result->free();
+    }
+
+    echo json_encode($usuarios);
+    exit;
+}
+
+/**
+ * Reporte de líderes de calle con sus asignaciones
+ */
+public function reporteLideresCalle() {
+    header('Content-Type: application/json');
+
+    $sql = "SELECT
+                u.id_usuario,
+                u.email,
+                u.fecha_creacion AS usuario_fecha_creacion,
+                u.ultimo_acceso,
+                p.cedula,
+                p.nombres,
+                p.apellidos,
+                CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
+                p.telefono,
+                p.correo,
+                p.sexo,
+                TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad,
+                h.ocupacion,
+                h.nivel_educativo,
+                (SELECT GROUP_CONCAT(CONCAT(ca.nombre, ' - ', ca.sector) SEPARATOR ', ')
+                 FROM lider_calle lc
+                 INNER JOIN calle ca ON lc.id_calle = ca.id_calle
+                 WHERE lc.id_usuario = u.id_usuario AND lc.activo = 1) AS calles_asignadas,
+                (SELECT COUNT(*) FROM lider_calle lc WHERE lc.id_usuario = u.id_usuario AND lc.activo = 1) AS total_calles,
+                (SELECT MIN(lc.fecha_asignacion) FROM lider_calle lc WHERE lc.id_usuario = u.id_usuario) AS fecha_designacion,
+                (SELECT SUM(
+                    (SELECT COUNT(*) FROM habitante_vivienda hv
+                     INNER JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
+                     WHERE v.id_calle = lc2.id_calle)
+                ) FROM lider_calle lc2 WHERE lc2.id_usuario = u.id_usuario AND lc2.activo = 1) AS total_habitantes_asignados
+            FROM usuario u
+            INNER JOIN persona p ON u.id_persona = p.id_persona
+            LEFT JOIN habitante h ON p.id_persona = h.id_persona
+            WHERE u.id_rol = 2 AND u.activo = 1
+            AND EXISTS (SELECT 1 FROM lider_calle lc WHERE lc.id_usuario = u.id_usuario AND lc.activo = 1)
+            ORDER BY p.apellidos ASC, p.nombres ASC";
+
+    $result = $this->usuarioModel->getConnection()->query($sql);
+    $lideres = [];
+
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $lideres[] = $row;
+        }
+        $result->free();
+    }
+
+    echo json_encode($lideres);
+    exit;
+}
+
+/**
+ * Estadísticas generales del sistema
+ */
+public function reporteEstadisticas() {
+    header('Content-Type: application/json');
+
+    try {
+        $db = $this->habitanteModel->getConnection();
+        
+        $stats = [
+            'total_habitantes' => 0,
+            'total_viviendas' => 0,
+            'total_familias' => 0,
+            'total_calles' => 0,
+            'total_usuarios' => 0,
+            'total_lideres' => 0
+        ];
+        
+        // Total habitantes
+        $result = $db->query("SELECT COUNT(*) as total FROM habitante WHERE activo = 1");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $stats['total_habitantes'] = (int)$row['total'];
+            $result->free();
+        }
+        
+        // Total viviendas
+        $result = $db->query("SELECT COUNT(*) as total FROM vivienda WHERE activo = 1");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $stats['total_viviendas'] = (int)$row['total'];
+            $result->free();
+        }
+        
+        // Total familias (jefes de familia únicos)
+        $result = $db->query("SELECT COUNT(DISTINCT id_habitante) as total FROM habitante_vivienda WHERE es_jefe_familia = 1");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $stats['total_familias'] = (int)$row['total'];
+            $result->free();
+        }
+        
+        // Total calles
+        $result = $db->query("SELECT COUNT(*) as total FROM calle WHERE activo = 1");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $stats['total_calles'] = (int)$row['total'];
+            $result->free();
+        }
+        
+        // Total usuarios
+        $result = $db->query("SELECT COUNT(*) as total FROM usuario WHERE activo = 1");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $stats['total_usuarios'] = (int)$row['total'];
+            $result->free();
+        }
+        
+        // Total líderes
+        $result = $db->query("SELECT COUNT(DISTINCT id_habitante) as total FROM lider_calle WHERE activo = 1");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $stats['total_lideres'] = (int)$row['total'];
+            $result->free();
+        }
+        
+        echo json_encode($stats);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Error al obtener estadísticas: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// ==================== VISTAS DE REPORTES ====================
+
+/**
+ * Vista de reporte de habitantes
+ */
+public function vistaReporteHabitantes() {
+    $data = [
+        'title' => 'Reporte de Habitantes',
+        'page_title' => 'Reporte de Habitantes'
+    ];
+    $this->renderAdminView('reportes/habitantes', $data);
+}
+
+/**
+ * Vista de reporte de viviendas
+ */
+public function vistaReporteViviendas() {
+    $data = [
+        'title' => 'Reporte de Viviendas',
+        'page_title' => 'Reporte de Viviendas'
+    ];
+    $this->renderAdminView('reportes/viviendas', $data);
+}
+
+/**
+ * Vista de reporte de familias
+ */
+public function vistaReporteFamilias() {
+    $data = [
+        'title' => 'Reporte de Familias',
+        'page_title' => 'Reporte de Familias'
+    ];
+    $this->renderAdminView('reportes/familias', $data);
+}
+
+/**
+ * Vista de reporte de usuarios
+ */
+public function vistaReporteUsuarios() {
+    $data = [
+        'title' => 'Reporte de Usuarios',
+        'page_title' => 'Reporte de Usuarios'
+    ];
+    $this->renderAdminView('reportes/usuarios', $data);
+}
+
+/**
+ * Vista de reporte de líderes de calle
+ */
+public function vistaReporteLideres() {
+    $data = [
+        'title' => 'Reporte de Líderes de Calle',
+        'page_title' => 'Reporte de Líderes de Calle'
+    ];
+    $this->renderAdminView('reportes/lideres', $data);
+}
+
+/**
+ * Vista de reporte por calle
+ */
+public function vistaReportePorCalle() {
+    $calles = $this->calleModel->findAll();
+    $data = [
+        'title' => 'Reporte por Calle',
+        'page_title' => 'Reporte por Calle',
+        'calles' => $calles
+    ];
+    $this->renderAdminView('reportes/por-calle', $data);
+}
+
 }
