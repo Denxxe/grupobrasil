@@ -107,15 +107,15 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="cedula" class="form-label">Cédula</label>
-                            <input type="text" class="form-control" id="cedula" name="cedula">
+                            <input type="text" class="form-control" id="cedula" name="cedula" maxlength="9" pattern="[0-9]{1,9}" title="Máximo 9 dígitos" inputmode="numeric">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="nombres" class="form-label">Nombres *</label>
-                            <input type="text" class="form-control" id="nombres" name="nombres" required>
+                            <input type="text" class="form-control" id="nombres" name="nombres" required maxlength="50">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="apellidos" class="form-label">Apellidos *</label>
-                            <input type="text" class="form-control" id="apellidos" name="apellidos" required>
+                            <input type="text" class="form-control" id="apellidos" name="apellidos" required maxlength="50">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
@@ -131,7 +131,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="telefono" class="form-label">Teléfono</label>
-                            <input type="text" class="form-control" id="telefono" name="telefono">
+                            <input type="text" class="form-control" id="telefono" name="telefono" maxlength="11" pattern="[0-9+\- ]{1,11}" inputmode="tel">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="id_calle" class="form-label">Calle *</label>
@@ -154,7 +154,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="correo" class="form-label">Correo Electrónico</label>
-                            <input type="email" class="form-control" id="correo" name="correo">
+                            <input type="email" class="form-control" id="correo" name="correo" maxlength="30">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="condicion" class="form-label">Condición</label>
@@ -170,6 +170,32 @@
                                 <label class="form-check-label" for="es_jefe_familia">
                                     <strong>Es Jefe de Familia</strong>
                                 </label>
+                            </div>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="create_user" name="create_user" value="1">
+                                <label class="form-check-label" for="create_user">
+                                    <strong>Crear cuenta de usuario (Líder)</strong> — si marcas esto se crearán credenciales de acceso
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="userCredentials" class="w-100" style="display:none;">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="user_email" class="form-label">Email de acceso</label>
+                                    <input type="email" class="form-control" id="user_email" name="user_email" maxlength="30">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="user_password" class="form-label">Contraseña</label>
+                                    <input type="password" class="form-control" id="user_password" name="user_password" minlength="8" maxlength="16">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="user_password_confirm" class="form-label">Confirmar Contraseña</label>
+                                    <input type="password" class="form-control" id="user_password_confirm" name="user_password_confirm" minlength="8" maxlength="16">
+                                </div>
                             </div>
                         </div>
                         <div class="col-12 mb-3">
@@ -216,4 +242,34 @@ function cargarViviendas(idCalle) {
             selectVivienda.innerHTML = '<option value="">Error al cargar viviendas</option>';
         });
 }
+</script>
+
+<script>
+// Mostrar/ocultar el bloque de credenciales cuando se marca 'create_user'
+document.getElementById('create_user').addEventListener('change', function() {
+    const creds = document.getElementById('userCredentials');
+    if (this.checked) creds.style.display = 'block'; else creds.style.display = 'none';
+});
+
+// Validación simple en el cliente antes de enviar el formulario
+document.querySelector('#addHabitanteModal form').addEventListener('submit', function(e) {
+    const createUser = document.getElementById('create_user').checked;
+    if (createUser) {
+        const email = document.getElementById('user_email').value.trim();
+        const pw = document.getElementById('user_password').value;
+        const pw2 = document.getElementById('user_password_confirm').value;
+        if (email === '') {
+            alert('Debes ingresar un Email para crear la cuenta.');
+            e.preventDefault(); return false;
+        }
+        if (pw.length < 8 || pw.length > 16) {
+            alert('La contraseña debe tener entre 8 y 16 caracteres.');
+            e.preventDefault(); return false;
+        }
+        if (pw !== pw2) {
+            alert('Las contraseñas no coinciden.');
+            e.preventDefault(); return false;
+        }
+    }
+});
 </script>

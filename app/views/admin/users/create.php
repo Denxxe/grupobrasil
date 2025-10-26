@@ -27,30 +27,30 @@
                         <div class="form-group row">
                             <div class="col-sm-6 mb-3 mb-sm-0">
                                 <label for="cedula">Cédula de Identidad <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="cedula" name="cedula" required
-                                       pattern="[0-9]{8,10}" 
-                                       title="La cédula debe contener solo números, entre 8 y 10 dígitos.">
+                    <input type="text" class="form-control" id="cedula" name="cedula" required maxlength="9"
+                        pattern="[0-9]{1,9}" 
+                        title="La cédula debe contener solo números (máximo 9 dígitos).">
                             </div>
                             <div class="col-sm-6">
                                 <label for="nombres">Nombres <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="nombres" name="nombres" required
-                                       pattern="[A-Za-zñÑáéíóúÁÉÍÓÚ\s]+" 
-                                       title="Solo se permiten letras y espacios en los nombres.">
+                    <input type="text" class="form-control" id="nombres" name="nombres" required maxlength="50"
+                        pattern="[A-Za-zñÑáéíóúÁÉÍÓÚ\s]+" 
+                        title="Solo se permiten letras y espacios en los nombres (máximo 50 caracteres).">
                             </div>
                         </div>
 
                         <div class="form-group row">
                             <div class="col-sm-6 mb-3 mb-sm-0">
                                 <label for="apellidos">Apellidos <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="apellidos" name="apellidos" required
-                                       pattern="[A-Za-zñÑáéíóúÁÉÍÓÚ\s]+" 
-                                       title="Solo se permiten letras y espacios en los apellidos.">
+                    <input type="text" class="form-control" id="apellidos" name="apellidos" required maxlength="50"
+                        pattern="[A-Za-zñÑáéíóúÁÉÍÓÚ\s]+" 
+                        title="Solo se permiten letras y espacios en los apellidos (máximo 50 caracteres).">
                             </div>
                             <div class="col-sm-6">
                                 <label for="telefono">Teléfono</label>
-                                <input type="text" class="form-control" id="telefono" name="telefono"
-                                       pattern="[0-9\s-]{7,15}" 
-                                       title="Ingrese un teléfono válido (solo números, espacios o guiones).">
+                    <input type="text" class="form-control" id="telefono" name="telefono" maxlength="11"
+                        pattern="[0-9\s-]{1,11}" 
+                        title="Ingrese un teléfono válido (solo números, espacios o guiones, máximo 11 caracteres).">
                             </div>
                         </div>
 
@@ -86,17 +86,17 @@
                             <div class="form-group row">
                                 <div class="col-sm-6 mb-3 mb-sm-0">
                                     <label for="email">Correo Electrónico <span class="text-danger">*</span></label>
-                                    <input type="email" class="form-control" id="email" name="email">
+                                    <input type="email" class="form-control" id="email" name="email" maxlength="30">
                                 </div>
                                 <div class="col-sm-6">
                                     <label for="password">Contraseña <span class="text-danger">*</span></label>
-                                    <input type="password" class="form-control" id="password" name="password">
+                                    <input type="password" class="form-control" id="password" name="password" maxlength="16">
                                 </div>
                             </div>
                             <div class="form-group row">
                                 <div class="col-sm-6">
                                     <label for="confirm_password">Confirmar Contraseña <span class="text-danger">*</span></label>
-                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" maxlength="16">
                                 </div>
                             </div>
 

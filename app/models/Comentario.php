@@ -11,18 +11,19 @@ class Comentario extends ModelBase {
         $this->primaryKey = 'id_comentario';
     }
 
- public function getAllComments(bool $onlyActive = true, array $order = ['column' => 'fecha_comentario', 'direction' => 'DESC']) {
+    public function getAllComments(bool $onlyActive = true, array $order = ['column' => 'fecha_comentario', 'direction' => 'DESC']) {
     $sql = "SELECT 
                 c.id_comentario,
                 c.id_noticia,
                 n.titulo AS titulo_noticia,
                 c.id_usuario,
-                CONCAT(u.username) AS nombre_usuario,
+                TRIM(CONCAT(COALESCE(p.nombres,''), ' ', COALESCE(p.apellidos,''))) AS nombre_usuario,
                 c.contenido,
                 c.fecha_comentario,
                 c.activo
             FROM " . $this->table . " c
             JOIN usuario u ON c.id_usuario = u.id_usuario
+            LEFT JOIN persona p ON u.id_persona = p.id_persona
             JOIN noticias n ON c.id_noticia = n.id_noticia";
 
     $params = [];
@@ -122,10 +123,11 @@ class Comentario extends ModelBase {
                 c.id_usuario,
                 c.contenido,
                 c.fecha_comentario, 
-                CONCAT(u.username) AS nombre_usuario,
+                TRIM(CONCAT(COALESCE(p.nombres,''), ' ', COALESCE(p.apellidos,''))) AS nombre_usuario,
                 NULL AS foto_perfil
             FROM " . $this->table . " c
             JOIN usuario u ON c.id_usuario = u.id_usuario
+            LEFT JOIN persona p ON u.id_persona = p.id_persona
             WHERE c.id_noticia = ?";
 
         
@@ -214,9 +216,10 @@ class Comentario extends ModelBase {
     // Normalizamos el JOIN a la tabla `usuario` (singular) y devolvemos campos
     // compatibles: usamos username como usuario_nombre y colocamos foto_perfil=NULL
     // para mantener compatibilidad con vistas que esperan esa clave.
-    $sql = "SELECT c.*, u.username AS usuario_nombre, '' AS usuario_apellido, NULL AS foto_perfil
+    $sql = "SELECT c.*, u.username AS usuario_nombre, COALESCE(p.nombres,'') AS usuario_nombres, COALESCE(p.apellidos,'') AS usuario_apellido, NULL AS foto_perfil
         FROM " . $this->table . " c
         JOIN usuario u ON c.id_usuario = u.id_usuario
+        LEFT JOIN persona p ON u.id_persona = p.id_persona
         WHERE c." . $this->primaryKey . " = ?";
         
         $params = [$id_comentario];

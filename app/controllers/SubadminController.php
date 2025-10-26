@@ -202,6 +202,39 @@ class SubadminController extends AppController {
                 $errores[] = 'La cédula ' . htmlspecialchars($cedula) . ' ya está registrada en el sistema.';
             }
         }
+
+        // Validaciones de longitudes (servidor)
+        $nombres = trim($_POST['nombres'] ?? '');
+        $apellidos = trim($_POST['apellidos'] ?? '');
+        $telefono = trim($_POST['telefono'] ?? '');
+        $correo = trim($_POST['correo'] ?? '');
+
+        if (mb_strlen($cedula) > 9) $errores[] = 'La cédula no puede tener más de 9 caracteres.';
+        if (mb_strlen($nombres) > 50) $errores[] = 'Nombres no puede tener más de 50 caracteres.';
+        if (mb_strlen($apellidos) > 50) $errores[] = 'Apellidos no puede tener más de 50 caracteres.';
+        if (!empty($telefono) && mb_strlen($telefono) > 11) $errores[] = 'Teléfono no puede tener más de 11 caracteres.';
+
+        // Si se solicita crear usuario (Líder) validar email y contraseñas
+        $createUser = isset($_POST['create_user']) && $_POST['create_user'] == '1';
+        $user_email = trim($_POST['user_email'] ?? '');
+        $user_password = $_POST['user_password'] ?? '';
+        $user_password_confirm = $_POST['user_password_confirm'] ?? '';
+        if ($createUser) {
+            if (empty($user_email)) {
+                $errores[] = 'El Email es requerido para crear la cuenta de usuario.';
+            } elseif (mb_strlen($user_email) > 30) {
+                $errores[] = 'El Email no puede tener más de 30 caracteres.';
+            } elseif (!filter_var($user_email, FILTER_VALIDATE_EMAIL)) {
+                $errores[] = 'El Email proporcionado no tiene un formato válido.';
+            }
+
+            if (mb_strlen($user_password) < 8 || mb_strlen($user_password) > 16) {
+                $errores[] = 'La contraseña debe tener entre 8 y 16 caracteres.';
+            }
+            if ($user_password !== $user_password_confirm) {
+                $errores[] = 'Las contraseñas no coinciden.';
+            }
+        }
         
         // Si hay errores, mostrarlos y redirigir
         if (!empty($errores)) {
@@ -259,8 +292,28 @@ class SubadminController extends AppController {
                         error_log("Error al crear habitante_vivienda");
                     }
                 }
-                
-                $_SESSION['flash_success'] = 'Habitante agregado exitosamente.';
+                // Si se solicitó crear usuario, intentarlo ahora
+                if ($createUser) {
+                    // Crear usuario solo (persona ya creada)
+                    $usuarioData = [
+                        'id_persona' => $idPersona,
+                        'email' => $user_email,
+                        'password' => password_hash($user_password, PASSWORD_DEFAULT),
+                        'id_rol' => 2, // Líder de vereda
+                        'activo' => 1
+                    ];
+
+                    $usuarioId = $this->usuarioModel->createUserOnly($usuarioData);
+                    if (!$usuarioId) {
+                        // Intentamos continuar pero informamos
+                        $_SESSION['flash_success'] = 'Habitante agregado, pero no se pudo crear la cuenta de usuario (email posiblemente duplicado).';
+                        header('Location:./index.php?route=subadmin/habitantes');
+                        exit();
+                    }
+                    $_SESSION['flash_success'] = 'Habitante y cuenta de usuario creados exitosamente.';
+                } else {
+                    $_SESSION['flash_success'] = 'Habitante agregado exitosamente.';
+                }
             } else {
                 $_SESSION['flash_error'] = 'Error al crear el habitante.';
             }

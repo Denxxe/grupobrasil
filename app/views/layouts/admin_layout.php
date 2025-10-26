@@ -241,6 +241,7 @@ error_log("Error: La vista de contenido '$content_view' no existe o no está def
 <script src="./js/toast_initializer.js?v=<?php echo time(); ?>"></script>
 <script src="./js/admin_news_scripts.js?v=<?php echo time(); ?>"></script>
 <script src="./js/edit_user_form.js?v=<?php echo time(); ?>"></script>
+<script src="./js/input_maxlength.js?v=<?php echo time(); ?>"></script>
     
 <script>
 document.addEventListener('DOMContentLoaded', function() {

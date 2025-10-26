@@ -170,5 +170,6 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
 
     <script src="./js/admin_dashboard.js?v=<?php echo time(); ?>"></script>
     <script src="./js/toast_initializer.js?v=<?php echo time(); ?>"></script>
+    <script src="./js/input_maxlength.js?v=<?php echo time(); ?>"></script>
     </body>
 </html>
