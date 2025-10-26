@@ -22,7 +22,7 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
 
 // Lógica para determinar la ruta actual y aplicar clases "active"
 $current_route = $_GET['route'] ?? 'admin/dashboard';
-$is_user_management_section = str_starts_with($current_route, 'admin/users/');
+$is_user_management_section = (strpos($current_route, 'admin/users/') === 0);
 $is_personas_active = $current_route === 'admin/users/personas';
 $is_jefes_familia_active = $current_route === 'admin/users/jefes-familia';
 $is_lideres_active = $current_route === 'admin/users/lideres';

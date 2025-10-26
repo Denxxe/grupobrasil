@@ -12,6 +12,12 @@ class Like extends ModelBase {
     }
 
     public function darLike(int $id_noticia, int $id_usuario) {
+        // Si la tabla no existe, evitar excepción y registrar el caso
+        if (!$this->tableExists()) {
+            error_log("Like::darLike - tabla '" . $this->table . "' no existe. Operación abortada.");
+            return false;
+        }
+
         // Primero, verifica si el usuario ya dio like a esta noticia para evitar duplicados
         if ($this->usuarioDioLike($id_noticia, $id_usuario)) {
             error_log("El usuario $id_usuario ya dio 'Me Gusta' a la noticia $id_noticia.");
@@ -34,6 +40,10 @@ class Like extends ModelBase {
     }
 
     public function quitarLike(int $id_noticia, int $id_usuario) {
+        if (!$this->tableExists()) {
+            error_log("Like::quitarLike - tabla '" . $this->table . "' no existe. Operación abortada.");
+            return false;
+        }
         $sql = "DELETE FROM " . $this->table . " WHERE id_noticia = ? AND id_usuario = ?";
         
         $stmt = $this->conn->prepare($sql);
@@ -57,6 +67,11 @@ class Like extends ModelBase {
     }
 
     public function contarLikesPorNoticia(int $id_noticia): int {
+        if (!$this->tableExists()) {
+            // Tabla no existe => asumimos 0 likes
+            error_log("Like::contarLikesPorNoticia - tabla '" . $this->table . "' no existe. Devolviendo 0.");
+            return 0;
+        }
         $sql = "SELECT COUNT(*) AS total_likes FROM " . $this->table . " WHERE id_noticia = ?";
         
         $stmt = $this->conn->prepare($sql);
@@ -83,6 +98,10 @@ class Like extends ModelBase {
     }
 
     public function usuarioDioLike(int $id_noticia, int $id_usuario): bool {
+        if (!$this->tableExists()) {
+            error_log("Like::usuarioDioLike - tabla '" . $this->table . "' no existe. Devolviendo false.");
+            return false;
+        }
         $sql = "SELECT COUNT(*) AS liked FROM " . $this->table . " WHERE id_noticia = ? AND id_usuario = ? LIMIT 1";
         
         $stmt = $this->conn->prepare($sql);
@@ -107,4 +126,12 @@ class Like extends ModelBase {
         $stmt->close();
         return false;
     }
+
+    // Añadimos método privado para verificar que la tabla exista y así evitar excepciones
+    private function tableExists(): bool {
+        $tbl = $this->conn->real_escape_string($this->table);
+        $res = $this->conn->query("SHOW TABLES LIKE '" . $tbl . "'");
+        return ($res && $res->num_rows > 0);
+    }
+
 }

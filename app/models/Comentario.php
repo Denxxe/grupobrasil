@@ -114,6 +114,8 @@ class Comentario extends ModelBase {
     bool $onlyActive = true,
     array $order = ['column' => 'fecha_comentario', 'direction' => 'ASC']
 ) {
+    // Nota: la columna `foto_perfil` no existe en el esquema actual (usuario table),
+    // por compatibilidad devolvemos la clave con NULL para evitar errores SQL.
     $sql = "SELECT 
                 c.id_comentario,
                 c.id_noticia,
@@ -121,7 +123,7 @@ class Comentario extends ModelBase {
                 c.contenido,
                 c.fecha_comentario, 
                 CONCAT(u.username) AS nombre_usuario,
-                u.foto_perfil
+                NULL AS foto_perfil
             FROM " . $this->table . " c
             JOIN usuario u ON c.id_usuario = u.id_usuario
             WHERE c.id_noticia = ?";
@@ -209,10 +211,13 @@ class Comentario extends ModelBase {
 
     public function getComentarioById(int $id_comentario, bool $onlyActive = false) {
      
-        $sql = "SELECT c.*, u.nombre AS usuario_nombre, u.apellido AS usuario_apellido, u.foto_perfil
-                FROM " . $this->table . " c
-                JOIN usuarios u ON c.id_usuario = u.id_usuario
-                WHERE c." . $this->primaryKey . " = ?";
+    // Normalizamos el JOIN a la tabla `usuario` (singular) y devolvemos campos
+    // compatibles: usamos username como usuario_nombre y colocamos foto_perfil=NULL
+    // para mantener compatibilidad con vistas que esperan esa clave.
+    $sql = "SELECT c.*, u.username AS usuario_nombre, '' AS usuario_apellido, NULL AS foto_perfil
+        FROM " . $this->table . " c
+        JOIN usuario u ON c.id_usuario = u.id_usuario
+        WHERE c." . $this->primaryKey . " = ?";
         
         $params = [$id_comentario];
         $types = "i";

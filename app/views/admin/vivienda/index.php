@@ -1,7 +1,5 @@
 <?php
 
-// Vista: Gestión de Viviendas (lista y formulario)
-// Variables esperadas: $page_title (definido por index.php)
 ?>
 <div class="card p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -9,7 +7,6 @@
         <button id="btnNewVivienda" class="btn btn-primary">Registrar Vivienda</button>
     </div>
 
-    <!-- Formulario (oculto por defecto) -->
     <div id="viviendaFormContainer" class="card p-3 mb-4 d-none">
         <form id="viviendaForm">
             <input type="hidden" name="id_vivienda" id="id_vivienda" value="">

@@ -1222,9 +1222,13 @@ public function storeNews() {
     }
 
     // Define la carpeta de subida
-    // CORRECCIÓN DE RUTA: Asume que el directorio 'public' está dos niveles por encima del controlador
-    $base_public_path = realpath(__DIR__ . '/../../../public');
-    $upload_dir = $base_public_path . '/uploads/noticias/';
+    // CORRECCIÓN: el directorio 'public' está dos niveles por encima de este controlador
+    $base_public_path = realpath(__DIR__ . '/../../public');
+    if (!$base_public_path) {
+        // Fallback si realpath falla (evita paths vacíos)
+        $base_public_path = dirname(__DIR__, 2) . '/public';
+    }
+    $upload_dir = rtrim($base_public_path, '/\\') . '/uploads/noticias/';
     $errors = [];
 
     // 2. Recolección, Saneamiento y Validación
@@ -1369,8 +1373,11 @@ public function updateNews() {
     }
 
     // Define la carpeta de subida
-    $base_public_path = realpath(__DIR__ . '/../../../public');
-    $upload_dir = $base_public_path . '/uploads/noticias/';
+    $base_public_path = realpath(__DIR__ . '/../../public');
+    if (!$base_public_path) {
+        $base_public_path = dirname(__DIR__, 2) . '/public';
+    }
+    $upload_dir = rtrim($base_public_path, '/\\') . '/uploads/noticias/';
     $errors = [];
 
     $id_noticia = filter_input(INPUT_POST, 'id_noticia', FILTER_SANITIZE_NUMBER_INT);
@@ -1517,7 +1524,8 @@ public function deleteNews($id) {
     }
 
     // Define la ruta base para eliminar archivos
-    $base_public_path = realpath(__DIR__ . '/../../../public');
+    $base_public_path = realpath(__DIR__ . '/../../public');
+    if (!$base_public_path) { $base_public_path = dirname(__DIR__, 2) . '/public'; }
 
     if (!empty($newsToDelete['imagen_principal'])) {
         $image_path_on_disk = $base_public_path . '/' . $newsToDelete['imagen_principal'];

@@ -7,6 +7,7 @@ require_once __DIR__ . '/../models/Comentario.php';
 require_once __DIR__ . '/../models/Like.php';
 require_once __DIR__ . '/../models/Usuario.php';
 require_once __DIR__ . '/../helpers/CsrfHelper.php';
+require_once __DIR__ . '/../models/NoticiaVisibilidad.php';
 
 class NoticiaController extends AppController {
     private $noticiaModel;
@@ -26,9 +27,29 @@ class NoticiaController extends AppController {
     public function index() {
         $noticias = $this->noticiaModel->getAllNews(true);
 
+        // Filtrar por visibilidad según el usuario actual
+        $user_id = $_SESSION['id_usuario'] ?? null;
+        $visModel = new NoticiaVisibilidad();
+        $filtered = [];
+
+        foreach ($noticias as $n) {
+            $id_noticia = (int)($n['id_noticia'] ?? $n['id'] ?? 0);
+            if ($user_id) {
+                if ($visModel->canUserSeeNews($id_noticia, (int)$user_id)) {
+                    $filtered[] = $n;
+                }
+            } else {
+                // visitante anónimo: mostrar solo noticias sin reglas de visibilidad
+                $vis = $visModel->getVisibilityForNews($id_noticia);
+                if (empty($vis['calles']) && empty($vis['habitantes'])) {
+                    $filtered[] = $n;
+                }
+            }
+        }
+
         $this->loadView('noticias/index', [
             'page_title' => 'Noticias de la Comunidad',
-            'noticias'   => $noticias
+            'noticias'   => $filtered
         ]);
     }
 
@@ -47,6 +68,22 @@ class NoticiaController extends AppController {
 
         if (!$noticia) {
             $this->setErrorMessage("La noticia no existe o no está activa.");
+            $this->redirect('noticias');
+        }
+
+        // Verificar visibilidad
+        $user_id = $_SESSION['id_usuario'] ?? null;
+        $visModel = new NoticiaVisibilidad();
+        $canSee = false;
+        if ($user_id) {
+            $canSee = $visModel->canUserSeeNews($id_noticia, (int)$user_id);
+        } else {
+            $vis = $visModel->getVisibilityForNews($id_noticia);
+            $canSee = (empty($vis['calles']) && empty($vis['habitantes']));
+        }
+
+        if (!$canSee) {
+            $this->setErrorMessage("No tienes permisos para ver esta noticia.");
             $this->redirect('noticias');
         }
 
@@ -85,10 +122,10 @@ class NoticiaController extends AppController {
         $contenido  = trim($_POST['contenido'] ?? '');
         $usuario_id = $_SESSION['id_usuario'] ?? null;
 
-        // Validaciones de contenido: mínimo 3 caracteres, máximo 1000
-        $len = mb_strlen($contenido);
-        if ($id_noticia <= 0 || !$usuario_id || $len < 3 || $len > 1000) {
-            $this->setErrorMessage("El comentario debe tener entre 3 y 1000 caracteres.");
+        // Validaciones de contenido: mínimo 3 caracteres, máximo 800
+        $len = function_exists('mb_strlen') ? mb_strlen($contenido) : strlen($contenido);
+        if ($id_noticia <= 0 || !$usuario_id || $len < 3 || $len > 800) {
+            $this->setErrorMessage("El comentario debe tener entre 3 y 800 caracteres.");
             $this->redirect('noticias/show/' . $id_noticia);
         }
 
@@ -190,18 +227,18 @@ class NoticiaController extends AppController {
             $this->redirect('noticias/show/' . $id_noticia);
         }
 
-        // Validación de longitud: 3..1000
-        $len = mb_strlen($contenido);
-        if ($len < 3 || $len > 1000) {
+        // Validación de longitud: 3..800
+    $len = function_exists('mb_strlen') ? mb_strlen($contenido) : strlen($contenido);
+    if ($len < 3 || $len > 800) {
             // Si es AJAX responder JSON con error
             $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
             if ($isAjax) {
                 header('Content-Type: application/json');
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'El comentario debe tener entre 3 y 1000 caracteres.']);
+                echo json_encode(['success' => false, 'message' => 'El comentario debe tener entre 3 y 800 caracteres.']);
                 exit;
             }
-            $this->setErrorMessage('El comentario debe tener entre 3 y 1000 caracteres.');
+            $this->setErrorMessage('El comentario debe tener entre 3 y 800 caracteres.');
             $this->redirect('noticias/show/' . $id_noticia);
         }
 

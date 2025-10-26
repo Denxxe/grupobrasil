@@ -3,15 +3,62 @@
 <div class="container mx-auto p-6">
 
     <!-- Imagen -->
-    <?php if (!empty($noticia['imagen_principal'])): ?>
-        <img src="/grupobrasil/public/<?= htmlspecialchars($noticia['imagen_principal']) ?>" 
-             alt="Imagen de la noticia"
-             class="w-full h-64 object-cover rounded-lg shadow mb-6">
-            <?php else: ?>
-                <img src="/grupobrasil/public/img/noticias/default.jpg"
-                     alt="Imagen por defecto"
-                     class="w-full h-full object-cover">
-    <?php endif; ?>
+    <?php
+        // Preparar ruta pública y ruta absoluta en disco para verificar existencia
+        $imgRel = !empty($noticia['imagen_principal']) ? $noticia['imagen_principal'] : null;
+
+        // Si no hay imagen definida en la noticia, usar la default
+        if (!$imgRel) {
+            $imgExists = false;
+            $imgUrl = '/grupobrasil/public/img/noticias/default.jpg';
+            $imgDiskPath = null;
+        } else {
+            // Normalizar la ruta relativa guardada en BD (usar siempre /)
+            $imgRelNorm = str_replace('\\', '/', ltrim($imgRel, '/\\'));
+
+            // Construir un conjunto de rutas candidatas en disco donde el archivo podría residir
+            $candidates = [];
+
+            // 1) ruta basada en DOCUMENT_ROOT (lo que usamos históricamente)
+            $docroot = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\');
+            $candidates[] = $docroot . '/grupobrasil/public/' . $imgRelNorm;
+
+            // 2) ruta basada en la ubicación del proyecto (realpath desde esta vista hacia /public)
+            $publicPath = realpath(__DIR__ . '/../../../public');
+            if ($publicPath) {
+                $candidates[] = rtrim($publicPath, '/\\') . '/' . $imgRelNorm;
+            }
+
+            // 3) ruta "uploads" en la raíz del proyecto (por si se guardó fuera de public)
+            $projectRoot = realpath(__DIR__ . '/../../..');
+            if ($projectRoot) {
+                $candidates[] = rtrim($projectRoot, '/\\') . '/' . $imgRelNorm;
+            }
+
+            // Comprobar cada candidato (normalizando separadores) y tomar el primero existente
+            $found = null;
+            foreach ($candidates as $cand) {
+                $disk = str_replace('/', DIRECTORY_SEPARATOR, $cand);
+                if (file_exists($disk)) { $found = $disk; break; }
+            }
+
+            if ($found) {
+                $imgDiskPath = $found;
+                // Construir URL pública relativa a DOCUMENT_ROOT
+                $base = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\');
+                $imgUrl = '/' . ltrim(str_replace('\\', '/', substr($imgDiskPath, strlen($base))), '/');
+                $imgExists = true;
+            } else {
+                $imgDiskPath = $candidates[0]; // mostrar la primera candidata para debug
+                $imgExists = false;
+                $imgUrl = '/grupobrasil/public/img/noticias/default.jpg';
+            }
+        }
+    ?>
+    <!-- DEBUG: imagen_principal="<?= htmlspecialchars($imgRel ?? '') ?>" | disk_path="<?= htmlspecialchars($imgDiskPath ?? '') ?>" | exists=<?= $imgExists ? 'yes' : 'no' ?> -->
+    <img src="<?= htmlspecialchars($imgExists ? $imgUrl : '/grupobrasil/public/img/noticias/default.jpg') ?>" 
+        alt="Imagen de la noticia"
+        style="width:100%; height:auto; max-height:500px; object-fit:contain; display:block; margin-bottom:1.5rem; border-radius:0.5rem; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
 
     <!-- Contenido -->
     <div class="text-gray-700 text-lg mb-6">
@@ -49,17 +96,11 @@
         </button>
 
         <!-- Imagen principal -->
-         <div class="h-1/2 w-full">
-            <?php if (!empty($noticia['imagen_principal'])): ?>
-                <img src="/grupobrasil/public/<?= htmlspecialchars($noticia['imagen_principal']) ?>" 
-                     alt="Imagen de la noticia"
-                     class="w-full h-full object-cover">
-            <?php else: ?>
-                <img src="/grupobrasil/public/img/noticias/default.jpg"
-                     alt="Imagen por defecto"
-                     class="w-full h-full object-cover">
-            <?php endif; ?>
-        </div>
+            <div style="height:50%; width:100%; display:flex; align-items:center; justify-content:center;">
+                <img src="<?= htmlspecialchars($imgExists ? $imgUrl : '/grupobrasil/public/img/noticias/default.jpg') ?>" 
+                      alt="Imagen de la noticia"
+                      style="max-height:100%; width:auto; max-width:100%; object-fit:contain; display:block;">
+          </div>
 
         <!-- Contenido -->
         <div class="flex-1 p-4 flex flex-col justify-between">
@@ -68,7 +109,17 @@
                     <?= htmlspecialchars($noticia['titulo']) ?>
                 </h1>
                 <p class="text-gray-600 text-sm">
-                    <?= htmlspecialchars(mb_substr($noticia['contenido'], 0, 180)) ?>...
+                    <?php
+                        $excerpt = '';
+                        if (!empty($noticia['contenido'])) {
+                            if (function_exists('mb_substr')) {
+                                $excerpt = mb_substr($noticia['contenido'], 0, 180);
+                            } else {
+                                $excerpt = substr($noticia['contenido'], 0, 180);
+                            }
+                        }
+                    ?>
+                    <?= htmlspecialchars($excerpt) ?>...
                 </p>
             </div>
 
@@ -168,7 +219,8 @@
                         <?= \CsrfHelper::getTokenInput() ?>
                         <input type="hidden" name="id_comentario" value="<?= $comentario['id_comentario'] ?>">
                         <input type="hidden" name="id_noticia" value="<?= $noticia['id_noticia'] ?>">
-                        <textarea name="contenido" rows="3" class="w-full border border-gray-300 rounded-lg p-2" minlength="3" maxlength="1000"><?= htmlspecialchars($comentario['contenido']) ?></textarea>
+                        <textarea name="contenido" rows="3" class="w-full border border-gray-300 rounded-lg p-2 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200" minlength="3" maxlength="800"><?= htmlspecialchars($comentario['contenido']) ?></textarea>
+                        <div class="text-right text-xs text-gray-500 mt-1"> <span class="char-count">0</span>/800</div>
                         <div class="mt-2 flex gap-2">
                             <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded">Guardar</button>
                             <button type="button" class="px-4 py-2 bg-gray-300 rounded btn-cancel-edit" data-id="<?= $comentario['id_comentario'] ?>">Cancelar</button>
@@ -192,8 +244,9 @@
                 <?= \CsrfHelper::getTokenInput() ?>
                 <input type="hidden" name="id_noticia" value="<?= $noticia['id_noticia'] ?>">
                 <textarea name="contenido" rows="3"
-                          class="w-full border border-gray-300 rounded-lg p-2"
-                          placeholder="Escribe tu comentario..." required minlength="3" maxlength="1000"></textarea>
+                          class="w-full border border-gray-300 rounded-lg p-2 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          placeholder="Escribe tu comentario..." required minlength="3" maxlength="800"></textarea>
+                <div class="text-right text-xs text-gray-500 mt-1"> <span class="char-count">0</span>/800</div>
                 <button type="submit" 
                         class="px-4 py-2 bg-green-500 text-white rounded-lg shadow">
                     💬 Comentar
@@ -241,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const idNoticia = form.querySelector('input[name="id_noticia"]').value;
             const contenido = form.querySelector('textarea[name="contenido"]').value.trim();
             const len = contenido.length;
-            if (len < 3 || len > 1000) { alert('El comentario debe tener entre 3 y 1000 caracteres.'); return; }
+            if (len < 3 || len > 800) { alert('El comentario debe tener entre 3 y 800 caracteres.'); return; }
 
             const action = form.getAttribute('action');
             const fd = new FormData(form);
@@ -297,3 +350,5 @@ document.addEventListener('DOMContentLoaded', function() {
     function escapeHtml(unsafe) { return String(unsafe).replace(/[&<"'>]/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]; }); }
 });
 </script>
+
+<script src="/grupobrasil/public/js/comment_counter.js"></script>

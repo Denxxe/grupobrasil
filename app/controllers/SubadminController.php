@@ -12,6 +12,7 @@ require_once __DIR__ . '/../models/LiderCalle.php';
 require_once __DIR__ . '/../models/CargaFamiliar.php';
 require_once __DIR__ . '/../models/HabitanteVivienda.php';
 require_once __DIR__ . '/AppController.php';
+require_once __DIR__ . '/../helpers/CsrfHelper.php';
 
 class SubadminController extends AppController { 
     private $usuarioModel;
@@ -863,11 +864,303 @@ class SubadminController extends AppController {
     }
 
     public function manageComments() {
-        $comentarios = $this->comentarioModel->getAllComments(false);
+        // Para la vista de gestión preferimos mostrar las noticias con conteo de comentarios
+        // y permitir al subadmin seleccionar una noticia para ver sus comentarios (modal AJAX)
+        $sql = "SELECT n.id_noticia, n.titulo, COUNT(c.id_comentario) AS conteo
+                FROM noticias n
+                LEFT JOIN comentarios c ON n.id_noticia = c.id_noticia
+                GROUP BY n.id_noticia, n.titulo
+                ORDER BY conteo DESC, n.titulo ASC";
+
+        $res = $this->comentarioModel->rawQuery($sql);
+        $noticias = [];
+        if ($res) {
+            while ($r = $res->fetch_assoc()) { $noticias[] = $r; }
+            $res->free();
+        }
+
+        // Obtener detalles de veredas asignadas para mostrar en modal de visibilidad
+        $idUsuario = $_SESSION['id_usuario'] ?? 0;
+        $callesDetalles = $this->liderCalleModel->getCallesConDetallesPorUsuario($idUsuario);
+
         $this->loadView('subadmin/comentarios/index', [
             'page_title' => 'Gestión de Comentarios (Subadmin)',
-            'comentarios' => $comentarios
-        ]); // **CORRECCIÓN: Eliminado 'return'**
+            'noticias' => $noticias,
+            'callesAsignadas' => $callesDetalles
+        ]);
+    }
+
+    /**
+     * GET (AJAX) - devuelve visibilidad actual para una noticia
+     */
+    public function getVisibilityForNews() {
+        header('Content-Type: application/json');
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        if ($id <= 0) { echo json_encode(['success'=>false,'message'=>'ID inválido']); exit; }
+
+        require_once __DIR__ . '/../models/NoticiaVisibilidad.php';
+        $nv = new NoticiaVisibilidad();
+        $vis = $nv->getVisibilityForNews($id);
+        echo json_encode(['success'=>true,'visibilidad'=>$vis]);
+        exit;
+    }
+
+    /**
+     * POST (AJAX) - guarda la visibilidad (calles y/o habitantes) para una noticia
+     */
+    public function saveVisibilityForNews() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success'=>false,'message'=>'Método inválido']); exit; }
+
+        // CSRF validation
+        $csrf = $_POST['csrf_token'] ?? null;
+        if (!\CsrfHelper::validateToken($csrf)) {
+            echo json_encode(['success'=>false,'message'=>'Token CSRF inválido']); exit;
+        }
+
+        $id_noticia = isset($_POST['id_noticia']) ? (int)$_POST['id_noticia'] : 0;
+        $calles = $_POST['calles'] ?? [];
+        $habitantes = $_POST['habitantes'] ?? [];
+        if ($id_noticia <= 0) { echo json_encode(['success'=>false,'message'=>'ID inválido']); exit; }
+
+        // Validar que las calles seleccionadas pertenezcan al líder
+        $assignedIds = $this->getAssignedVeredas();
+        foreach ($calles as $c) {
+            if (!in_array((int)$c, $assignedIds, true)) {
+                echo json_encode(['success'=>false,'message'=>'Intento de asignar vereda no autorizada']); exit;
+            }
+        }
+
+        require_once __DIR__ . '/../models/NoticiaVisibilidad.php';
+        $nv = new NoticiaVisibilidad();
+
+        // Limpiar visibilidad previa
+        $nv->clearVisibilityForNews($id_noticia);
+
+        // Insertar nuevas reglas por calle
+        foreach ($calles as $c) { $nv->assignVisibilityByCalle($id_noticia, (int)$c); }
+        // Insertar por habitante (opcional)
+        foreach ($habitantes as $h) { $nv->assignVisibilityByHabitante($id_noticia, (int)$h); }
+
+        echo json_encode(['success'=>true]);
+        exit;
+    }
+
+    /**
+     * Devuelve comentarios para una noticia (AJAX) - usado por el modal en la vista
+     */
+    public function getCommentsByNoticia() {
+        header('Content-Type: application/json');
+
+        $id = $_GET['id'] ?? null;
+        if (!$id || !is_numeric($id)) {
+            echo json_encode(['success' => false, 'message' => 'ID de noticia inválido']);
+            exit;
+        }
+
+        $comentarios = $this->comentarioModel->obtenerComentariosPorNoticia((int)$id, false);
+
+        // Filtrar comentarios según veredas asignadas del subadmin
+        $assigned = $this->getAssignedVeredas(); // array de id_calle
+        $filtered = [];
+
+        // Si no hay veredas asignadas, denegar (salvo admin)
+        if (empty($assigned) && ($_SESSION['id_rol'] ?? 0) == 2) {
+            echo json_encode(['success' => false, 'message' => 'No tienes veredas asignadas.']);
+            exit;
+        }
+
+        foreach ($comentarios as $c) {
+            // Si es admin (1) permitimos ver todo
+            if (($_SESSION['id_rol'] ?? 0) == 1) {
+                $filtered[] = $c; continue;
+            }
+
+            $id_usuario = $c['id_usuario'] ?? null;
+            if (!$id_usuario) continue;
+
+            $usuario = $this->usuarioModel->find((int)$id_usuario);
+            if (!$usuario) continue;
+            $persona = $this->personaModel->find($usuario['id_persona'] ?? 0);
+            if (!$persona) continue;
+
+            if (in_array((int)$persona['id_calle'], $assigned, true)) {
+                $filtered[] = $c;
+            }
+        }
+
+        $titulo = "";
+        if (!empty($filtered)) {
+            $titulo = $filtered[0]['titulo_noticia'] ?? $this->noticiaModel->getById((int)$id)['titulo'] ?? 'Noticia sin título';
+        } else {
+            $noticia = $this->noticiaModel->getById((int)$id);
+            $titulo = $noticia['titulo'] ?? 'Noticia';
+        }
+
+        echo json_encode([
+            'success' => true,
+            'titulo' => $titulo,
+            'comentarios' => $filtered
+        ]);
+        exit;
+    }
+
+    public function softDeleteComment($id) {
+        if (!is_numeric($id) || $id <= 0) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                echo json_encode(['success' => false, 'message' => 'ID de comentario inválido.']); exit;
+            }
+            $_SESSION['error_message'] = "ID de comentario inválido.";
+            header('Location: ./index.php?route=subadmin/comments');
+            exit();
+        }
+
+        // Verificar CSRF si es POST
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $csrf = $_POST['csrf_token'] ?? null;
+            if (!\CsrfHelper::validateToken($csrf)) {
+                if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                    echo json_encode(['success' => false, 'message' => 'Token CSRF inválido.']); exit;
+                }
+                $_SESSION['error_message'] = 'Token CSRF inválido.';
+                header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? './index.php?route=subadmin/comments'));
+                exit();
+            }
+        }
+
+        // Verificar permiso: el comentario debe pertenecer a un usuario en las veredas asignadas
+        $coment = $this->comentarioModel->getComentarioById((int)$id, false);
+        $assigned = $this->getAssignedVeredas();
+        $authorized = false;
+        if (($_SESSION['id_rol'] ?? 0) == 1) $authorized = true; // admin
+        if (!$authorized && $coment) {
+            $usuario = $this->usuarioModel->find($coment['id_usuario']);
+            $persona = $this->personaModel->find($usuario['id_persona'] ?? 0);
+            if ($persona && in_array((int)$persona['id_calle'], $assigned, true)) $authorized = true;
+        }
+
+        if (!$authorized) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                echo json_encode(['success' => false, 'message' => 'No tienes permiso para eliminar este comentario.']); exit;
+            }
+            $_SESSION['error_message'] = 'No tienes permiso para eliminar este comentario.';
+            header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? './index.php?route=subadmin/comments'));
+            exit();
+        }
+
+        $result = $this->comentarioModel->softDeleteComentario((int)$id);
+
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            echo json_encode(['success' => (bool)$result]); exit;
+        }
+
+        if ($result) {
+            $_SESSION['success_message'] = "Comentario eliminado lógicamente.";
+        } else {
+            $_SESSION['error_message'] = "Error al eliminar lógicamente el comentario.";
+        }
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? './index.php?route=subadmin/comments'));
+        exit();
+    }
+
+    public function activateComment($id) {
+        if (!is_numeric($id) || $id <= 0) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                echo json_encode(['success' => false, 'message' => 'ID de comentario inválido.']); exit;
+            }
+            $_SESSION['error_message'] = "ID de comentario inválido.";
+            header('Location: ./index.php?route=subadmin/comments');
+            exit();
+        }
+
+        // Permisos (mismo patrón que softDeleteComment)
+        $coment = $this->comentarioModel->getComentarioById((int)$id, false);
+        $assigned = $this->getAssignedVeredas();
+        $authorized = false;
+        if (($_SESSION['id_rol'] ?? 0) == 1) $authorized = true;
+        if (!$authorized && $coment) {
+            $usuario = $this->usuarioModel->find($coment['id_usuario']);
+            $persona = $this->personaModel->find($usuario['id_persona'] ?? 0);
+            if ($persona && in_array((int)$persona['id_calle'], $assigned, true)) $authorized = true;
+        }
+
+        if (!$authorized) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                echo json_encode(['success' => false, 'message' => 'No tienes permiso para activar este comentario.']); exit;
+            }
+            $_SESSION['error_message'] = 'No tienes permiso para activar este comentario.';
+            header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? './index.php?route=subadmin/comments'));
+            exit();
+        }
+
+        $result = $this->comentarioModel->activarComentario((int)$id);
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            echo json_encode(['success' => (bool)$result]); exit;
+        }
+
+        if ($result) {
+            $_SESSION['success_message'] = "Comentario activado.";
+        } else {
+            $_SESSION['error_message'] = "Error al activar el comentario.";
+        }
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? './index.php?route=subadmin/comments'));
+        exit();
+    }
+
+    public function deleteComment($id) {
+        if (!is_numeric($id) || $id <= 0) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                echo json_encode(['success' => false, 'message' => 'ID de comentario inválido.']); exit;
+            }
+            $_SESSION['error_message'] = "ID de comentario inválido para eliminación física.";
+            header('Location: ./index.php?route=subadmin/comments');
+            exit();
+        }
+
+        // Verificar CSRF si es POST
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $csrf = $_POST['csrf_token'] ?? null;
+            if (!\CsrfHelper::validateToken($csrf)) {
+                if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                    echo json_encode(['success' => false, 'message' => 'Token CSRF inválido.']); exit;
+                }
+                $_SESSION['error_message'] = 'Token CSRF inválido.';
+                header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? './index.php?route=subadmin/comments'));
+                exit();
+            }
+        }
+
+        $coment = $this->comentarioModel->getComentarioById((int)$id, false);
+        $assigned = $this->getAssignedVeredas();
+        $authorized = false;
+        if (($_SESSION['id_rol'] ?? 0) == 1) $authorized = true;
+        if (!$authorized && $coment) {
+            $usuario = $this->usuarioModel->find($coment['id_usuario']);
+            $persona = $this->personaModel->find($usuario['id_persona'] ?? 0);
+            if ($persona && in_array((int)$persona['id_calle'], $assigned, true)) $authorized = true;
+        }
+
+        if (!$authorized) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                echo json_encode(['success' => false, 'message' => 'No tienes permiso para eliminar este comentario.']); exit;
+            }
+            $_SESSION['error_message'] = 'No tienes permiso para eliminar este comentario.';
+            header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? './index.php?route=subadmin/comments'));
+            exit();
+        }
+
+        $result = $this->comentarioModel->deleteComentario((int)$id);
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            echo json_encode(['success' => (bool)$result]); exit;
+        }
+
+        if ($result) {
+            $_SESSION['success_message'] = "Comentario eliminado físicamente.";
+        } else {
+            $_SESSION['error_message'] = "Error al eliminar físicamente el comentario.";
+        }
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? './index.php?route=subadmin/comments'));
+        exit();
     }
 
     public function manageNotifications() {

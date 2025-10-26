@@ -320,27 +320,34 @@ if (!isset($_SESSION['id_usuario'])) {
                     header('Location: ./index.php?route=user/dashboard');
                     exit();
                 }
+
                 $controllerName = 'SubadminController';
+
                 if ($actionSegment === 'news') {
-                    if ($id === 'soft-delete') { 
-                        $actionName = 'requestSoftDeleteNews'; 
-                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-                    } else { 
-                        $actionName = 'manageNews'; 
+                    if ($id === 'soft-delete') {
+                        $actionName = 'requestSoftDeleteNews';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } else {
+                        $actionName = 'manageNews';
                     }
                 } elseif ($actionSegment === 'comments') {
-                    if ($id === 'soft-delete') { 
-                        $actionName = 'softDeleteComment'; 
-                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-                    } elseif ($id === 'activate') { 
-                        $actionName = 'activateComment'; 
-                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-                    } elseif ($id === 'delete') { 
-                        $actionName = 'deleteComment'; 
-                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); 
-                    } else { 
-                        $actionName = 'manageComments'; 
+                    if ($id === 'soft-delete') {
+                        $actionName = 'softDeleteComment';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } elseif ($id === 'delete') {
+                        $actionName = 'deleteComment';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } else {
+                        $actionName = 'manageComments';
                     }
+                } elseif ($actionSegment === 'getCommentsByNoticia') {
+                    $actionName = 'getCommentsByNoticia';
+                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                } elseif ($actionSegment === 'getVisibilityForNews') {
+                    $actionName = 'getVisibilityForNews';
+                    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                } elseif ($actionSegment === 'saveVisibilityForNews') {
+                    $actionName = 'saveVisibilityForNews';
                 } elseif ($actionSegment === 'reports') {
                     $actionName = 'reports';
                 } elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
@@ -395,6 +402,7 @@ if (!isset($_SESSION['id_usuario'])) {
                     elseif ($id === 'delete') { $actionName = 'deleteNotification'; $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT); }
                     else { $actionName = 'manageNotifications'; }
                 }
+
                 break;
 
             case 'api':

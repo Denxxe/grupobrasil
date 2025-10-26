@@ -142,8 +142,11 @@ class Noticia extends ModelBase {
             return false; 
         }
 
-        $sql = "INSERT INTO " . $this->table . " (titulo, contenido, imagen_principal, id_usuario, id_categoria, estado, fecha_publicacion)
-                 VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
+    // Generar slug único a partir del título para evitar errores por constraint UNIQUE
+    $slug = $this->generateUniqueSlug($titulo ?? '');
+
+    $sql = "INSERT INTO " . $this->table . " (titulo, contenido, imagen_principal, slug, id_usuario, id_categoria, estado, fecha_publicacion)
+         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
 
         $stmt = $this->conn->prepare($sql);
 
@@ -152,8 +155,8 @@ class Noticia extends ModelBase {
             return false;
         }
 
-        // bind_param: sssiss (titulo, contenido, imagen_principal, id_usuario, id_categoria, estado_value)
-        $stmt->bind_param("sssiss", $titulo, $contenido, $imagen_principal, $id_usuario, $id_categoria, $estado_value);
+    // bind_param: ssss i i s (titulo, contenido, imagen_principal, slug, id_usuario, id_categoria, estado_value)
+    $stmt->bind_param("ssssiis", $titulo, $contenido, $imagen_principal, $slug, $id_usuario, $id_categoria, $estado_value);
 
         if ($stmt->execute()) {
             $new_id = $this->conn->insert_id;
@@ -164,6 +167,44 @@ class Noticia extends ModelBase {
             $stmt->close();
             return false;
         }
+    }
+
+    /**
+     * Genera un slug amigable y lo hace único en la tabla 'noticias'.
+     */
+    private function generateUniqueSlug(string $title): string {
+        // Slug básico: translit + lowercase + reemplazo de no-alfa-num por guiones
+        $slug = $title;
+        if (function_exists('iconv')) {
+            $slug = iconv('UTF-8', 'ASCII//TRANSLIT', $slug);
+        }
+        $slug = preg_replace('/[^a-zA-Z0-9\s-_]/', '', $slug);
+        $slug = preg_replace('/[\s-_]+/', '-', $slug);
+        $slug = strtolower(trim($slug, " -_"));
+
+        if (empty($slug)) {
+            $slug = 'noticia-' . time();
+        }
+
+        $base = $slug;
+        $i = 1;
+        // Comprobar existencia en BD
+        while (true) {
+            $sql = "SELECT COUNT(*) as cnt FROM " . $this->table . " WHERE slug = ?";
+            $stmt = $this->conn->prepare($sql);
+            if ($stmt === false) break;
+            $stmt->bind_param('s', $slug);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            $row = $res ? $res->fetch_assoc() : null;
+            $count = $row ? (int)$row['cnt'] : 0;
+            $stmt->close();
+            if ($count === 0) break;
+            $slug = $base . '-' . $i;
+            $i++;
+        }
+
+        return $slug;
     }
 
     /**
