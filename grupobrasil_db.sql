@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 25-10-2025 a las 22:00:14
+-- Tiempo de generación: 26-10-2025 a las 07:39:18
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -42,9 +42,17 @@ CREATE TABLE `calle` (
 --
 
 INSERT INTO `calle` (`id_calle`, `nombre`, `sector`, `descripcion`, `activo`, `fecha_registro`, `fecha_actualizacion`) VALUES
-(1, 'Vereda 6', NULL, NULL, 1, '2025-10-21 03:17:21', '2025-10-21 04:01:51'),
-(2, 'Vereda 7', NULL, NULL, 1, '2025-10-21 03:17:21', '2025-10-21 04:02:02'),
-(3, 'Vereda 8', NULL, NULL, 1, '2025-10-21 03:17:21', '2025-10-21 04:02:15');
+(1, 'Vereda 1', NULL, NULL, 1, '2025-10-21 03:17:21', '2025-10-25 23:47:54'),
+(2, 'Vereda 2', NULL, NULL, 1, '2025-10-21 03:17:21', '2025-10-25 23:48:01'),
+(3, 'Vereda 3', NULL, NULL, 1, '2025-10-21 03:17:21', '2025-10-25 23:48:08'),
+(4, 'Vereda 4', NULL, NULL, 1, '2025-10-25 23:49:00', '2025-10-25 23:49:12'),
+(5, 'Vereda 5', NULL, NULL, 1, '2025-10-25 23:49:21', '2025-10-25 23:49:21'),
+(6, 'Vereda 6', NULL, NULL, 1, '2025-10-25 23:49:30', '2025-10-25 23:49:30'),
+(7, 'Vereda 7', NULL, NULL, 1, '2025-10-25 23:49:37', '2025-10-25 23:49:37'),
+(8, 'Vereda 8', NULL, NULL, 1, '2025-10-25 23:49:45', '2025-10-25 23:49:45'),
+(9, 'Vereda 9', NULL, NULL, 1, '2025-10-25 23:50:04', '2025-10-25 23:50:04'),
+(10, 'Vereda 10', NULL, NULL, 1, '2025-10-25 23:50:11', '2025-10-25 23:50:11'),
+(11, 'Vereda 11', NULL, NULL, 1, '2025-10-25 23:50:20', '2025-10-25 23:50:20');
 
 -- --------------------------------------------------------
 
@@ -102,6 +110,13 @@ CREATE TABLE `comentarios` (
   `fecha_comentario` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Fecha y hora de publicación',
   `activo` tinyint(1) NOT NULL DEFAULT 1 COMMENT '0=inactivo, 1=activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `comentarios`
+--
+
+INSERT INTO `comentarios` (`id_comentario`, `id_noticia`, `id_usuario`, `contenido`, `fecha_comentario`, `activo`) VALUES
+(4, 2, 5, 'holas', '2025-10-26 05:57:53', 1);
 
 -- --------------------------------------------------------
 
@@ -214,7 +229,8 @@ CREATE TABLE `lider_calle` (
 INSERT INTO `lider_calle` (`id_habitante`, `id_calle`, `fecha_designacion`, `activo`, `fecha_registro`, `fecha_actualizacion`) VALUES
 (3, 1, '2025-10-24', 1, '2025-10-24 21:05:42', '2025-10-24 21:05:42'),
 (3, 2, '2025-10-24', 1, '2025-10-24 21:05:42', '2025-10-24 21:05:42'),
-(4, 1, '2025-10-24', 1, '2025-10-24 21:35:33', '2025-10-24 21:35:33');
+(4, 1, '2025-10-25', 1, '2025-10-25 23:16:59', '2025-10-25 23:16:59'),
+(4, 2, '2025-10-25', 1, '2025-10-25 23:16:59', '2025-10-25 23:16:59');
 
 -- --------------------------------------------------------
 
@@ -231,6 +247,27 @@ CREATE TABLE `lider_comunal` (
   `fecha_registro` datetime DEFAULT current_timestamp(),
   `fecha_actualizacion` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `likes`
+--
+
+CREATE TABLE `likes` (
+  `id_like` int(10) UNSIGNED NOT NULL,
+  `id_noticia` int(10) UNSIGNED NOT NULL,
+  `id_usuario` int(10) UNSIGNED NOT NULL,
+  `fecha_like` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `likes`
+--
+
+INSERT INTO `likes` (`id_like`, `id_noticia`, `id_usuario`, `fecha_like`) VALUES
+(2, 2, 5, '2025-10-26 01:20:29'),
+(3, 2, 3, '2025-10-26 01:20:48');
 
 -- --------------------------------------------------------
 
@@ -264,6 +301,29 @@ CREATE TABLE `noticias` (
   `fecha_publicacion` datetime DEFAULT NULL,
   `fecha_registro` datetime NOT NULL DEFAULT current_timestamp(),
   `fecha_actualizacion` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `noticias`
+--
+
+INSERT INTO `noticias` (`id_noticia`, `id_usuario`, `id_categoria`, `titulo`, `contenido`, `imagen_principal`, `slug`, `estado`, `fecha_publicacion`, `fecha_registro`, `fecha_actualizacion`) VALUES
+(2, 2, 3, 'Noticia prueba', 'talfi', 'uploads/noticias/news_68fda8b71cfbf.jpg', '', 'publicado', '2025-10-25 23:19:28', '2025-10-25 23:19:28', '2025-10-26 00:51:03'),
+(5, 2, 3, 'Qlq', 'ti', 'uploads/noticias/news_68fda8a020348.png', 'noticia-1761454240', 'borrador', '2025-10-26 00:50:40', '2025-10-26 00:50:40', '2025-10-26 00:50:40');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `noticia_visibilidad`
+--
+
+CREATE TABLE `noticia_visibilidad` (
+  `id` int(11) NOT NULL,
+  `id_noticia` int(10) UNSIGNED NOT NULL,
+  `id_calle` int(10) UNSIGNED DEFAULT NULL,
+  `id_habitante` int(10) UNSIGNED DEFAULT NULL,
+  `visible` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -380,7 +440,8 @@ INSERT INTO `persona` (`id_persona`, `cedula`, `nombres`, `apellidos`, `fecha_na
 (3, '12345678', 'Lider', 'Comunidad', '1980-01-01', 'F', '0987654321', 'Oficina Central', 1, '2', 'admin@grupobrasil.com', NULL, 1, '2025-10-20 23:29:39', '2025-10-21 07:52:21'),
 (6, '31044092', 'Cristian Jesus', 'Correa Pinto', '0000-00-00', '', '12345678', 'Urbanización Brasil', 3, '6', 'cristiancorreaxd@gmail.com', 'Residente', 1, '2025-10-21 04:48:38', '2025-10-21 07:52:54'),
 (7, '87654321', 'Luis', 'Arredondo', NULL, NULL, '04147852753', '', 1, '', '', 'Residente', 1, '2025-10-21 20:33:17', '2025-10-21 20:33:17'),
-(8, '30000000', 'Jesus', 'Alberto', NULL, NULL, '04126785678', '', 3, '', '', 'Residente', 1, '2025-10-24 21:05:09', '2025-10-24 21:05:09');
+(8, '30000000', 'Jesus', 'Alberto', NULL, NULL, '04126785678', '', 3, '', '', 'Residente', 1, '2025-10-24 21:05:09', '2025-10-24 21:05:09'),
+(10, '30443822', 'Luis', 'Arredondo', NULL, NULL, '04147852753', '', 2, '', '', 'Residente', 1, '2025-10-25 23:04:39', '2025-10-25 23:04:39');
 
 -- --------------------------------------------------------
 
@@ -473,6 +534,13 @@ CREATE TABLE `vivienda` (
   `fecha_registro` datetime DEFAULT current_timestamp(),
   `fecha_actualizacion` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `vivienda`
+--
+
+INSERT INTO `vivienda` (`id_vivienda`, `id_calle`, `numero`, `tipo`, `estado`, `activo`, `fecha_registro`, `fecha_actualizacion`) VALUES
+(4, 1, '8', 'Casa', 'Activo', 1, '2025-10-25 23:16:30', '2025-10-25 23:16:30');
 
 -- --------------------------------------------------------
 
@@ -571,6 +639,14 @@ ALTER TABLE `lider_comunal`
   ADD PRIMARY KEY (`id_habitante`,`fecha_inicio`);
 
 --
+-- Indices de la tabla `likes`
+--
+ALTER TABLE `likes`
+  ADD PRIMARY KEY (`id_like`),
+  ADD KEY `id_noticia` (`id_noticia`),
+  ADD KEY `id_usuario` (`id_usuario`);
+
+--
 -- Indices de la tabla `log_actividad`
 --
 ALTER TABLE `log_actividad`
@@ -584,6 +660,15 @@ ALTER TABLE `noticias`
   ADD PRIMARY KEY (`id_noticia`),
   ADD UNIQUE KEY `slug` (`slug`),
   ADD KEY `fk_noticias_usuario` (`id_usuario`);
+
+--
+-- Indices de la tabla `noticia_visibilidad`
+--
+ALTER TABLE `noticia_visibilidad`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_noticia` (`id_noticia`),
+  ADD KEY `idx_calle` (`id_calle`),
+  ADD KEY `idx_habitante` (`id_habitante`);
 
 --
 -- Indices de la tabla `notificaciones`
@@ -677,7 +762,7 @@ ALTER TABLE `vivienda_detalle`
 -- AUTO_INCREMENT de la tabla `calle`
 --
 ALTER TABLE `calle`
-  MODIFY `id_calle` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_calle` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT de la tabla `carga_familiar`
@@ -695,7 +780,7 @@ ALTER TABLE `categorias`
 -- AUTO_INCREMENT de la tabla `comentarios`
 --
 ALTER TABLE `comentarios`
-  MODIFY `id_comentario` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id_comentario` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `concepto_pago`
@@ -722,6 +807,12 @@ ALTER TABLE `indicador_gestion`
   MODIFY `id_indicador` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `likes`
+--
+ALTER TABLE `likes`
+  MODIFY `id_like` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT de la tabla `log_actividad`
 --
 ALTER TABLE `log_actividad`
@@ -731,7 +822,13 @@ ALTER TABLE `log_actividad`
 -- AUTO_INCREMENT de la tabla `noticias`
 --
 ALTER TABLE `noticias`
-  MODIFY `id_noticia` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_noticia` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT de la tabla `noticia_visibilidad`
+--
+ALTER TABLE `noticia_visibilidad`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `notificaciones`
@@ -767,7 +864,7 @@ ALTER TABLE `participacion_evento`
 -- AUTO_INCREMENT de la tabla `persona`
 --
 ALTER TABLE `persona`
-  MODIFY `id_persona` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id_persona` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT de la tabla `rol`
@@ -791,7 +888,7 @@ ALTER TABLE `usuario`
 -- AUTO_INCREMENT de la tabla `vivienda`
 --
 ALTER TABLE `vivienda`
-  MODIFY `id_vivienda` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_vivienda` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `vivienda_detalle`
@@ -856,6 +953,13 @@ ALTER TABLE `lider_comunal`
   ADD CONSTRAINT `lider_comunal_id_habitante_fkey` FOREIGN KEY (`id_habitante`) REFERENCES `habitante` (`id_habitante`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 --
+-- Filtros para la tabla `likes`
+--
+ALTER TABLE `likes`
+  ADD CONSTRAINT `fk_likes_noticia` FOREIGN KEY (`id_noticia`) REFERENCES `noticias` (`id_noticia`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_likes_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE;
+
+--
 -- Filtros para la tabla `log_actividad`
 --
 ALTER TABLE `log_actividad`
@@ -866,6 +970,14 @@ ALTER TABLE `log_actividad`
 --
 ALTER TABLE `noticias`
   ADD CONSTRAINT `fk_noticias_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `noticia_visibilidad`
+--
+ALTER TABLE `noticia_visibilidad`
+  ADD CONSTRAINT `fk_nv_calle` FOREIGN KEY (`id_calle`) REFERENCES `calle` (`id_calle`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_nv_habitante` FOREIGN KEY (`id_habitante`) REFERENCES `habitante` (`id_habitante`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_nv_noticia` FOREIGN KEY (`id_noticia`) REFERENCES `noticias` (`id_noticia`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `notificaciones`
