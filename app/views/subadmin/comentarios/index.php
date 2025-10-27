@@ -117,19 +117,50 @@ document.querySelectorAll('.open-modal').forEach(button => {
                                 if (!confirm('¿Estás seguro de ELIMINAR FÍSICAMENTE este comentario? Esta acción es irreversible.')) return;
                             }
 
+                            // Determinar la ruta correcta según el enrutador (subadmin expects comments/{subaction})
+                            let routePath = '';
+                            if (action === 'deleteComment') {
+                                routePath = `subadmin/comments/delete&id=${encodeURIComponent(cid)}`;
+                            } else if (action === 'softDeleteComment') {
+                                routePath = `subadmin/comments/soft-delete&id=${encodeURIComponent(cid)}`;
+                            } else if (action === 'activateComment') {
+                                routePath = `subadmin/comments/activate&id=${encodeURIComponent(cid)}`;
+                            } else {
+                                // fallback: try action name directly
+                                routePath = `subadmin/${action}&id=${encodeURIComponent(cid)}`;
+                            }
+
                             // Llamada AJAX (POST) al endpoint correspondiente con CSRF
                             try {
                                 const body = new URLSearchParams();
                                 body.append('csrf_token', CSRF_TOKEN);
 
-                                const res = await fetch(`./index.php?route=subadmin/${action}&id=${encodeURIComponent(cid)}`, {
+                                const url = `./index.php?route=${routePath}`;
+                                const res = await fetch(url, {
                                     method: 'POST',
                                     credentials: 'same-origin',
                                     headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
                                     body: body.toString()
                                 });
+
+                                // Intentar parsear JSON de forma segura
+                                const contentType = res.headers.get('content-type') || '';
+                                if (!res.ok) {
+                                    const text = await res.text();
+                                    console.error('Respuesta no OK:', res.status, text);
+                                    alert('Error del servidor al ejecutar la acción (ver consola).');
+                                    return;
+                                }
+
+                                if (contentType.indexOf('application/json') === -1) {
+                                    const text = await res.text();
+                                    console.error('Respuesta inesperada (no JSON):', text);
+                                    alert('Respuesta inesperada del servidor (ver consola).');
+                                    return;
+                                }
+
                                 const data = await res.json();
-                                if (res.ok && data.success) {
+                                if (data.success) {
                                     // Remover tarjeta del DOM
                                     const card = btn.closest('.comment-card');
                                     if (card) card.remove();

@@ -154,11 +154,11 @@ $formatCurrency = fn($value) => '$' . number_format($value, 0, ',', '.');
                     <div class="flex items-center justify-center bg-indigo-100 text-indigo-500 rounded-full w-12 h-12 mr-4">
                         <i class="fas fa-boxes text-xl"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-gray-800">Gestionar Inventario</h3>
+                    <h3 class="text-xl font-semibold text-gray-800">Gestionar Reportes</h3>
                 </div>
-                <p class="text-gray-600 mb-4">Actualiza el inventario y la información de los productos o recursos disponibles.</p>
-                <a href="./index.php?route=admin/products" class="inline-block <?php echo $vinotinto; ?> hover:bg-red-800 text-white px-5 py-2 rounded-lg font-medium transition duration-300 shadow-md">
-                    Ver Inventario
+                <p class="text-gray-600 mb-4">Accede a las métricas clave, tendencias y análisis detallados del rendimiento del sistema.</p>
+                <a href="./index.php?route=admin/reports" class="inline-block <?php echo $vinotinto; ?> hover:bg-red-800 text-white px-5 py-2 rounded-lg font-medium transition duration-300 shadow-md">
+                    Ver Reportes
                 </a>
             </div>
         </div>

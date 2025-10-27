@@ -1061,6 +1061,7 @@ class SubadminController extends AppController {
     public function softDeleteComment($id) {
         if (!is_numeric($id) || $id <= 0) {
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'ID de comentario inválido.']); exit;
             }
             $_SESSION['error_message'] = "ID de comentario inválido.";
@@ -1073,6 +1074,7 @@ class SubadminController extends AppController {
             $csrf = $_POST['csrf_token'] ?? null;
             if (!\CsrfHelper::validateToken($csrf)) {
                 if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                    header('Content-Type: application/json');
                     echo json_encode(['success' => false, 'message' => 'Token CSRF inválido.']); exit;
                 }
                 $_SESSION['error_message'] = 'Token CSRF inválido.';
@@ -1094,6 +1096,7 @@ class SubadminController extends AppController {
 
         if (!$authorized) {
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'No tienes permiso para eliminar este comentario.']); exit;
             }
             $_SESSION['error_message'] = 'No tienes permiso para eliminar este comentario.';
@@ -1104,6 +1107,7 @@ class SubadminController extends AppController {
         $result = $this->comentarioModel->softDeleteComentario((int)$id);
 
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json');
             echo json_encode(['success' => (bool)$result]); exit;
         }
 
@@ -1119,6 +1123,7 @@ class SubadminController extends AppController {
     public function activateComment($id) {
         if (!is_numeric($id) || $id <= 0) {
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'ID de comentario inválido.']); exit;
             }
             $_SESSION['error_message'] = "ID de comentario inválido.";
@@ -1139,6 +1144,7 @@ class SubadminController extends AppController {
 
         if (!$authorized) {
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'No tienes permiso para activar este comentario.']); exit;
             }
             $_SESSION['error_message'] = 'No tienes permiso para activar este comentario.';
@@ -1148,6 +1154,7 @@ class SubadminController extends AppController {
 
         $result = $this->comentarioModel->activarComentario((int)$id);
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json');
             echo json_encode(['success' => (bool)$result]); exit;
         }
 
@@ -1163,6 +1170,7 @@ class SubadminController extends AppController {
     public function deleteComment($id) {
         if (!is_numeric($id) || $id <= 0) {
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'ID de comentario inválido.']); exit;
             }
             $_SESSION['error_message'] = "ID de comentario inválido para eliminación física.";
@@ -1175,6 +1183,7 @@ class SubadminController extends AppController {
             $csrf = $_POST['csrf_token'] ?? null;
             if (!\CsrfHelper::validateToken($csrf)) {
                 if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                    header('Content-Type: application/json');
                     echo json_encode(['success' => false, 'message' => 'Token CSRF inválido.']); exit;
                 }
                 $_SESSION['error_message'] = 'Token CSRF inválido.';
@@ -1195,6 +1204,7 @@ class SubadminController extends AppController {
 
         if (!$authorized) {
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'No tienes permiso para eliminar este comentario.']); exit;
             }
             $_SESSION['error_message'] = 'No tienes permiso para eliminar este comentario.';
@@ -1204,6 +1214,7 @@ class SubadminController extends AppController {
 
         $result = $this->comentarioModel->deleteComentario((int)$id);
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json');
             echo json_encode(['success' => (bool)$result]); exit;
         }
 
@@ -1215,7 +1226,7 @@ class SubadminController extends AppController {
         header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? './index.php?route=subadmin/comments'));
         exit();
     }
-
+    
     public function manageNotifications() {
         $id_subadmin = $_SESSION['id_usuario'] ?? 0;
         
