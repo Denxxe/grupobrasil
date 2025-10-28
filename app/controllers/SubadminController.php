@@ -903,16 +903,10 @@ class SubadminController extends AppController {
     }
 
     public function reports() {
-    
-        $noticias = $this->noticiaModel->getAll();
-        $comentarios = $this->comentarioModel->getAll();
-
         $data = [
-            'page_title' => 'Reportes de Subadministración',
-            'noticias' => $noticias,
-            'comentarios' => $comentarios
+            'title' => 'Reportes',
+            'page_title' => 'Reportes de Mi Calle'
         ];
-
         $this->loadView('subadmin/reports', $data);
     }
 
@@ -1315,6 +1309,252 @@ class SubadminController extends AppController {
         }
         header('Location:./index.php?route=subadmin/notifications');
         exit();
+    }
+
+    // ==================== REPORTES PARA SUBADMIN ====================
+
+    /**
+     * Vista de reporte de habitantes (solo de sus calles)
+     */
+    public function vistaReporteHabitantes() {
+        $data = [
+            'title' => 'Reporte de Habitantes',
+            'page_title' => 'Reporte de Habitantes de Mi Calle'
+        ];
+        $this->loadView('subadmin/reportes/habitantes', $data);
+    }
+
+    /**
+     * Vista de reporte de viviendas (solo de sus calles)
+     */
+    public function vistaReporteViviendas() {
+        $data = [
+            'title' => 'Reporte de Viviendas',
+            'page_title' => 'Reporte de Viviendas de Mi Calle'
+        ];
+        $this->loadView('subadmin/reportes/viviendas', $data);
+    }
+
+    /**
+     * Vista de reporte de familias (solo de sus calles)
+     */
+    public function vistaReporteFamilias() {
+        $data = [
+            'title' => 'Reporte de Familias',
+            'page_title' => 'Reporte de Familias de Mi Calle'
+        ];
+        $this->loadView('subadmin/reportes/familias', $data);
+    }
+
+    /**
+     * API: Reporte de habitantes (solo de sus calles asignadas)
+     */
+    public function reporteHabitantes() {
+        header('Content-Type: application/json');
+        
+        $veredasAsignadas = $this->getAssignedVeredas();
+        
+        if (empty($veredasAsignadas)) {
+            echo json_encode([]);
+            exit;
+        }
+        
+        $callesIds = implode(',', array_map('intval', $veredasAsignadas));
+        
+        $sql = "SELECT 
+                    p.cedula,
+                    CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
+                    p.telefono,
+                    p.correo,
+                    p.sexo,
+                    TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad,
+                    c.nombre AS calle,
+                    c.sector,
+                    v.numero AS numero_vivienda,
+                    v.tipo AS tipo_vivienda,
+                    h.condicion,
+                    hv.es_jefe_familia
+                FROM habitante h
+                INNER JOIN persona p ON h.id_persona = p.id_persona
+                LEFT JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante
+                LEFT JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
+                LEFT JOIN calle c ON v.id_calle = c.id_calle
+                WHERE h.activo = 1 
+                AND v.id_calle IN ($callesIds)
+                ORDER BY c.nombre ASC, p.apellidos ASC, p.nombres ASC";
+        
+        $result = $this->habitanteModel->rawQuery($sql);
+        $habitantes = [];
+        
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $habitantes[] = $row;
+            }
+            $result->free();
+        }
+        
+        echo json_encode($habitantes);
+        exit;
+    }
+
+    /**
+     * API: Reporte de viviendas (solo de sus calles asignadas)
+     */
+    public function reporteViviendas() {
+        header('Content-Type: application/json');
+        
+        $veredasAsignadas = $this->getAssignedVeredas();
+        
+        if (empty($veredasAsignadas)) {
+            echo json_encode([]);
+            exit;
+        }
+        
+        $callesIds = implode(',', array_map('intval', $veredasAsignadas));
+        
+        $sql = "SELECT 
+                    v.id_vivienda,
+                    v.numero AS numero_vivienda,
+                    v.tipo AS tipo_vivienda,
+                    v.estado,
+                    c.nombre AS calle,
+                    c.sector,
+                    (SELECT COUNT(*) FROM habitante_vivienda hv 
+                     INNER JOIN habitante h ON hv.id_habitante = h.id_habitante 
+                     WHERE hv.id_vivienda = v.id_vivienda AND h.activo = 1) AS total_habitantes,
+                    (SELECT COUNT(DISTINCT hv.id_habitante) FROM habitante_vivienda hv 
+                     WHERE hv.id_vivienda = v.id_vivienda AND hv.es_jefe_familia = 1) AS total_familias
+                FROM vivienda v
+                INNER JOIN calle c ON v.id_calle = c.id_calle
+                WHERE v.activo = 1 
+                AND v.id_calle IN ($callesIds)
+                ORDER BY c.nombre ASC, v.numero ASC";
+        
+        $result = $this->viviendaModel->rawQuery($sql);
+        $viviendas = [];
+        
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $viviendas[] = $row;
+            }
+            $result->free();
+        }
+        
+        echo json_encode($viviendas);
+        exit;
+    }
+
+    /**
+     * API: Reporte de familias (solo de sus calles asignadas)
+     */
+    public function reporteFamilias() {
+        header('Content-Type: application/json');
+        
+        $veredasAsignadas = $this->getAssignedVeredas();
+        
+        if (empty($veredasAsignadas)) {
+            echo json_encode([]);
+            exit;
+        }
+        
+        $callesIds = implode(',', array_map('intval', $veredasAsignadas));
+        
+        $sql = "SELECT 
+                    hv.id_habitante AS id_jefe,
+                    CONCAT(p.nombres, ' ', p.apellidos) AS jefe_familia,
+                    p.cedula AS jefe_cedula,
+                    p.telefono AS jefe_telefono,
+                    v.numero AS numero_vivienda,
+                    c.nombre AS calle,
+                    c.sector,
+                    (SELECT COUNT(*) FROM carga_familiar cf 
+                     WHERE cf.id_jefe = hv.id_habitante 
+                     AND cf.activo = 1) AS total_miembros
+                FROM habitante_vivienda hv
+                INNER JOIN habitante h ON hv.id_habitante = h.id_habitante
+                INNER JOIN persona p ON h.id_persona = p.id_persona
+                INNER JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
+                INNER JOIN calle c ON v.id_calle = c.id_calle
+                WHERE hv.es_jefe_familia = 1 
+                AND h.activo = 1 
+                AND v.activo = 1
+                AND v.id_calle IN ($callesIds)
+                ORDER BY c.nombre ASC, p.apellidos ASC, p.nombres ASC";
+        
+        $result = $this->habitanteModel->rawQuery($sql);
+        $familias = [];
+        
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $familias[] = $row;
+            }
+            $result->free();
+        }
+        
+        echo json_encode($familias);
+        exit;
+    }
+
+    /**
+     * Estadísticas generales del subadmin (solo sus calles)
+     */
+    public function reporteEstadisticas() {
+        header('Content-Type: application/json');
+        
+        $veredasAsignadas = $this->getAssignedVeredas();
+        
+        if (empty($veredasAsignadas)) {
+            echo json_encode([
+                'total_habitantes' => 0,
+                'total_viviendas' => 0,
+                'total_familias' => 0
+            ]);
+            exit;
+        }
+        
+        $callesIds = implode(',', array_map('intval', $veredasAsignadas));
+        $db = $this->habitanteModel->getConnection();
+        
+        $stats = [
+            'total_habitantes' => 0,
+            'total_viviendas' => 0,
+            'total_familias' => 0
+        ];
+        
+        // Total habitantes
+        $result = $db->query("SELECT COUNT(DISTINCT h.id_habitante) as total 
+                              FROM habitante h 
+                              INNER JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante
+                              INNER JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
+                              WHERE h.activo = 1 AND v.id_calle IN ($callesIds)");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $stats['total_habitantes'] = (int)$row['total'];
+            $result->free();
+        }
+        
+        // Total viviendas
+        $result = $db->query("SELECT COUNT(*) as total FROM vivienda 
+                              WHERE activo = 1 AND id_calle IN ($callesIds)");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $stats['total_viviendas'] = (int)$row['total'];
+            $result->free();
+        }
+        
+        // Total familias
+        $result = $db->query("SELECT COUNT(DISTINCT hv.id_habitante) as total 
+                              FROM habitante_vivienda hv
+                              INNER JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
+                              WHERE hv.es_jefe_familia = 1 AND v.id_calle IN ($callesIds)");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $stats['total_familias'] = (int)$row['total'];
+            $result->free();
+        }
+        
+        echo json_encode($stats);
+        exit;
     }
 
 }

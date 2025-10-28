@@ -310,7 +310,7 @@ if (!isset($_SESSION['id_usuario'])) {
                 }
                 // Rutas para reportes específicos
                 elseif ($actionSegment === 'reportes') {
-                    $subSegment = $routeParts[2] ?? null;
+                    $subSegment = $id; // El tercer segmento ya fue extraído en $id
                     if ($subSegment === 'habitantes') {
                         $actionName = 'vistaReporteHabitantes';
                     } elseif ($subSegment === 'viviendas') {
@@ -326,6 +326,7 @@ if (!isset($_SESSION['id_usuario'])) {
                     } else {
                         $actionName = 'reports';
                     }
+                    $id = null; // Resetear $id ya que no se usa como parámetro en estos métodos
                 }
                 // APIs de reportes (JSON)
                 elseif ($actionSegment === 'reporteHabitantes') {
@@ -391,6 +392,27 @@ if (!isset($_SESSION['id_usuario'])) {
                     $actionName = 'saveVisibilityForNews';
                 } elseif ($actionSegment === 'reports') {
                     $actionName = 'reports';
+                } elseif ($actionSegment === 'reportes') {
+                    // Rutas para reportes específicos de subadmin
+                    $subSegment = $id;
+                    if ($subSegment === 'habitantes') {
+                        $actionName = 'vistaReporteHabitantes';
+                    } elseif ($subSegment === 'viviendas') {
+                        $actionName = 'vistaReporteViviendas';
+                    } elseif ($subSegment === 'familias') {
+                        $actionName = 'vistaReporteFamilias';
+                    } else {
+                        $actionName = 'reports';
+                    }
+                    $id = null;
+                } elseif ($actionSegment === 'reporteHabitantes') {
+                    $actionName = 'reporteHabitantes';
+                } elseif ($actionSegment === 'reporteViviendas') {
+                    $actionName = 'reporteViviendas';
+                } elseif ($actionSegment === 'reporteFamilias') {
+                    $actionName = 'reporteFamilias';
+                } elseif ($actionSegment === 'reporteEstadisticas') {
+                    $actionName = 'reporteEstadisticas';
                 } elseif ($actionSegment === 'dashboard' || $actionSegment === 'index' || empty($actionSegment)) {
                     $actionName = 'dashboard';
                 } elseif ($actionSegment === 'habitantes') {

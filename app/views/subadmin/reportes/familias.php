@@ -1,5 +1,5 @@
 <?php
-// Vista de Reporte de Familias - Grupo Brasil
+// Vista de Reporte de Familias - Subadmin (Líder de Calle)
 ?>
 
 <div class="container mx-auto p-4 md:p-8">
@@ -9,7 +9,7 @@
             <h1 class="text-3xl font-extrabold text-gray-900">👨‍👩‍👧‍👦 Reporte de Familias</h1>
             <p class="text-gray-600 mt-2">Familias registradas con jefes de hogar y miembros</p>
         </div>
-        <a href="index.php?route=admin/reports" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+        <a href="index.php?route=subadmin/reports" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
             ← Volver
         </a>
     </div>
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function cargarReporteFamilias() {
     mostrarLoading();
     
-    fetch('index.php?route=admin/reporteFamilias')
+    fetch('index.php?route=subadmin/reporteFamilias')
         .then(res => res.json())
         .then(datos => {
             if (!datos || datos.length === 0) {

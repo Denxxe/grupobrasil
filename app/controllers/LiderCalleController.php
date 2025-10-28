@@ -1,116 +1,172 @@
 <?php
+// grupobrasil/app/controllers/LiderCalleController.php
 require_once __DIR__ . '/../models/LiderCalle.php';
+require_once __DIR__ . '/AppController.php';
 
-class LiderCalleController {
+class LiderCalleController extends AppController {
+    
+    private $liderCalleModel;
 
+    public function __construct() {
+        parent::__construct();
+        $this->liderCalleModel = new LiderCalle();
+    }
+
+    /**
+     * Obtener todos los líderes de calle
+     */
     public function index() {
-        $liderModel = new LiderCalle();
-        $lideres = $liderModel->getAll();
         header('Content-Type: application/json');
-        echo json_encode($lideres);
+        
+        try {
+            $lideres = $this->liderCalleModel->getAll();
+            echo json_encode($lideres);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al obtener líderes: ' . $e->getMessage()]);
+        }
+        exit;
     }
 
-    public function show($id) {
+    /**
+     * Obtener un líder específico por ID
+     */
+    public function show($id = null) {
+        header('Content-Type: application/json');
+        
         if (!$id) {
             http_response_code(400);
-            echo json_encode(['error' => 'ID de habitante (líder) no proporcionado.']);
-            return;
+            echo json_encode(['error' => 'ID de líder no proporcionado']);
+            exit;
         }
-        $liderModel = new LiderCalle();
-        $lider = $liderModel->getById((int)$id);
-        header('Content-Type: application/json');
-        if ($lider) {
-            echo json_encode($lider);
-        } else {
-            http_response_code(404);
-            echo json_encode(['error' => 'Líder de calle no encontrado.']);
+
+        try {
+            $lider = $this->liderCalleModel->getById((int)$id);
+            
+            if ($lider) {
+                echo json_encode($lider);
+            } else {
+                http_response_code(404);
+                echo json_encode(['error' => 'Líder de calle no encontrado']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al obtener líder: ' . $e->getMessage()]);
         }
+        exit;
     }
 
+    /**
+     * Crear un nuevo líder de calle
+     */
     public function store() {
-        $data = json_decode(file_get_contents('php://input'), true);
-        if (empty($data['id_habitante']) || empty($data['sector']) || empty($data['fecha_designacion'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Los campos id_habitante, sector y fecha_designacion son requeridos.']);
-            return;
-        }
-
-        $liderModel = new LiderCalle();
-        $newId = $liderModel->createLiderCalle($data);
-
         header('Content-Type: application/json');
-        if ($newId) {
-            http_response_code(201);
-            echo json_encode(['id_habitante' => $newId, 'message' => 'Líder de calle creado exitosamente.']);
-        } else {
-            http_response_code(500);
-            echo json_encode(['error' => 'Error al crear el líder de calle.']);
-        }
-    }
-
-    public function update($id) {
-        if (!$id) {
-            http_response_code(400);
-            echo json_encode(['error' => 'ID de habitante (líder) no proporcionado.']);
-            return;
-        }
+        
         $data = json_decode(file_get_contents('php://input'), true);
         
-        $liderModel = new LiderCalle();
-        $success = $liderModel->updateLiderCalle((int)$id, $data);
-
-        header('Content-Type: application/json');
-        if ($success) {
-            echo json_encode(['message' => 'Líder de calle actualizado exitosamente.']);
-        } else {
-            http_response_code(500);
-            echo json_encode(['error' => 'Error al actualizar el líder de calle.']);
+        if (empty($data['id_habitante']) || empty($data['id_calle'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Los campos id_habitante e id_calle son requeridos']);
+            exit;
         }
+
+        try {
+            $newId = $this->liderCalleModel->create($data);
+
+            if ($newId) {
+                http_response_code(201);
+                echo json_encode([
+                    'id' => $newId, 
+                    'message' => 'Líder de calle creado exitosamente'
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Error al crear el líder de calle']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al crear líder: ' . $e->getMessage()]);
+        }
+        exit;
     }
 
-    public function destroy($id) {
+    /**
+     * Actualizar un líder de calle existente
+     */
+    public function update($id = null) {
+        header('Content-Type: application/json');
+        
         if (!$id) {
             http_response_code(400);
-            echo json_encode(['error' => 'ID de habitante (líder) no proporcionado.']);
-            return;
+            echo json_encode(['error' => 'ID de líder no proporcionado']);
+            exit;
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        try {
+            $success = $this->liderCalleModel->update((int)$id, $data);
+
+            if ($success) {
+                echo json_encode(['message' => 'Líder de calle actualizado exitosamente']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Error al actualizar el líder de calle']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al actualizar líder: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    /**
+     * Eliminar (soft delete) un líder de calle
+     */
+    public function destroy($id = null) {
+        header('Content-Type: application/json');
+        
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID de líder no proporcionado']);
+            exit;
         }
         
-        $liderModel = new LiderCalle();
-        $success = $liderModel->deleteLiderCalle((int)$id);
+        try {
+            $success = $this->liderCalleModel->delete((int)$id);
 
-        header('Content-Type: application/json');
-        if ($success) {
-            echo json_encode(['message' => 'Líder de calle eliminado exitosamente.']);
-        } else {
+            if ($success) {
+                echo json_encode(['message' => 'Líder de calle eliminado exitosamente']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Error al eliminar el líder de calle']);
+            }
+        } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Error al eliminar el líder de calle.']);
+            echo json_encode(['error' => 'Error al eliminar líder: ' . $e->getMessage()]);
         }
+        exit;
     }
-}
 
-// --- Router Básico ---
-$action = $_GET['action'] ?? null;
-$id = $_GET['id'] ?? null;
-$controller = new LiderCalleController();
+    /**
+     * Obtener líderes por calle específica
+     */
+    public function getByCalle($idCalle = null) {
+        header('Content-Type: application/json');
+        
+        if (!$idCalle) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID de calle no proporcionado']);
+            exit;
+        }
 
-switch ($action) {
-    case 'index':
-        $controller->index();
-        break;
-    case 'show':
-        $controller->show($id);
-        break;
-    case 'store':
-        $controller->store();
-        break;
-    case 'update':
-        $controller->update($id);
-        break;
-    case 'destroy':
-        $controller->destroy($id);
-        break;
-    default:
-        http_response_code(404);
-        echo json_encode(['error' => 'Acción no válida.']);
-        break;
+        try {
+            $lideres = $this->liderCalleModel->getCallesIdsPorUsuario((int)$idCalle);
+            echo json_encode($lideres);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al obtener líderes: ' . $e->getMessage()]);
+        }
+        exit;
+    }
 }

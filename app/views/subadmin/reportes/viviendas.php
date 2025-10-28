@@ -1,5 +1,5 @@
 <?php
-// Vista de Reporte de Viviendas - Grupo Brasil
+// Vista de Reporte de Viviendas - Subadmin (Líder de Calle)
 ?>
 
 <div class="container mx-auto p-4 md:p-8">
@@ -7,9 +7,9 @@
     <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-3xl font-extrabold text-gray-900">🏠 Reporte de Viviendas</h1>
-            <p class="text-gray-600 mt-2">Información completa de todas las viviendas registradas</p>
+            <p class="text-gray-600 mt-2">Información de viviendas de mis calles asignadas</p>
         </div>
-        <a href="index.php?route=admin/reports" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+        <a href="index.php?route=subadmin/reports" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
             ← Volver
         </a>
     </div>
@@ -25,7 +25,7 @@
             </div>
             
             <div class="flex items-end gap-2">
-                <button onclick="exportarExcel('reporte_viviendas')" 
+                <button onclick="exportarExcel('reporte_viviendas_micalle')" 
                     class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2">
                     <span>📊</span> Excel
                 </button>
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function cargarReporteViviendas() {
     mostrarLoading();
     
-    fetch('index.php?route=admin/reporteViviendas')
+    fetch('index.php?route=subadmin/reporteViviendas')
         .then(res => res.json())
         .then(datos => {
             if (!datos || datos.length === 0) {
