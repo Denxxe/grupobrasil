@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 26-10-2025 a las 07:39:18
+-- Tiempo de generación: 28-10-2025 a las 09:12:32
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -116,7 +116,8 @@ CREATE TABLE `comentarios` (
 --
 
 INSERT INTO `comentarios` (`id_comentario`, `id_noticia`, `id_usuario`, `contenido`, `fecha_comentario`, `activo`) VALUES
-(4, 2, 5, 'holas', '2025-10-26 05:57:53', 1);
+(6, 2, 5, 'pitipua', '2025-10-27 05:37:36', 1),
+(7, 2, 3, 'hablame', '2025-10-27 05:38:16', 1);
 
 -- --------------------------------------------------------
 
@@ -370,14 +371,56 @@ CREATE TABLE `pago` (
 CREATE TABLE `pagos` (
   `id_pago` int(10) UNSIGNED NOT NULL,
   `id_usuario` int(10) UNSIGNED NOT NULL COMMENT 'Usuario que recibe el pago/beneficio',
+  `id_habitante` int(10) UNSIGNED DEFAULT NULL,
+  `id_vivienda` int(10) UNSIGNED DEFAULT NULL,
   `id_tipo_beneficio` int(10) UNSIGNED NOT NULL,
   `id_periodo` int(10) UNSIGNED NOT NULL,
   `monto` decimal(10,2) NOT NULL COMMENT 'Monto pagado o valor del beneficio',
+  `fecha_envio` datetime NOT NULL DEFAULT current_timestamp(),
+  `metodo_pago` enum('transferencia','pago_movil','efectivo') DEFAULT 'transferencia',
+  `referencia_pago` varchar(255) DEFAULT NULL,
+  `ruta_captura` varchar(255) DEFAULT NULL,
   `fecha_pago` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Fecha real en que se registró el pago/entrega',
   `concepto` varchar(255) DEFAULT NULL,
+  `estado_actual` enum('en_espera','cancelado','rechazado','procesado','vencido') NOT NULL DEFAULT 'en_espera',
   `estado` enum('pendiente','procesado','fallido','vencido') NOT NULL DEFAULT 'procesado',
-  `registrado_por_id` int(10) UNSIGNED DEFAULT NULL COMMENT 'ID del admin o líder que registró el pago'
+  `registrado_por_id` int(10) UNSIGNED DEFAULT NULL COMMENT 'ID del admin o líder que registró el pago',
+  `verificado_por` int(10) UNSIGNED DEFAULT NULL,
+  `fecha_verificacion` datetime DEFAULT NULL,
+  `comentario_rechazo` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `pagos_estado_log`
+--
+
+CREATE TABLE `pagos_estado_log` (
+  `id_log` int(10) UNSIGNED NOT NULL,
+  `id_pago` int(10) UNSIGNED NOT NULL,
+  `estado_anterior` varchar(50) DEFAULT NULL,
+  `estado_nuevo` varchar(50) NOT NULL,
+  `id_usuario` int(10) UNSIGNED DEFAULT NULL,
+  `comentario` text DEFAULT NULL,
+  `fecha` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `pagos_evidencias`
+--
+
+CREATE TABLE `pagos_evidencias` (
+  `id_evidencia` int(10) UNSIGNED NOT NULL,
+  `id_pago` int(10) UNSIGNED NOT NULL,
+  `ruta` varchar(255) NOT NULL,
+  `mime` varchar(100) DEFAULT NULL,
+  `tamano` int(11) DEFAULT NULL,
+  `creado_por` int(10) UNSIGNED DEFAULT NULL,
+  `fecha_registro` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -388,8 +431,13 @@ CREATE TABLE `pagos` (
 CREATE TABLE `pagos_periodos` (
   `id_periodo` int(10) UNSIGNED NOT NULL,
   `nombre_periodo` varchar(100) NOT NULL COMMENT 'Ej: Enero 2025, Campaña Q1',
+  `id_tipo_beneficio` int(10) UNSIGNED DEFAULT NULL,
+  `monto` decimal(10,2) DEFAULT NULL,
+  `instrucciones_pago` text DEFAULT NULL,
+  `creado_por` int(10) UNSIGNED DEFAULT NULL,
   `fecha_inicio` date NOT NULL COMMENT 'Fecha desde la que se puede pagar',
   `fecha_limite` date NOT NULL COMMENT 'Fecha límite para realizar el pago',
+  `fecha_registro` datetime NOT NULL DEFAULT current_timestamp(),
   `estado` enum('activo','cerrado','archivado') NOT NULL DEFAULT 'activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -440,7 +488,7 @@ INSERT INTO `persona` (`id_persona`, `cedula`, `nombres`, `apellidos`, `fecha_na
 (3, '12345678', 'Lider', 'Comunidad', '1980-01-01', 'F', '0987654321', 'Oficina Central', 1, '2', 'admin@grupobrasil.com', NULL, 1, '2025-10-20 23:29:39', '2025-10-21 07:52:21'),
 (6, '31044092', 'Cristian Jesus', 'Correa Pinto', '0000-00-00', '', '12345678', 'Urbanización Brasil', 3, '6', 'cristiancorreaxd@gmail.com', 'Residente', 1, '2025-10-21 04:48:38', '2025-10-21 07:52:54'),
 (7, '87654321', 'Luis', 'Arredondo', NULL, NULL, '04147852753', '', 1, '', '', 'Residente', 1, '2025-10-21 20:33:17', '2025-10-21 20:33:17'),
-(8, '30000000', 'Jesus', 'Alberto', NULL, NULL, '04126785678', '', 3, '', '', 'Residente', 1, '2025-10-24 21:05:09', '2025-10-24 21:05:09'),
+(8, '30000000', 'Jesus', 'Alberto', '0000-00-00', 'M', '04126785678', '', 3, '', '', 'Residente', 1, '2025-10-24 21:05:09', '2025-10-27 01:36:00'),
 (10, '30443822', 'Luis', 'Arredondo', NULL, NULL, '04147852753', '', 2, '', '', 'Residente', 1, '2025-10-25 23:04:39', '2025-10-25 23:04:39');
 
 -- --------------------------------------------------------
@@ -693,7 +741,24 @@ ALTER TABLE `pagos`
   ADD PRIMARY KEY (`id_pago`),
   ADD KEY `id_usuario` (`id_usuario`),
   ADD KEY `id_tipo_beneficio` (`id_tipo_beneficio`),
-  ADD KEY `id_periodo` (`id_periodo`);
+  ADD KEY `id_periodo` (`id_periodo`),
+  ADD KEY `id_habitante` (`id_habitante`),
+  ADD KEY `estado_actual` (`estado_actual`);
+
+--
+-- Indices de la tabla `pagos_estado_log`
+--
+ALTER TABLE `pagos_estado_log`
+  ADD PRIMARY KEY (`id_log`),
+  ADD KEY `id_pago` (`id_pago`),
+  ADD KEY `id_usuario` (`id_usuario`);
+
+--
+-- Indices de la tabla `pagos_evidencias`
+--
+ALTER TABLE `pagos_evidencias`
+  ADD PRIMARY KEY (`id_evidencia`),
+  ADD KEY `id_pago` (`id_pago`);
 
 --
 -- Indices de la tabla `pagos_periodos`
@@ -780,7 +845,7 @@ ALTER TABLE `categorias`
 -- AUTO_INCREMENT de la tabla `comentarios`
 --
 ALTER TABLE `comentarios`
-  MODIFY `id_comentario` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_comentario` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT de la tabla `concepto_pago`
@@ -847,6 +912,18 @@ ALTER TABLE `pago`
 --
 ALTER TABLE `pagos`
   MODIFY `id_pago` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `pagos_estado_log`
+--
+ALTER TABLE `pagos_estado_log`
+  MODIFY `id_log` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `pagos_evidencias`
+--
+ALTER TABLE `pagos_evidencias`
+  MODIFY `id_evidencia` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `pagos_periodos`

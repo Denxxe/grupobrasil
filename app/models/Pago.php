@@ -101,4 +101,96 @@ class Pago extends ModelBase {
 
         return 0.0;
     }
+
+    /**
+     * Inserta un pago enviado por un jefe de familia.
+     * @param array $data Campos esperados: id_usuario, id_tipo_beneficio, id_periodo, monto, metodo_pago, referencia_pago, id_habitante, id_vivienda, registrado_por_id
+     * @return int|false id_pago o false
+     */
+    public function submitPago(array $data) {
+        // Campos mínimos
+        if (empty($data['id_usuario']) || empty($data['id_tipo_beneficio']) || empty($data['id_periodo'])) {
+            error_log('submitPago: faltan campos');
+            return false;
+        }
+
+        // Normalizar estado inicial
+        $data['estado'] = $data['estado'] ?? 'en_espera';
+        $data['fecha_envio'] = $data['fecha_envio'] ?? date('Y-m-d H:i:s');
+
+        // Insert usando create del modelo base
+        $id = $this->create($data);
+        return $id;
+    }
+
+    public function addEvidence(int $id_pago, string $ruta, ?string $mime, ?int $size, ?int $creado_por = null) {
+        $sql = "INSERT INTO pagos_evidencias (id_pago, ruta, mime, tamano, creado_por) VALUES (?, ?, ?, ?, ?)";
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) return false;
+        $stmt->bind_param('issii', $id_pago, $ruta, $mime, $size, $creado_por);
+        $ok = $stmt->execute();
+        if ($ok) {
+            $insertId = $this->conn->insert_id;
+            $stmt->close();
+            return $insertId;
+        }
+        $stmt->close();
+        return false;
+    }
+
+    public function verifyPago(int $id_pago, string $nuevo_estado, int $verificado_por, ?string $comentario = null) {
+        // obtener estado anterior
+        $stmt = $this->conn->prepare("SELECT estado_actual FROM pagos WHERE id_pago = ? LIMIT 1");
+        $stmt->bind_param('i', $id_pago);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $estado_anterior = null;
+        if ($res && $row = $res->fetch_assoc()) $estado_anterior = $row['estado_actual'];
+        $stmt->close();
+
+        $stmt = $this->conn->prepare("UPDATE pagos SET estado_actual = ?, verificado_por = ?, fecha_verificacion = ?, comentario_rechazo = ? WHERE id_pago = ?");
+        $fecha = date('Y-m-d H:i:s');
+        $stmt->bind_param('sissi', $nuevo_estado, $verificado_por, $fecha, $comentario, $id_pago);
+        $ok = $stmt->execute();
+        $stmt->close();
+
+        if ($ok) {
+            // insert log
+            $stmt2 = $this->conn->prepare("INSERT INTO pagos_estado_log (id_pago, estado_anterior, estado_nuevo, id_usuario, comentario) VALUES (?, ?, ?, ?, ?)");
+            $stmt2->bind_param('issis', $id_pago, $estado_anterior, $nuevo_estado, $verificado_por, $comentario);
+            $stmt2->execute();
+            $stmt2->close();
+            return true;
+        }
+        return false;
+    }
+
+    public function getPagosPorVereda(int $id_calle) {
+        $sql = "SELECT p.*, per.cedula, per.nombres, per.apellidos, v.numero AS numero_vivienda, c.nombre AS vereda
+                FROM pagos p
+                LEFT JOIN usuario u ON p.id_usuario = u.id_usuario
+                LEFT JOIN habitante h ON u.id_persona = h.id_persona
+                LEFT JOIN persona per ON h.id_persona = per.id_persona
+                LEFT JOIN vivienda v ON p.id_vivienda = v.id_vivienda
+                LEFT JOIN calle c ON v.id_calle = c.id_calle
+                WHERE v.id_calle = ? ORDER BY p.fecha_envio DESC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('i', $id_calle);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $data = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $stmt->close();
+        return $data;
+    }
+
+    public function getPagosPorHabitante(int $id_habitante) {
+        $sql = "SELECT p.*, pp.nombre_periodo FROM pagos p LEFT JOIN pagos_periodos pp ON p.id_periodo = pp.id_periodo WHERE p.id_habitante = ? ORDER BY p.fecha_envio DESC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('i', $id_habitante);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $data = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $stmt->close();
+        return $data;
+    }
 }

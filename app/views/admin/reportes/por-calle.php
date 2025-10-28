@@ -12,7 +12,7 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Calle</label>
-                <select id="selectCalle" onchange="cargarReportePorCalle()" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <select id="selectCalle" onchange="cargarReportePorCalle()" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white text-gray-900">
                     <option value="">-- Seleccione una calle --</option>
                     <?php foreach($calles as $calle): ?>
                         <option value="<?= $calle['id_calle'] ?>"><?= htmlspecialchars($calle['nombre']) ?><?= $calle['sector'] ? ' - ' . htmlspecialchars($calle['sector']) : '' ?></option>
@@ -21,7 +21,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
-                <input type="text" id="filtroCalle" onkeyup="filtrarTabla('filtroCalle', 'tablaReporte')" placeholder="Buscar..." class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <input type="text" id="filtroCalle" onkeyup="filtrarTabla('filtroCalle', 'tablaReporte')" placeholder="Buscar..." class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white text-gray-900">
             </div>
             <div class="flex items-end gap-2">
                 <button onclick="exportarExcel('reporte_por_calle')" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">📊</button>

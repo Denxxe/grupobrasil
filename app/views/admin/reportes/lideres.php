@@ -11,7 +11,7 @@
     <div class="bg-white shadow-lg rounded-xl p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
-                <input type="text" id="filtroLideres" onkeyup="filtrarTabla('filtroLideres', 'tablaReporte')" placeholder="Buscar..." class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
+                <input type="text" id="filtroLideres" onkeyup="filtrarTabla('filtroLideres', 'tablaReporte')" placeholder="Buscar..." class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none bg-white text-gray-900">
             </div>
             <div class="flex items-end gap-2">
                 <button onclick="exportarExcel('reporte_lideres')" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">📊 Excel</button>

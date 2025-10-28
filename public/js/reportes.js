@@ -52,6 +52,46 @@ function formatearTelefono(telefono) {
     return telefono;
 }
 
+// Helper: fetch JSON con manejo de errores, credenciales y timeout
+async function fetchJson(url, { timeout = 15000 } = {}) {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    let res;
+    try {
+        // incluir credenciales para mantener sesión
+        res = await fetch(url, { credentials: 'same-origin', signal });
+    } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+            throw new Error('La solicitud tardó demasiado y fue cancelada (timeout)');
+        }
+        throw new Error('Error de red al solicitar datos: ' + err.message);
+    }
+
+    clearTimeout(timeoutId);
+
+    const text = await res.text();
+
+    // Intentar parsear JSON, si falla devolvemos el texto como error
+    let data = null;
+    try {
+        data = text ? JSON.parse(text) : null;
+    } catch (e) {
+        // Si el servidor devuelve HTML (p. ej. un error PHP), incluimos el texto en el mensaje
+        throw new Error('Respuesta inválida del servidor: ' + (text || '[vacío]'));
+    }
+
+    if (!res.ok) {
+        const msg = (data && data.error) ? data.error : `Error HTTP ${res.status}`;
+        throw new Error(msg);
+    }
+
+    return data;
+}
+
 // Función para mostrar loading
 function mostrarLoading(contenedorId = 'contenidoReporte') {
     const contenedor = document.getElementById(contenedorId);

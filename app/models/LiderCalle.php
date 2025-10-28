@@ -136,6 +136,12 @@ error_log("Error al preparar la consulta getCallesIdsByHabitanteId: " . $this->c
 return [];
 }
 
+    /**
+     * Obtiene los líderes (filas) asignados a una calle determinada
+     * @param int $idCalle
+     * @return array
+     */
+
 $stmt->bind_param("i", $habitanteId);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -179,6 +185,24 @@ $calles[] = (int) $row['id_calle'];
 $stmt->close();
 return $calles;
 }
+
+    /**
+     * Obtiene los líderes (filas) asignados a una calle determinada
+     * @param int $idCalle
+     * @return array
+     */
+    public function getLeadersByCalle(int $idCalle): array {
+        $sql = "SELECT * FROM {$this->table} WHERE id_calle = ? AND activo = 1";
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) return [];
+        $stmt->bind_param('i', $idCalle);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $data = [];
+        if ($res) while ($row = $res->fetch_assoc()) $data[] = $row;
+        $stmt->close();
+        return $data;
+    }
 
 /**
  * Obtiene las calles asignadas a un usuario (a través de su id_usuario)

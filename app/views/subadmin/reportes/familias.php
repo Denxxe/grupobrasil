@@ -21,7 +21,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
                 <input type="text" id="filtroFamilias" onkeyup="filtrarFamilias()" 
                     placeholder="Buscar por nombre del jefe, calle, vivienda..." 
-                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:outline-none">
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:outline-none bg-white text-gray-900">
             </div>
             
             <div class="flex items-end gap-2">

@@ -65,6 +65,7 @@ require_once CONTROLLERS_PATH . 'AdminController.php';
 require_once CONTROLLERS_PATH . 'SubadminController.php';
 require_once CONTROLLERS_PATH . 'NoticiaController.php';
 require_once CONTROLLERS_PATH . 'UserController.php';
+require_once CONTROLLERS_PATH . 'PagoController.php';
 require_once UTILS_PATH . 'Validator.php'; // Tu clase de validación
 
 // --- Manejo de Mensajes Flash de Sesión ---
@@ -323,10 +324,27 @@ if (!isset($_SESSION['id_usuario'])) {
                         $actionName = 'vistaReporteLideres';
                     } elseif ($subSegment === 'por-calle') {
                         $actionName = 'vistaReportePorCalle';
+                    } elseif ($subSegment === 'pagos') {
+                        $actionName = 'adminPeriodos';
                     } else {
                         $actionName = 'reports';
                     }
                     $id = null; // Resetear $id ya que no se usa como parámetro en estos métodos
+                }
+                elseif ($actionSegment === 'pagos') {
+                    $subSegment = $id;
+                    if ($subSegment === 'periodos') {
+                        $actionName = 'adminPeriodos';
+                    } elseif ($subSegment === 'crear') {
+                        $actionName = 'adminCrearPeriodo';
+                    } elseif ($subSegment === 'store' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $actionName = 'adminStorePeriodo';
+                    } elseif ($subSegment === 'close' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $actionName = 'adminClosePeriodo';
+                    } else {
+                        $actionName = 'adminPeriodos';
+                    }
+                    $id = null;
                 }
                 // APIs de reportes (JSON)
                 elseif ($actionSegment === 'reporteHabitantes') {
@@ -407,6 +425,17 @@ if (!isset($_SESSION['id_usuario'])) {
                     $id = null;
                 } elseif ($actionSegment === 'reporteHabitantes') {
                     $actionName = 'reporteHabitantes';
+                } elseif ($actionSegment === 'pagos') {
+                    // Líder de vereda: lista de pagos y acciones
+                    $subSegment = $id;
+                    if ($subSegment === 'lista') {
+                        $actionName = 'liderListaPagos';
+                    } elseif ($subSegment === 'verify' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $actionName = 'liderVerifyPago';
+                    } else {
+                        $actionName = 'liderListaPagos';
+                    }
+                    $id = null;
                 } elseif ($actionSegment === 'reporteViviendas') {
                     $actionName = 'reporteViviendas';
                 } elseif ($actionSegment === 'reporteFamilias') {
@@ -542,7 +571,18 @@ if (!isset($_SESSION['id_usuario'])) {
                 } elseif ($actionSegment === 'updateViviendaDetails' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     $actionName = 'updateViviendaDetails';
                 }
-                
+                elseif ($actionSegment === 'pagos') {
+                    $subSegment = $id;
+                    if ($subSegment === 'detalle') {
+                        $actionName = 'userDetallePeriodo';
+                        $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                    } elseif ($subSegment === 'submit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $actionName = 'userSubmitPago';
+                    } else {
+                        $actionName = 'userIndexPeriodos';
+                    }
+                }
+
                 break;
             default:
                 // Si la ruta no coincide con ningún controlador conocido para usuarios autenticados

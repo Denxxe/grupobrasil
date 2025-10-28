@@ -124,12 +124,10 @@
 
                             <div class="col-md-4 mb-3">
                                 <label for="numero_casa" class="form-label">Número de Casa</label>
-                                <input type="text" class="form-control" id="numero_casa" name="numero_casa" 
-                                    value="<?= htmlspecialchars($persona['numero_casa'] ?? '') ?>"
-                                    maxlength="3" 
-                                    inputmode="numeric" 
-                                    pattern="[0-9]{1,3}"
-                                    title="El número de casa debe contener solo números y un máximo de 3 dígitos.">
+                                <select class="form-control" id="numero_casa" name="numero_casa">
+                                    <option value="">Seleccione una vereda primero...</option>
+                                    <!-- Opciones cargadas vía JS según la vereda -->
+                                </select>
                             </div>
                         </div>
 
@@ -157,8 +155,8 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Campos que solo aceptan números (Cédula, Teléfono, Número de Casa)
-        const numericFields = ['cedula', 'telefono', 'numero_casa'];
+        // Campos que solo aceptan números (Cédula, Teléfono)
+        const numericFields = ['cedula', 'telefono'];
         numericFields.forEach(id => {
             const field = document.getElementById(id);
             if (field) {
@@ -182,5 +180,65 @@
                 });
             }
         });
+
+        // Select dependiente: viviendas (casas) por vereda
+        const veredaSelect = document.getElementById('id_calle');
+        const casaSelect = document.getElementById('numero_casa');
+        const selectedCasa = <?= json_encode($persona['numero_casa'] ?? '') ?>;
+
+        function setCasaPlaceholder() {
+            casaSelect.innerHTML = '<option value="">Seleccione una vereda primero...</option>';
+            casaSelect.disabled = true;
+        }
+
+        async function loadViviendasByCalle(idCalle, preselectNumero) {
+            if (!idCalle) {
+                setCasaPlaceholder();
+                return;
+            }
+
+            casaSelect.innerHTML = '<option value="">Cargando casas...</option>';
+            casaSelect.disabled = true;
+
+            try {
+                const res = await fetch(`./index.php?route=api/viviendas-por-calle&id_calle=${encodeURIComponent(idCalle)}`);
+                const data = await res.json();
+                if (data.success && Array.isArray(data.viviendas)) {
+                    casaSelect.innerHTML = '<option value="">Seleccione un número de casa...</option>';
+                    data.viviendas.forEach(v => {
+                        const opt = document.createElement('option');
+                        opt.value = v.numero;
+                        opt.textContent = v.numero;
+                        opt.dataset.idVivienda = v.id_vivienda || '';
+                        if (preselectNumero && String(preselectNumero) === String(v.numero)) {
+                            opt.selected = true;
+                        }
+                        casaSelect.appendChild(opt);
+                    });
+                    casaSelect.disabled = false;
+                } else {
+                    casaSelect.innerHTML = '<option value="">No hay casas para la vereda seleccionada</option>';
+                    casaSelect.disabled = true;
+                }
+            } catch (err) {
+                console.error('Error cargando viviendas:', err);
+                casaSelect.innerHTML = '<option value="">Error cargando casas</option>';
+                casaSelect.disabled = true;
+            }
+        }
+
+        if (veredaSelect && casaSelect) {
+            veredaSelect.addEventListener('change', function() {
+                const idCalle = this.value || null;
+                loadViviendasByCalle(idCalle, null);
+            });
+
+            const initialCalle = veredaSelect.value || null;
+            if (initialCalle) {
+                loadViviendasByCalle(initialCalle, selectedCasa);
+            } else {
+                setCasaPlaceholder();
+            }
+        }
     });
 </script>

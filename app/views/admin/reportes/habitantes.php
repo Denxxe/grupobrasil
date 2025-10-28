@@ -22,7 +22,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
                 <input type="text" id="filtroHabitantes" onkeyup="filtrarTabla('filtroHabitantes', 'tablaReporte')" 
                     placeholder="Buscar por nombre, cédula, calle, vivienda..." 
-                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 focus:outline-none">
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 focus:outline-none bg-white text-gray-900">
             </div>
             
             <!-- Botones de Acción -->
@@ -63,20 +63,19 @@ document.addEventListener('DOMContentLoaded', function() {
 function cargarReporteHabitantes() {
     mostrarLoading();
     
-    fetch('index.php?route=admin/reporteHabitantes')
-        .then(res => res.json())
+    fetchJson('index.php?route=admin/reporteHabitantes')
         .then(datos => {
             if (!datos || datos.length === 0) {
                 mostrarSinDatos();
                 return;
             }
-            
+
             mostrarTablaHabitantes(datos);
             actualizarContador(datos.length);
         })
         .catch(err => {
             console.error('Error:', err);
-            mostrarError('Error al cargar el reporte');
+            mostrarError(err.message || 'Error al cargar el reporte');
         });
 }
 

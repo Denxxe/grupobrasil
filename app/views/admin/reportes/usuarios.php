@@ -11,7 +11,7 @@
     <div class="bg-white shadow-lg rounded-xl p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
-                <input type="text" id="filtroUsuarios" onkeyup="filtrarTabla('filtroUsuarios', 'tablaReporte')" placeholder="Buscar..." class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                <input type="text" id="filtroUsuarios" onkeyup="filtrarTabla('filtroUsuarios', 'tablaReporte')" placeholder="Buscar..." class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900">
             </div>
             <div class="flex items-end gap-2">
                 <button onclick="exportarExcel('reporte_usuarios')" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">📊 Excel</button>
@@ -31,14 +31,13 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     mostrarLoading();
-    fetch('index.php?route=admin/reporteUsuarios')
-        .then(res => res.json())
+    fetchJson('index.php?route=admin/reporteUsuarios')
         .then(datos => {
             if (!datos || datos.length === 0) { mostrarSinDatos(); return; }
             mostrarUsuarios(datos);
             actualizarContador(datos.length);
         })
-        .catch(err => { console.error(err); mostrarError('Error al cargar el reporte'); });
+        .catch(err => { console.error(err); mostrarError(err.message || 'Error al cargar el reporte'); });
 });
 
 function mostrarUsuarios(datos) {

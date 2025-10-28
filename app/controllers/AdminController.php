@@ -2088,45 +2088,46 @@ public function reporteHabitantes() {
     header('Content-Type: application/json');
 
     try {
-        $sql = "SELECT
-                    h.id_habitante,
-                    h.condicion,
-                    h.fecha_ingreso,
-                    h.fecha_registro AS habitante_fecha_registro,
-                    p.id_persona,
-                    p.cedula,
-                    p.nombres,
-                    p.apellidos,
-                    CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
-                    p.fecha_nacimiento,
-                    TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad,
-                    p.sexo,
-                    p.telefono,
-                    p.correo,
-                    p.direccion,
-                    c.id_calle,
-                    c.nombre AS calle_nombre,
-                    c.sector AS calle_sector,
-                    v.id_vivienda,
-                    v.numero AS numero_vivienda,
-                    v.tipo AS tipo_vivienda,
-                    hv.es_jefe_familia,
-                    hv.fecha_asignacion AS fecha_asignacion_vivienda,
-                    u.id_usuario,
-                    u.email AS usuario_email,
-                    u.fecha_creacion AS usuario_fecha_creacion,
-                    u.ultimo_acceso AS usuario_ultimo_acceso,
-                    r.id_rol,
-                    r.nombre AS rol_nombre,
-                    (SELECT COUNT(*) FROM habitante_vivienda hv2 
-                     WHERE hv2.id_vivienda = hv.id_vivienda 
-                     AND hv2.id_habitante != h.id_habitante) AS total_familiares,
-                    (SELECT GROUP_CONCAT(CONCAT(pl.nombres, ' ', pl.apellidos) SEPARATOR ', ')
-                     FROM lider_calle lc
-                     INNER JOIN usuario ul ON lc.id_usuario = ul.id_usuario
-                     INNER JOIN persona pl ON ul.id_persona = pl.id_persona
-                     WHERE lc.id_calle = c.id_calle AND lc.activo = 1) AS lideres_calle
-                FROM habitante h
+    $sql = "SELECT
+            h.id_habitante,
+            h.condicion,
+            h.fecha_ingreso,
+            h.fecha_registro AS habitante_fecha_registro,
+            p.id_persona,
+            p.cedula,
+            p.nombres,
+            p.apellidos,
+            CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
+            p.fecha_nacimiento,
+            TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad,
+            p.sexo,
+            p.telefono,
+            p.correo,
+            p.direccion,
+            c.id_calle,
+            c.nombre AS calle_nombre,
+            c.sector AS calle_sector,
+            v.id_vivienda,
+            v.numero AS vivienda_numero,
+            v.tipo AS vivienda_tipo,
+            v.estado AS vivienda_estado,
+            hv.es_jefe_familia,
+            hv.fecha_inicio AS fecha_asignacion_vivienda,
+            u.id_usuario,
+            u.email AS usuario_email,
+            u.fecha_registro AS usuario_fecha_creacion,
+            NULL AS usuario_ultimo_acceso,
+            r.id_rol,
+            r.nombre AS rol_nombre,
+            (SELECT COUNT(*) FROM habitante_vivienda hv2 
+             WHERE hv2.id_vivienda = hv.id_vivienda 
+             AND hv2.id_habitante != h.id_habitante) AS total_familiares,
+            (SELECT GROUP_CONCAT(CONCAT(pl.nombres, ' ', pl.apellidos) SEPARATOR ', ')
+             FROM lider_calle lc
+             INNER JOIN habitante hl ON lc.id_habitante = hl.id_habitante
+             INNER JOIN persona pl ON hl.id_persona = pl.id_persona
+             WHERE lc.id_calle = c.id_calle AND lc.activo = 1) AS lideres_calle
+        FROM habitante h
                 INNER JOIN persona p ON h.id_persona = p.id_persona
                 LEFT JOIN habitante_vivienda hv ON h.id_habitante = hv.id_habitante
                 LEFT JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
@@ -2174,9 +2175,9 @@ public function reporteHabitantesPorCalle() {
     $sql = "SELECT
                 h.id_habitante,
                 h.condicion,
-                h.ocupacion,
-                h.nivel_educativo,
-                h.estado_civil,
+                NULL AS ocupacion,
+                NULL AS nivel_educativo,
+                NULL AS estado_civil,
                 p.cedula,
                 p.nombres,
                 p.apellidos,
@@ -2195,8 +2196,8 @@ public function reporteHabitantesPorCalle() {
                 (SELECT COUNT(*) FROM carga_familiar cf WHERE cf.id_jefe = h.id_habitante AND cf.activo = 1) AS total_familiares,
                 (SELECT GROUP_CONCAT(CONCAT(pl.nombres, ' ', pl.apellidos) SEPARATOR ', ')
                  FROM lider_calle lc
-                 INNER JOIN usuario ul ON lc.id_usuario = ul.id_usuario
-                 INNER JOIN persona pl ON ul.id_persona = pl.id_persona
+                 INNER JOIN habitante hl ON lc.id_habitante = hl.id_habitante
+                 INNER JOIN persona pl ON hl.id_persona = pl.id_persona
                  WHERE lc.id_calle = c.id_calle AND lc.activo = 1) AS lideres_calle
             FROM habitante h
             INNER JOIN persona p ON h.id_persona = p.id_persona
@@ -2260,13 +2261,13 @@ public function reporteViviendas() {
                  WHERE hv.id_vivienda = v.id_vivienda AND hv.es_jefe_familia = 1) AS jefes_familia,
                 (SELECT GROUP_CONCAT(CONCAT(pl.nombres, ' ', pl.apellidos) SEPARATOR ', ')
                  FROM lider_calle lc
-                 INNER JOIN usuario ul ON lc.id_usuario = ul.id_usuario
-                 INNER JOIN persona pl ON ul.id_persona = pl.id_persona
+                 INNER JOIN habitante hl ON lc.id_habitante = hl.id_habitante
+                 INNER JOIN persona pl ON hl.id_persona = pl.id_persona
                  WHERE lc.id_calle = c.id_calle AND lc.activo = 1) AS lideres_calle,
                 vd.habitaciones,
                 vd.banos,
                 vd.servicios,
-                vd.observaciones AS vivienda_observaciones
+                vd.servicios AS vivienda_observaciones
             FROM vivienda v
             INNER JOIN calle c ON v.id_calle = c.id_calle
             LEFT JOIN vivienda_detalle vd ON v.id_vivienda = vd.id_vivienda
@@ -2312,8 +2313,8 @@ public function reporteFamilias() {
                 pj.telefono AS jefe_telefono,
                 pj.correo AS jefe_correo,
                 pj.sexo AS jefe_sexo,
-                hj.ocupacion AS jefe_ocupacion,
-                hj.nivel_educativo AS jefe_nivel_educativo,
+                NULL AS jefe_ocupacion,
+                NULL AS jefe_nivel_educativo,
                 c.id_calle,
                 c.nombre AS calle_nombre,
                 c.sector AS calle_sector,
@@ -2324,8 +2325,8 @@ public function reporteFamilias() {
                 (SELECT COUNT(*) FROM carga_familiar cf2 WHERE cf2.id_jefe = cf.id_jefe AND cf2.activo = 1) AS total_miembros,
                 (SELECT GROUP_CONCAT(CONCAT(pl.nombres, ' ', pl.apellidos) SEPARATOR ', ')
                  FROM lider_calle lc
-                 INNER JOIN usuario ul ON lc.id_usuario = ul.id_usuario
-                 INNER JOIN persona pl ON ul.id_persona = pl.id_persona
+                 INNER JOIN habitante hl ON lc.id_habitante = hl.id_habitante
+                 INNER JOIN persona pl ON hl.id_persona = pl.id_persona
                  WHERE lc.id_calle = c.id_calle AND lc.activo = 1) AS lideres_calle
             FROM carga_familiar cf
             INNER JOIN habitante hj ON cf.id_jefe = hj.id_habitante
@@ -2360,9 +2361,9 @@ public function reporteFamilias() {
                                 p.sexo,
                                 p.telefono,
                                 p.correo,
-                                h.ocupacion,
-                                h.nivel_educativo,
-                                h.estado_civil
+                                NULL AS ocupacion,
+                                NULL AS nivel_educativo,
+                                NULL AS estado_civil
                             FROM carga_familiar cf
                             INNER JOIN habitante h ON cf.id_miembro = h.id_habitante
                             INNER JOIN persona p ON h.id_persona = p.id_persona
@@ -2403,8 +2404,8 @@ public function reporteUsuarios() {
         $sql = "SELECT
                     u.id_usuario,
                     u.email,
-                    u.fecha_creacion,
-                    u.ultimo_acceso,
+                    u.fecha_registro AS fecha_creacion,
+                    NULL AS ultimo_acceso,
                     u.activo AS usuario_activo,
                     p.id_persona,
                     p.cedula,
@@ -2432,8 +2433,8 @@ public function reporteUsuarios() {
                     (SELECT GROUP_CONCAT(CONCAT(ca.nombre, ' - ', ca.sector) SEPARATOR ', ')
                      FROM lider_calle lc
                      INNER JOIN calle ca ON lc.id_calle = ca.id_calle
-                     WHERE lc.id_usuario = u.id_usuario AND lc.activo = 1) AS calles_asignadas,
-                    (SELECT COUNT(*) FROM lider_calle lc WHERE lc.id_usuario = u.id_usuario AND lc.activo = 1) AS total_calles_asignadas
+                          WHERE lc.id_habitante = h.id_habitante AND lc.activo = 1) AS calles_asignadas,
+                              (SELECT COUNT(*) FROM lider_calle lc WHERE lc.id_habitante = h.id_habitante AND lc.activo = 1) AS total_calles_asignadas
                 FROM usuario u
                 INNER JOIN persona p ON u.id_persona = p.id_persona
                 LEFT JOIN rol r ON u.id_rol = r.id_rol
@@ -2474,8 +2475,8 @@ public function reporteLideresCalle() {
     $sql = "SELECT
                 u.id_usuario,
                 u.email,
-                u.fecha_creacion AS usuario_fecha_creacion,
-                u.ultimo_acceso,
+                u.fecha_registro AS usuario_fecha_creacion,
+                NULL AS ultimo_acceso,
                 p.cedula,
                 p.nombres,
                 p.apellidos,
@@ -2484,24 +2485,24 @@ public function reporteLideresCalle() {
                 p.correo,
                 p.sexo,
                 TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad,
-                h.ocupacion,
-                h.nivel_educativo,
+                NULL AS ocupacion,
+                NULL AS nivel_educativo,
                 (SELECT GROUP_CONCAT(CONCAT(ca.nombre, ' - ', ca.sector) SEPARATOR ', ')
                  FROM lider_calle lc
                  INNER JOIN calle ca ON lc.id_calle = ca.id_calle
-                 WHERE lc.id_usuario = u.id_usuario AND lc.activo = 1) AS calles_asignadas,
-                (SELECT COUNT(*) FROM lider_calle lc WHERE lc.id_usuario = u.id_usuario AND lc.activo = 1) AS total_calles,
-                (SELECT MIN(lc.fecha_asignacion) FROM lider_calle lc WHERE lc.id_usuario = u.id_usuario) AS fecha_designacion,
+                 WHERE lc.id_habitante = h.id_habitante AND lc.activo = 1) AS calles_asignadas,
+                (SELECT COUNT(*) FROM lider_calle lc WHERE lc.id_habitante = h.id_habitante AND lc.activo = 1) AS total_calles,
+                (SELECT MIN(lc.fecha_designacion) FROM lider_calle lc WHERE lc.id_habitante = h.id_habitante) AS fecha_designacion,
                 (SELECT SUM(
                     (SELECT COUNT(*) FROM habitante_vivienda hv
                      INNER JOIN vivienda v ON hv.id_vivienda = v.id_vivienda
                      WHERE v.id_calle = lc2.id_calle)
-                ) FROM lider_calle lc2 WHERE lc2.id_usuario = u.id_usuario AND lc2.activo = 1) AS total_habitantes_asignados
+                ) FROM lider_calle lc2 WHERE lc2.id_habitante = h.id_habitante AND lc2.activo = 1) AS total_habitantes_asignados
             FROM usuario u
             INNER JOIN persona p ON u.id_persona = p.id_persona
             LEFT JOIN habitante h ON p.id_persona = h.id_persona
             WHERE u.id_rol = 2 AND u.activo = 1
-            AND EXISTS (SELECT 1 FROM lider_calle lc WHERE lc.id_usuario = u.id_usuario AND lc.activo = 1)
+            AND EXISTS (SELECT 1 FROM lider_calle lc WHERE lc.id_habitante = h.id_habitante AND lc.activo = 1)
             ORDER BY p.apellidos ASC, p.nombres ASC";
 
     $result = $this->usuarioModel->getConnection()->query($sql);
@@ -2654,6 +2655,25 @@ public function vistaReporteLideres() {
  */
 public function vistaReportePorCalle() {
     $calles = $this->calleModel->findAll();
+    // Ordenar veredas/calles por su número cuando el nombre contiene un número (p.ej. "Vereda 2", "Vereda 10")
+    usort($calles, function($a, $b) {
+        $nameA = $a['nombre'] ?? '';
+        $nameB = $b['nombre'] ?? '';
+
+        // Extraer primer número encontrado en el nombre
+        preg_match('/(\d+)/', $nameA, $mA);
+        preg_match('/(\d+)/', $nameB, $mB);
+
+        if (!empty($mA) && !empty($mB)) {
+            $nA = (int)$mA[1];
+            $nB = (int)$mB[1];
+            if ($nA === $nB) return strcmp($nameA, $nameB);
+            return $nA - $nB;
+        }
+
+        // Si no hay número, ordenar alfabéticamente
+        return strcmp($nameA, $nameB);
+    });
     $data = [
         'title' => 'Reporte por Calle',
         'page_title' => 'Reporte por Calle',
