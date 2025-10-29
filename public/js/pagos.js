@@ -2,8 +2,30 @@
 async function submitPagoForm(form) {
     const url = form.getAttribute('action');
     const fd = new FormData(form);
+    // Validación cliente: referencia numérica y longitud máxima 20
+    const refEl = form.querySelector('input[name="referencia_pago"]');
+    if (refEl) {
+        const val = (refEl.value || '').toString().replace(/[^0-9]/g, '').slice(0,20);
+        if (val.length === 0) {
+            showToast('La referencia es obligatoria y debe contener solo números.', 'error');
+            return;
+        }
+        if (val.length > 20) {
+            showToast('La referencia debe tener máximo 20 dígitos.', 'error');
+            return;
+        }
+        // garantizar que el FormData tenga el valor sanitizado
+        fd.set('referencia_pago', val);
+    }
     try {
         const res = await fetch(url, { method: 'POST', body: fd, credentials: 'same-origin' });
+        if (!res.ok) {
+            // Intentar leer texto de la respuesta para depuración y mostrar mensaje amigable
+            let txt = '';
+            try { txt = await res.text(); } catch (e) { txt = res.statusText || 'Error en servidor'; }
+            showToast('Error del servidor: ' + (txt ? txt.toString().slice(0,200) : res.statusText), 'error');
+            return;
+        }
         const json = await res.json();
         if (json.ok) {
             showToast(json.message || 'Enviado correctamente', 'success');

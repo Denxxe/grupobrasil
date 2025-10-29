@@ -174,29 +174,58 @@ class PagoController extends AppController {
         $uModel = new Usuario();
         $usuario = $uModel->getById($userId);
         $id_habitante = null;
-            if (!empty($usuario['id_persona'])) {
+        if (!empty($usuario['id_persona'])) {
             require_once __DIR__ . '/../models/Habitante.php';
             $hModel = new Habitante();
             $hab = $hModel->findByPersonaId($usuario['id_persona']);
-            if ($hab) $id_habitante = $hab['id_habitante'];
+            if ($hab) {
+                $id_habitante = $hab['id_habitante'];
+            } else {
+                // Intentar crear un habitante mínimo desde la persona (fallback seguro)
+                // Esto ayuda cuando la persona existe como usuario pero no tiene aún registro en 'habitante'
+                $created = $hModel->createFromPersona((int)$usuario['id_persona']);
+                if ($created) {
+                    $id_habitante = $created;
+                    error_log("[PagoController::userSubmitPago] Habitante creado automaticamente para persona " . $usuario['id_persona'] . ", id_habitante=" . $created);
+                } else {
+                    error_log("[PagoController::userSubmitPago] No existe habitante para persona " . $usuario['id_persona'] . " y no pudo crearse");
+                }
+            }
         }
 
-        // Validaciones básicas
+    // Validaciones básicas
         $id_periodo = intval($_POST['id_periodo'] ?? 0);
         $metodo = $_POST['metodo_pago'] ?? 'transferencia';
         $referencia = trim($_POST['referencia_pago'] ?? '');
         $id_vivienda = intval($_POST['id_vivienda'] ?? 0) ?: null;
 
+    // Depuración: registrar valores clave para diagnosticar problemas de envío
+    error_log("[PagoController::userSubmitPago] userId=" . json_encode($userId) . ", id_periodo=" . json_encode($id_periodo) . ", referencia='" . $referencia . "'");
+    if (!empty($usuario)) error_log("[PagoController::userSubmitPago] usuario.id_persona=" . json_encode($usuario['id_persona'] ?? null));
+
         if (!$id_periodo || !$userId || !$id_habitante) {
+            // Detallar el motivo en el log para facilitar debugging
+            error_log("[PagoController::userSubmitPago] Falta id_periodo/userId/id_habitante (id_periodo=" . json_encode($id_periodo) . ", userId=" . json_encode($userId) . ", id_habitante=" . json_encode($id_habitante) . ")");
             echo json_encode(['ok' => false, 'message' => 'Datos incompletos o permisos insuficientes']);
             return null;
         }
+
+        // Validar referencia: solo dígitos y máximo 20 caracteres
+        $ref_sanitized = preg_replace('/[^0-9]/', '', $referencia);
+        if ($ref_sanitized === '' || strlen($ref_sanitized) > 20) {
+            echo json_encode(['ok' => false, 'message' => 'Referencia inválida: debe contener solo números y hasta 20 dígitos']);
+            return null;
+        }
+        $referencia = $ref_sanitized;
 
         // Verificar que el habitante sea jefe de familia (habitante_vivienda.es_jefe_familia = 1)
         require_once __DIR__ . '/../models/HabitanteVivienda.php';
         $hvModel = new HabitanteVivienda();
         $esJefe = $hvModel->isJefeFamilia($id_habitante);
-        if (!$esJefe) {
+        // Permitir envío si es jefe (habitante_vivienda.es_jefe_familia = 1)
+        // o si el usuario tiene rol 3 (Jefe de Familia) como excepción práctica
+        $userIsJefeRole = (!empty($usuario['id_rol']) && intval($usuario['id_rol']) === 3);
+        if (!$esJefe && !$userIsJefeRole) {
             echo json_encode(['ok' => false, 'message' => 'Solo Jefes de Familia pueden enviar pagos.']);
             return null;
         }
@@ -208,11 +237,25 @@ class PagoController extends AppController {
             return null;
         }
 
+        // Validar y normalizar monto: debe ser numérico y no nulo
+        $monto_raw = trim((string)($_POST['monto'] ?? ''));
+        if ($monto_raw === '') {
+            echo json_encode(['ok' => false, 'message' => 'Monto inválido o no especificado']);
+            return null;
+        }
+        // Aceptar separador decimal por coma o punto
+        $monto_normalized = str_replace(',', '.', $monto_raw);
+        if (!is_numeric($monto_normalized)) {
+            echo json_encode(['ok' => false, 'message' => 'Monto inválido']);
+            return null;
+        }
+        $monto = (float)$monto_normalized;
+
         $data = [
             'id_usuario' => $userId,
             'id_tipo_beneficio' => $_POST['id_tipo_beneficio'] ?? null,
             'id_periodo' => $id_periodo,
-            'monto' => $_POST['monto'] ?? null,
+            'monto' => $monto,
             'metodo_pago' => $metodo,
             'referencia_pago' => $referencia,
             'id_habitante' => $id_habitante,
@@ -221,7 +264,15 @@ class PagoController extends AppController {
             'estado_actual' => 'en_espera'
         ];
 
-        $id_pago = $this->pagoModel->submitPago($data);
+        // Intentar insertar y capturar excepciones para devolver JSON legible
+        try {
+            $id_pago = $this->pagoModel->submitPago($data);
+        } catch (\Throwable $e) {
+            error_log("[PagoController::userSubmitPago] Excepción al crear pago: " . $e->getMessage());
+            echo json_encode(['ok' => false, 'message' => 'Error interno al registrar el pago']);
+            return null;
+        }
+
         if (!$id_pago) {
             echo json_encode(['ok' => false, 'message' => 'No se pudo registrar el pago']);
             return null;
