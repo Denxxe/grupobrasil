@@ -73,6 +73,11 @@ $page_title = $page_title ?? 'Mi Perfil';
                     </a>
                 </li>
                 <li>
+                    <a href="./index.php?route=eventos" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                        <i class="fas fa-calendar-alt mr-3 sidebar-icon"></i> <span class="sidebar-text">Eventos</span>
+                    </a>
+                </li>
+                <li>
                     <a href="./index.php?route=user/notifications" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
                         <i class="fas fa-bell mr-3 sidebar-icon"></i> <span class="sidebar-text">Mis Notificaciones</span>
                     </a>
@@ -94,6 +99,11 @@ $page_title = $page_title ?? 'Mi Perfil';
                     </a>
                 </li>
                 <?php endif; ?>
+                <li>
+                    <a href="./index.php?route=eventos/metrics" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                        <i class="fas fa-chart-pie mr-3 sidebar-icon"></i> <span class="sidebar-text">Indicadores</span>
+                    </a>
+                </li>
                 <?php 
                 if (isset($_SESSION['available_roles']) && count($_SESSION['available_roles']) > 1): 
                 ?>

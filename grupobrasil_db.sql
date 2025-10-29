@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 29-10-2025 a las 13:02:18
+-- Tiempo de generación: 30-10-2025 a las 00:24:31
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -147,6 +147,44 @@ CREATE TABLE `evento` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `eventos`
+--
+
+CREATE TABLE `eventos` (
+  `id_evento` int(11) NOT NULL,
+  `titulo` varchar(255) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `ubicacion` varchar(255) DEFAULT NULL,
+  `fecha` date NOT NULL,
+  `hora_inicio` time DEFAULT NULL,
+  `hora_fin` time DEFAULT NULL,
+  `categoria_edad` enum('ninos','jovenes','adultos','adultos_mayores','todos') NOT NULL DEFAULT 'todos',
+  `alcance` enum('comunidad','vereda') NOT NULL DEFAULT 'comunidad',
+  `id_calle` int(10) UNSIGNED DEFAULT NULL,
+  `creado_por` int(10) UNSIGNED DEFAULT NULL,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `actualizado_por` int(10) UNSIGNED DEFAULT NULL,
+  `fecha_actualizacion` timestamp NULL DEFAULT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `evento_asistentes`
+--
+
+CREATE TABLE `evento_asistentes` (
+  `id_asistencia` int(11) NOT NULL,
+  `id_evento` int(11) NOT NULL,
+  `id_usuario` int(10) UNSIGNED NOT NULL,
+  `estado` enum('si','no','talvez') NOT NULL DEFAULT 'si',
+  `fecha_registro` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `habitante`
 --
 
@@ -166,7 +204,9 @@ CREATE TABLE `habitante` (
 
 INSERT INTO `habitante` (`id_habitante`, `id_persona`, `fecha_ingreso`, `condicion`, `activo`, `fecha_registro`, `fecha_actualizacion`) VALUES
 (3, 8, '2025-10-25', 'Residente', 1, '2025-10-24 21:05:42', '2025-10-24 21:05:42'),
-(4, 7, '2025-10-25', 'Residente', 1, '2025-10-24 21:35:33', '2025-10-24 21:35:33');
+(4, 7, '2025-10-25', 'Residente', 1, '2025-10-24 21:35:33', '2025-10-24 21:35:33'),
+(5, 6, '2025-10-29', 'Residente', 1, '2025-10-29 08:18:32', '2025-10-29 08:18:32'),
+(6, 11, '2025-10-30', 'Residente', 1, '2025-10-29 19:04:03', '2025-10-29 19:04:03');
 
 -- --------------------------------------------------------
 
@@ -389,6 +429,13 @@ CREATE TABLE `pagos` (
   `comentario_rechazo` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `pagos`
+--
+
+INSERT INTO `pagos` (`id_pago`, `id_usuario`, `id_habitante`, `id_vivienda`, `id_tipo_beneficio`, `id_periodo`, `monto`, `fecha_envio`, `metodo_pago`, `referencia_pago`, `ruta_captura`, `fecha_pago`, `concepto`, `estado_actual`, `estado`, `registrado_por_id`, `verificado_por`, `fecha_verificacion`, `comentario_rechazo`) VALUES
+(1, 3, 5, NULL, 2, 1, 200.00, '2025-10-29 13:26:36', 'pago_movil', '2342423234242', NULL, '2025-10-29 08:26:36', NULL, 'en_espera', '', 3, NULL, NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -420,6 +467,13 @@ CREATE TABLE `pagos_evidencias` (
   `creado_por` int(10) UNSIGNED DEFAULT NULL,
   `fecha_registro` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `pagos_evidencias`
+--
+
+INSERT INTO `pagos_evidencias` (`id_evidencia`, `id_pago`, `ruta`, `mime`, `tamano`, `creado_por`, `fecha_registro`) VALUES
+(1, 1, 'uploads/pagos/1/1/1761740796_511cd3dc.jpg', 'image/jpeg', 212993, 3, '2025-10-29 08:26:36');
 
 -- --------------------------------------------------------
 
@@ -495,7 +549,7 @@ INSERT INTO `persona` (`id_persona`, `cedula`, `nombres`, `apellidos`, `fecha_na
 (6, '31044092', 'Cristian Jesus', 'Correa Pinto', '0000-00-00', '', '12345678', 'Urbanización Brasil', 3, '6', 'cristiancorreaxd@gmail.com', 'Residente', 1, '2025-10-21 04:48:38', '2025-10-21 07:52:54'),
 (7, '87654321', 'Luis', 'Arredondo', NULL, NULL, '04147852753', '', 1, '', '', 'Residente', 1, '2025-10-21 20:33:17', '2025-10-21 20:33:17'),
 (8, '30000000', 'Jesus', 'Alberto', '0000-00-00', 'M', '04126785678', '', 3, '', '', 'Residente', 1, '2025-10-24 21:05:09', '2025-10-27 01:36:00'),
-(10, '30443822', 'Luis', 'Arredondo', NULL, NULL, '04147852753', '', 2, '', '', 'Residente', 1, '2025-10-25 23:04:39', '2025-10-25 23:04:39');
+(11, '29328392', 'Denilson', 'Cardiet', NULL, NULL, '04126283726', '', 2, '', '', 'Residente', 1, '2025-10-29 19:02:45', '2025-10-29 19:02:45');
 
 -- --------------------------------------------------------
 
@@ -568,9 +622,10 @@ CREATE TABLE `usuario` (
 
 INSERT INTO `usuario` (`id_usuario`, `id_persona`, `id_rol`, `id_rol_secundario`, `password`, `email`, `fecha_registro`, `estado`, `activo`, `fecha_actualizacion`, `username`) VALUES
 (2, 3, 1, NULL, '$2y$10$6OPuIKDZ12i0vwqYqf0pwevZS9hkghvPzKrfcAZrxtlxUgvv4TQcu', NULL, '2025-10-20 23:29:39', 'activo', 1, '2025-10-21 05:55:07', 'Admin'),
-(3, 6, 3, NULL, '$2y$10$kqO8xp6ijfL.yMNsd7n8vO2RyrxZndg8wUsi5n2y4JJUPQymWhHMW', 'cristiancorreaxd@gmail.com', '2025-10-21 07:19:28', NULL, 1, '2025-10-21 07:19:28', 'Usuario'),
+(3, 6, NULL, NULL, '$2y$10$kqO8xp6ijfL.yMNsd7n8vO2RyrxZndg8wUsi5n2y4JJUPQymWhHMW', 'cristiancorreaxd@gmail.com', '2025-10-21 07:19:28', NULL, 1, '2025-10-29 19:14:00', 'Usuario'),
 (5, 7, 2, NULL, '$2y$10$JgfZpa2Gb7INj.zhWNDHDeb7bPMAITJKHjZGbEzt6Ll4rIhQ1CLYm', 'lfarredondot14@gmail.com', '2025-10-22 15:02:39', NULL, 1, '2025-10-22 15:02:39', 'Usuario'),
-(6, 8, 2, NULL, '$2y$10$smcuW8bFwB13iqGzuJrJeeRkolTt/xQu7261hVquxw6vr5IbK5WeG', 'jesuslapara@gmail.com', '2025-10-24 21:05:42', NULL, 1, '2025-10-24 21:05:42', 'Usuario');
+(6, 8, 2, NULL, '$2y$10$smcuW8bFwB13iqGzuJrJeeRkolTt/xQu7261hVquxw6vr5IbK5WeG', 'jesuslapara@gmail.com', '2025-10-24 21:05:42', NULL, 1, '2025-10-24 21:05:42', 'Usuario'),
+(7, 11, NULL, NULL, '$2y$10$KbwxRpVacu8l.qZrZPJExeW.dqyr39x.idGRlr155KlWuql.zLsPy', 'denilsoncalidad@gmail.com', '2025-10-29 19:04:04', NULL, 1, '2025-10-29 19:11:57', 'Usuario');
 
 -- --------------------------------------------------------
 
@@ -594,7 +649,8 @@ CREATE TABLE `vivienda` (
 --
 
 INSERT INTO `vivienda` (`id_vivienda`, `id_calle`, `numero`, `tipo`, `estado`, `activo`, `fecha_registro`, `fecha_actualizacion`) VALUES
-(4, 1, '8', 'Casa', 'Activo', 1, '2025-10-25 23:16:30', '2025-10-25 23:16:30');
+(4, 1, '8', 'Casa', 'Activo', 1, '2025-10-25 23:16:30', '2025-10-25 23:16:30'),
+(5, 2, '11', 'Casa', 'Activo', 1, '2025-10-29 19:07:16', '2025-10-29 19:07:16');
 
 -- --------------------------------------------------------
 
@@ -657,6 +713,25 @@ ALTER TABLE `concepto_pago`
 ALTER TABLE `evento`
   ADD PRIMARY KEY (`id_evento`),
   ADD KEY `evento_creado_por_fkey` (`creado_por`);
+
+--
+-- Indices de la tabla `eventos`
+--
+ALTER TABLE `eventos`
+  ADD PRIMARY KEY (`id_evento`),
+  ADD KEY `idx_eventos_fecha` (`fecha`),
+  ADD KEY `idx_eventos_id_calle` (`id_calle`),
+  ADD KEY `fk_eventos_creado_por` (`creado_por`),
+  ADD KEY `fk_eventos_actualizado_por` (`actualizado_por`);
+
+--
+-- Indices de la tabla `evento_asistentes`
+--
+ALTER TABLE `evento_asistentes`
+  ADD PRIMARY KEY (`id_asistencia`),
+  ADD UNIQUE KEY `ux_evento_usuario` (`id_evento`,`id_usuario`),
+  ADD KEY `idx_asistentes_evento` (`id_evento`),
+  ADD KEY `idx_asistentes_usuario` (`id_usuario`);
 
 --
 -- Indices de la tabla `habitante`
@@ -866,10 +941,22 @@ ALTER TABLE `evento`
   MODIFY `id_evento` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `eventos`
+--
+ALTER TABLE `eventos`
+  MODIFY `id_evento` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `evento_asistentes`
+--
+ALTER TABLE `evento_asistentes`
+  MODIFY `id_asistencia` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `habitante`
 --
 ALTER TABLE `habitante`
-  MODIFY `id_habitante` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_habitante` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `indicador_gestion`
@@ -917,7 +1004,7 @@ ALTER TABLE `pago`
 -- AUTO_INCREMENT de la tabla `pagos`
 --
 ALTER TABLE `pagos`
-  MODIFY `id_pago` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id_pago` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `pagos_estado_log`
@@ -929,7 +1016,7 @@ ALTER TABLE `pagos_estado_log`
 -- AUTO_INCREMENT de la tabla `pagos_evidencias`
 --
 ALTER TABLE `pagos_evidencias`
-  MODIFY `id_evidencia` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id_evidencia` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `pagos_periodos`
@@ -947,7 +1034,7 @@ ALTER TABLE `participacion_evento`
 -- AUTO_INCREMENT de la tabla `persona`
 --
 ALTER TABLE `persona`
-  MODIFY `id_persona` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id_persona` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT de la tabla `rol`
@@ -965,13 +1052,13 @@ ALTER TABLE `tipos_beneficio`
 -- AUTO_INCREMENT de la tabla `usuario`
 --
 ALTER TABLE `usuario`
-  MODIFY `id_usuario` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_usuario` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT de la tabla `vivienda`
 --
 ALTER TABLE `vivienda`
-  MODIFY `id_vivienda` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_vivienda` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `vivienda_detalle`
@@ -1002,6 +1089,21 @@ ALTER TABLE `comentarios`
 --
 ALTER TABLE `evento`
   ADD CONSTRAINT `evento_creado_por_fkey` FOREIGN KEY (`creado_por`) REFERENCES `usuario` (`id_usuario`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Filtros para la tabla `eventos`
+--
+ALTER TABLE `eventos`
+  ADD CONSTRAINT `fk_eventos_actualizado_por` FOREIGN KEY (`actualizado_por`) REFERENCES `usuario` (`id_usuario`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_eventos_calle` FOREIGN KEY (`id_calle`) REFERENCES `calle` (`id_calle`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_eventos_creado_por` FOREIGN KEY (`creado_por`) REFERENCES `usuario` (`id_usuario`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `evento_asistentes`
+--
+ALTER TABLE `evento_asistentes`
+  ADD CONSTRAINT `fk_asistentes_evento` FOREIGN KEY (`id_evento`) REFERENCES `eventos` (`id_evento`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_asistentes_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `habitante`

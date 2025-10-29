@@ -389,6 +389,42 @@ class AdminController extends AppController{
     $this->renderAdminView('dashboard', $data);
 }
 
+    /**
+     * Página global Indicadores (Admin)
+     * Agrega métricas de eventos, pagos y usuarios.
+     */
+    public function indicadores() {
+        // Requerir modelos adicionales
+        require_once __DIR__ . '/../models/Event.php';
+        require_once __DIR__ . '/../models/Pago.php';
+
+        $eventModel = new Event();
+        $pagoModel = new Pago();
+
+        $year = (int)($_GET['year'] ?? date('Y'));
+        $byMonth = $eventModel->countEventsByMonth($year);
+        $byYear = $eventModel->countEventsByYear();
+        $byCategory = $eventModel->countEventsByCategory();
+
+        // Métricas rápidas de usuarios y pagos (si los métodos existen en los modelos)
+        $totalUsuarios = method_exists($this->usuarioModel, 'getTotalUsuarios') ? $this->usuarioModel->getTotalUsuarios() : 0;
+        $totalPagosHoy = method_exists($pagoModel, 'sumPaymentsToday') ? $pagoModel->sumPaymentsToday() : 0.0;
+        $variacionPagosAyer = method_exists($pagoModel, 'getPaymentChangeVsYesterday') ? $pagoModel->getPaymentChangeVsYesterday() : 0.0;
+
+        $data = [
+            'page_title' => 'Indicadores',
+            'byMonth' => $byMonth,
+            'byYear' => $byYear,
+            'byCategory' => $byCategory,
+            'year' => $year,
+            'totalUsuarios' => $totalUsuarios,
+            'totalPagosHoy' => $totalPagosHoy,
+            'variacionPagosAyer' => $variacionPagosAyer
+        ];
+
+        $this->renderAdminView('indicadores', $data);
+    }
+
     // -------------------------------------------------------------------------
     // GESTIÓN DE HABITANTES (PERSONAS)
     // -------------------------------------------------------------------------
@@ -870,7 +906,9 @@ class AdminController extends AppController{
         $data = [
             'title' => 'Editar Usuario',
             'page_title' => 'Editar Usuario',
+            // Exponer ambas claves para compatibilidad con vistas antiguas y nuevas
             'user' => $user_data_to_display,
+            'user_data_to_display' => $user_data_to_display,
             'roles' => $roles,
             'errors' => $errors,
         ];
@@ -1341,15 +1379,31 @@ class AdminController extends AppController{
                     'activo' => 1
                 ];
 
-                $hvCreate = $hvModel->create($hvData);
-                if ($hvCreate) {
-                    $successMessage .= ' Y vivienda asignada como domicilio del jefe.';
-                } else {
-                    error_log('[v0] Error al crear habitante_vivienda para jefe de familia.');
-                    $_SESSION['error_message'] = 'No fue posible asignar la vivienda seleccionada.';
+                // Crear registro en habitante_vivienda usando columnas reales de la tabla
+                // (la tabla usa 'fecha_inicio' y no tiene columna 'activo')
+                $db = $this->viviendaModel->getConnection();
+                $sql = "INSERT INTO habitante_vivienda (id_habitante, id_vivienda, es_jefe_familia, fecha_inicio) VALUES (?, ?, ?, ?)";
+                $stmt = $db->prepare($sql);
+                if ($stmt === false) {
+                    error_log('[v0] prepare failed habitante_vivienda insert: ' . $db->error);
+                    $_SESSION['error_message'] = 'No fue posible asignar la vivienda (error interno).';
                     header('Location: ./index.php?route=admin/users/create-user-role&person_id=' . $personId);
                     return;
                 }
+
+                $fechaInicio = date('Y-m-d');
+                $esJefe = 1;
+                $stmt->bind_param('iiis', $habitanteId, $idVivienda, $esJefe, $fechaInicio);
+                $execOk = $stmt->execute();
+                if (!$execOk) {
+                    error_log('[v0] execute failed habitante_vivienda insert: ' . $stmt->error);
+                    $stmt->close();
+                    $_SESSION['error_message'] = 'No fue posible asignar la vivienda seleccionada (error DB).';
+                    header('Location: ./index.php?route=admin/users/create-user-role&person_id=' . $personId);
+                    return;
+                }
+                $stmt->close();
+                $successMessage .= ' Y vivienda asignada como domicilio del jefe.';
             }
         }
 
@@ -1404,14 +1458,33 @@ class AdminController extends AppController{
             }
         }
 
-        // Finalmente quitar el rol del usuario (establecer NULL)
-        $updateResult = $this->usuarioModel->update($usuarioId, ['id_rol' => null]);
-
-        if ($updateResult) {
-            $_SESSION['success_message'] = 'Rol revocado correctamente.';
-        } else {
-            $_SESSION['error_message'] = 'Ocurrió un error al intentar revocar el rol.';
+        // Finalmente: eliminar la cuenta de usuario completamente (solo la fila de 'usuario'),
+        // ya que el habitante quedará sin rol y deberá esperar nueva asignación.
+        // NOTA: No eliminamos la fila de 'persona' aquí.
+        if ($rolActual === 1) {
+            // No permitir tocar al Admin Principal desde aquí
+            $_SESSION['error_message'] = 'No se permite revocar/eliminar la cuenta del Administrador Principal desde esta interfaz.';
+            header('Location: ./index.php?route=admin/users/personas');
+            return;
         }
+
+        $db = $this->usuarioModel->getConnection();
+        $delStmt = $db->prepare("DELETE FROM usuario WHERE id_usuario = ?");
+        if ($delStmt === false) {
+            error_log('[v0] revokeUserRole prepare delete usuario failed: ' . $db->error);
+            $_SESSION['error_message'] = 'Ocurrió un error interno al revocar el rol.';
+            header('Location: ./index.php?route=admin/users/personas');
+            return;
+        }
+        $delStmt->bind_param('i', $usuarioId);
+        $deleted = $delStmt->execute();
+        if ($deleted) {
+            $_SESSION['success_message'] = 'Rol revocado y cuenta de usuario eliminada correctamente.';
+        } else {
+            error_log('[v0] revokeUserRole execute delete usuario failed: ' . $delStmt->error);
+            $_SESSION['error_message'] = 'Ocurrió un error al intentar eliminar la cuenta de usuario.';
+        }
+        $delStmt->close();
 
         header('Location: ./index.php?route=admin/users/personas');
         return;

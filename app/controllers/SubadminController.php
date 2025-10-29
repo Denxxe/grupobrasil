@@ -47,6 +47,29 @@ class SubadminController extends AppController {
         }
     }
 
+    /**
+     * Render wrapper para vistas que deben mostrarse en el layout de Subadmin.
+     * Similar a AdminController::renderAdminView pero para subadmin.
+     */
+    public function renderSubadminView($viewPath, $data = []) {
+        // Definir variables de vista
+        extract($data);
+        $title = $data['title'] ?? 'Líder de Vereda';
+        $page_title = $data['page_title'] ?? ($data['page_title'] ?? 'Panel de Líder');
+        // content_view_path esperado por subadmin_layout.php
+        $content_view_path = __DIR__ . '/../views/' . $viewPath . '.php';
+        $content_view = $content_view_path; // compatibilidad
+
+        if (!file_exists($content_view_path)) {
+            http_response_code(500);
+            echo "Error: La vista '" . htmlspecialchars($viewPath) . "' no se encontró en '" . htmlspecialchars($content_view_path) . "'.";
+            exit();
+        }
+
+        include_once __DIR__ . '/../views/layouts/subadmin_layout.php';
+        exit();
+    }
+
     private function setFlash($type, $message) {
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
@@ -289,20 +312,19 @@ class SubadminController extends AppController {
                 // Asignar a vivienda si se seleccionó
                 if ($idVivienda > 0) {
                     $esJefeFamilia = isset($_POST['es_jefe_familia']) ? 1 : 0;
-                    $habitanteViviendaData = [
-                        'id_habitante' => (int)$idHabitante,
-                        'id_vivienda' => (int)$idVivienda,
-                        'es_jefe_familia' => (int)$esJefeFamilia,
-                        'fecha_ingreso' => date('Y-m-d'),
-                        'activo' => 1
-                    ];
-                    
-                    error_log("Intentando crear habitante_vivienda: " . print_r($habitanteViviendaData, true));
-                    
-                    $resultado = $this->habitanteViviendaModel->create($habitanteViviendaData);
-                    
-                    if (!$resultado) {
-                        error_log("Error al crear habitante_vivienda");
+                    $fechaInicio = date('Y-m-d');
+                    $db = $this->viviendaModel->getConnection();
+                    $sql = "INSERT INTO habitante_vivienda (id_habitante, id_vivienda, es_jefe_familia, fecha_inicio) VALUES (?, ?, ?, ?)";
+                    $stmt = $db->prepare($sql);
+                    if ($stmt === false) {
+                        error_log("Error prepare habitante_vivienda insert: " . $db->error);
+                    } else {
+                        $esJefeFamilia = (int)$esJefeFamilia;
+                        $stmt->bind_param('iiis', $idHabitante, $idVivienda, $esJefeFamilia, $fechaInicio);
+                        if (!$stmt->execute()) {
+                            error_log("Error execute habitante_vivienda insert: " . $stmt->error);
+                        }
+                        $stmt->close();
                     }
                 }
                 // Si se solicitó crear usuario, intentarlo ahora
@@ -647,14 +669,20 @@ class SubadminController extends AppController {
                 require_once __DIR__ . '/../models/HabitanteVivienda.php';
                 $hvModel = new HabitanteVivienda();
                 $hvModel->deleteByHabitanteId($idHabitante);
-                $hvData = [
-                    'id_habitante' => $idHabitante,
-                    'id_vivienda' => $idVivienda,
-                    'es_jefe_familia' => 1,
-                    'fecha_ingreso' => date('Y-m-d'),
-                    'activo' => 1
-                ];
-                $hvModel->create($hvData);
+                $db = $this->viviendaModel->getConnection();
+                $sql = "INSERT INTO habitante_vivienda (id_habitante, id_vivienda, es_jefe_familia, fecha_inicio) VALUES (?, ?, ?, ?)";
+                $stmt = $db->prepare($sql);
+                if ($stmt === false) {
+                    error_log('[v0] prepare failed habitante_vivienda insert (subadmin): ' . $db->error);
+                } else {
+                    $fechaInicio = date('Y-m-d');
+                    $esJefe = 1;
+                    $stmt->bind_param('iiis', $idHabitante, $idVivienda, $esJefe, $fechaInicio);
+                    if (!$stmt->execute()) {
+                        error_log('[v0] execute failed habitante_vivienda insert (subadmin): ' . $stmt->error);
+                    }
+                    $stmt->close();
+                }
             }
 
             $this->setFlash('success', 'Asignación de Jefe de Familia completada.');

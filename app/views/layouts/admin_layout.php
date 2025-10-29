@@ -180,6 +180,18 @@ $is_pagos_active = strpos($current_route, 'admin/pagos') === 0 || strpos($curren
 </a>
 </li>
 <li>
+<a href="./index.php?route=eventos" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
+<i class="fas fa-calendar-alt sidebar-icon mr-3"></i>
+<span class="sidebar-text">Eventos</span>
+</a>
+</li>
+<li>
+<a href="./index.php?route=admin/indicadores" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
+<i class="fas fa-chart-pie sidebar-icon mr-3"></i>
+<span class="sidebar-text">Indicadores</span>
+</a>
+</li>
+<li>
 <a href="./index.php?route=admin/settings" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
 <i class="fas fa-cog sidebar-icon mr-3"></i> 
 <span class="sidebar-text">Configuración</span>

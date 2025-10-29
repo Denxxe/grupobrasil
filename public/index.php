@@ -234,7 +234,6 @@ if (!isset($_SESSION['id_usuario'])) {
                     $action = $_GET['action'] ?? null;
                     if ($action === 'index') {
                         $actionName = 'viviendasIndex';
-                    
                     } elseif ($action === 'byCalle') {
                         // API: listar viviendas por id_calle con conteo de familias
                         $actionName = 'viviendasByCalle';
@@ -262,6 +261,10 @@ if (!isset($_SESSION['id_usuario'])) {
                         // Vista principal
                         $actionName = 'viviendas';
                     }
+                }
+                // Página global de indicadores en AdminController
+                elseif ($actionSegment === 'indicadores') {
+                    $actionName = 'indicadores';
                 }
                 elseif ($actionSegment === 'carga-familiar') {
                     // Permitir a admin ver todas las cargas familiares usando ?action=all
@@ -541,6 +544,26 @@ if (!isset($_SESSION['id_usuario'])) {
                 }
                 break;
 
+            case 'eventos':
+                // Rutas para la sección de eventos
+                $controllerName = 'EventosController';
+                if ($actionSegment === 'list') {
+                    $actionName = 'list';
+                } elseif ($actionSegment === 'create') {
+                    $actionName = 'create';
+                } elseif ($actionSegment === 'edit') {
+                    $actionName = 'edit';
+                    // el ID se pasa como tercer segmento o via GET
+                    $id = $id ?: filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                } elseif ($actionSegment === 'delete') {
+                    $actionName = 'delete';
+                } elseif ($actionSegment === 'metrics') {
+                    $actionName = 'metrics';
+                } else {
+                    $actionName = 'index';
+                }
+                break;
+
             case 'user':
                 if ($userRole !== 3 && $userRole !== 2 && $userRole !== 1) {
                     $_SESSION['error_message'] = "No tienes permisos para acceder a esta sección.";
@@ -687,21 +710,24 @@ extract($data); // Hace que todas las claves de $data sean variables ($page_titl
 
 $page_title = $page_title ?? 'Grupo Brasil'; // Asegura un título por defecto
 
-// Captura el contenido de la vista específica
-ob_start();
+// Preparar ruta de la vista específica para que los layouts la incluyan
 $view_file = VIEWS_PATH . $viewData['view'] . '.php';
-if (file_exists($view_file)) {
-    include $view_file;
-} else {
-    // Si la vista especificada por el controlador no existe, muestra una vista de error genérica
-    http_response_code(500);
-    include VIEWS_PATH . 'error/500.php'; // Asegúrate de tener un error/500.php
-    error_log("Error: La vista especificada '" . htmlspecialchars($viewData['view']) . ".php' no fue encontrada.");
-}
-$page_content = ob_get_clean(); // Captura el HTML de la vista
+$content_view_path = $view_file; // usado por subadmin/user layouts
 
-// Incluye el layout principal, que debe tener una variable $page_content
-// y las variables $success_message, $error_message, $page_title disponibles
+if (!file_exists($view_file)) {
+    // Si la vista especificada por el controlador no existe, mostrar error 500
+    http_response_code(500);
+    error_log("Error: La vista especificada '" . htmlspecialchars($viewData['view']) . ".php' no fue encontrada.");
+    // Fallback a vista de error 500
+    $content_view_path = VIEWS_PATH . 'error/500.php';
+}
+
+// Para compatibilidad, también exponemos $page_content (algunas vistas/layouts podrían usarla)
+ob_start();
+include $content_view_path;
+$page_content = ob_get_clean();
+
+// Incluye el layout principal, que debe tener acceso a $content_view_path o $page_content
 if (isset($_SESSION['id_rol'])) {
     switch ($_SESSION['id_rol']) {
         case 1:

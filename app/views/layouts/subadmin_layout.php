@@ -110,6 +110,16 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
                         <i class="fas fa-chart-line mr-3 sidebar-icon"></i> <span class="sidebar-text">Reportes</span>
                     </a>
                 </li>
+                <li>
+                    <a href="./index.php?route=eventos" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                        <i class="fas fa-calendar-alt mr-3 sidebar-icon"></i> <span class="sidebar-text">Eventos</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="./index.php?route=eventos/metrics" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                        <i class="fas fa-chart-pie mr-3 sidebar-icon"></i> <span class="sidebar-text">Indicadores</span>
+                    </a>
+                </li>
                 </ul>
         </nav>
         <div class="mt-auto p-4 border-t border-vinotinto-800">
