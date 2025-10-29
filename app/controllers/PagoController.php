@@ -211,12 +211,18 @@ class PagoController extends AppController {
         }
 
         // Validar referencia: solo dígitos y máximo 20 caracteres
-        $ref_sanitized = preg_replace('/[^0-9]/', '', $referencia);
-        if ($ref_sanitized === '' || strlen($ref_sanitized) > 20) {
-            echo json_encode(['ok' => false, 'message' => 'Referencia inválida: debe contener solo números y hasta 20 dígitos']);
-            return null;
+        // Si el método es 'efectivo' no es obligatorio ni referencia ni comprobante
+        if ($metodo !== 'efectivo') {
+            $ref_sanitized = preg_replace('/[^0-9]/', '', $referencia);
+            if ($ref_sanitized === '' || strlen($ref_sanitized) > 20) {
+                echo json_encode(['ok' => false, 'message' => 'Referencia inválida: debe contener solo números y hasta 20 dígitos']);
+                return null;
+            }
+            $referencia = $ref_sanitized;
+        } else {
+            // Pago en efectivo: limpiar referencia y permitir ausencia de comprobantes
+            $referencia = null;
         }
-        $referencia = $ref_sanitized;
 
         // Verificar que el habitante sea jefe de familia (habitante_vivienda.es_jefe_familia = 1)
         require_once __DIR__ . '/../models/HabitanteVivienda.php';
@@ -347,7 +353,12 @@ class PagoController extends AppController {
                 // Construir mensaje incluyendo el periodo si está disponible
                 $periodoInfo = $this->periodoModel->getById($id_periodo);
                 $periodoNombre = $periodoInfo['nombre_periodo'] ?? null;
-                $msg = "Pago enviado por {$usuario['nombre_completo']} (referencia: {$referencia})";
+                $msg = "Pago enviado por {$usuario['nombre_completo']}";
+                if (!empty($referencia)) {
+                    $msg .= " (referencia: {$referencia})";
+                } else {
+                    $msg .= " (sin referencia)";
+                }
                 if ($periodoNombre) $msg .= " — Periodo: {$periodoNombre}";
 
                 require_once __DIR__ . '/../models/Usuario.php';
@@ -375,6 +386,19 @@ class PagoController extends AppController {
                         $this->notificacionModel->crearNotificacion($adm['id_usuario'], $_SESSION['id_usuario'] ?? null, 'pago_enviado', $msg, $id_pago);
                     }
                 }
+            }
+        } else {
+            // No hay vivienda asociada: notificar directamente a Jefes (rol 1)
+            require_once __DIR__ . '/../models/Usuario.php';
+            $uModel2 = new Usuario();
+            $admins = $uModel2->getAllFiltered(['id_rol' => 1]);
+            $periodoInfo = $this->periodoModel->getById($id_periodo);
+            $periodoNombre = $periodoInfo['nombre_periodo'] ?? null;
+            $msg = "Pago enviado por {$usuario['nombre_completo']}";
+            if (!empty($referencia)) $msg .= " (referencia: {$referencia})"; else $msg .= " (sin referencia)";
+            if ($periodoNombre) $msg .= " — Periodo: {$periodoNombre}";
+            foreach ($admins as $adm) {
+                $this->notificacionModel->crearNotificacion($adm['id_usuario'], $_SESSION['id_usuario'] ?? null, 'pago_enviado', $msg, $id_pago);
             }
         }
 

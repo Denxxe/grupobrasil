@@ -278,11 +278,21 @@ class Pago extends ModelBase {
             return [];
         }
 
-        // bind params dynamically
-        // $types and $params already built above
-        $bind_names = array_merge([$types], $params);
+        // bind params dynamically (robusto): crear variables temporales y pasarlas por referencia
+        // Verificar que el número de placeholders coincide con la cantidad de parámetros
+        if (preg_match_all('/\?/', $sql) !== strlen($types)) {
+            error_log("[Pago::getPagosPorCalles] mismatch entre placeholders (" . preg_match_all('/\?/', $sql, $m) . ") y types (" . strlen($types) . ")");
+        }
+
+        // Preparar array de referencias: primero el string de tipos, luego variables temporales para cada param
         $refs = [];
-        foreach ($bind_names as $key => $val) { $refs[$key] = &$bind_names[$key]; }
+        $refs[] = &$types;
+        for ($i = 0; $i < count($params); $i++) {
+            ${"param_$i"} = $params[$i];
+            $refs[] = &${"param_$i"};
+        }
+
+        // Llamar bind_param con referencias
         call_user_func_array([$stmt, 'bind_param'], $refs);
 
         $stmt->execute();
@@ -440,7 +450,8 @@ class Pago extends ModelBase {
     }
 
     public function getEvidencesByPago(int $id_pago) {
-        $sql = "SELECT id_evidencia, ruta, mime, tamano, creado_por, fecha_creacion FROM pagos_evidencias WHERE id_pago = ? ORDER BY fecha_creacion DESC";
+    // Nota: la columna de timestamp en la tabla se llama `fecha_registro` en la migración
+    $sql = "SELECT id_evidencia, ruta, mime, tamano, creado_por, fecha_registro FROM pagos_evidencias WHERE id_pago = ? ORDER BY fecha_registro DESC";
         $stmt = $this->conn->prepare($sql);
         if ($stmt === false) return [];
         $stmt->bind_param('i', $id_pago);

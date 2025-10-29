@@ -4,18 +4,25 @@ async function submitPagoForm(form) {
     const fd = new FormData(form);
     // Validación cliente: referencia numérica y longitud máxima 20
     const refEl = form.querySelector('input[name="referencia_pago"]');
+    const metodoEl = form.querySelector('select[name="metodo_pago"]');
+    const metodoVal = metodoEl ? (metodoEl.value || '').toString() : '';
     if (refEl) {
-        const val = (refEl.value || '').toString().replace(/[^0-9]/g, '').slice(0,20);
-        if (val.length === 0) {
-            showToast('La referencia es obligatoria y debe contener solo números.', 'error');
-            return;
+        const rawVal = (refEl.value || '').toString();
+        const val = rawVal.replace(/[^0-9]/g, '').slice(0,20);
+        // Si el método es distinto de 'efectivo', la referencia es obligatoria
+        if (metodoVal !== 'efectivo') {
+            if (val.length === 0) {
+                showToast('La referencia es obligatoria y debe contener solo números.', 'error');
+                return;
+            }
+            if (val.length > 20) {
+                showToast('La referencia debe tener máximo 20 dígitos.', 'error');
+                return;
+            }
         }
-        if (val.length > 20) {
-            showToast('La referencia debe tener máximo 20 dígitos.', 'error');
-            return;
-        }
-        // garantizar que el FormData tenga el valor sanitizado
-        fd.set('referencia_pago', val);
+        // garantizar que el FormData tenga el valor sanitizado (si hay alguno)
+        if (val.length > 0) fd.set('referencia_pago', val);
+        else fd.set('referencia_pago', '');
     }
     try {
         const res = await fetch(url, { method: 'POST', body: fd, credentials: 'same-origin' });
