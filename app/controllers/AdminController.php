@@ -30,32 +30,20 @@ class AdminController extends AppController{
     private $viviendaModel;
     private $cargaFamiliarModel;
 
-    public function __construct(
-        Usuario $usuarioModel,
-        Persona $personaModel,
-        Noticia $noticiaModel,
-        Comentario $comentarioModel,
-        Notificacion $notificacionModel,
-        Calle $calleModel,
-        LiderCalle $liderCalleModel,
-        Categoria $categoriaModel,
-        Role $roleModel,
-        Habitante $habitanteModel,
-        Vivienda $viviendaModel,
-        CargaFamiliar $cargaFamiliarModel
-    ) {
-        $this->usuarioModel = $usuarioModel;
-        $this->personaModel = $personaModel;
-        $this->noticiaModel = $noticiaModel;
-        $this->comentarioModel = $comentarioModel;
-        $this->notificacionModel = $notificacionModel;
-        $this->calleModel = $calleModel;
-        $this->liderCalleModel = $liderCalleModel;
-        $this->categoriaModel = $categoriaModel;
-        $this->roleModel = $roleModel;
-        $this->habitanteModel = $habitanteModel;
-        $this->viviendaModel = $viviendaModel;
-        $this->cargaFamiliarModel = $cargaFamiliarModel;
+    public function __construct() {
+        // Instanciar modelos internos para uso en métodos del controlador
+        $this->usuarioModel = new Usuario();
+        $this->personaModel = new Persona();
+        $this->noticiaModel = new Noticia();
+        $this->comentarioModel = new Comentario();
+        $this->notificacionModel = new Notificacion();
+        $this->calleModel = new Calle();
+        $this->liderCalleModel = new LiderCalle();
+        $this->categoriaModel = new Categoria();
+        $this->roleModel = new Role();
+        $this->habitanteModel = new Habitante();
+        $this->viviendaModel = new Vivienda();
+        $this->cargaFamiliarModel = new CargaFamiliar();
 
         // Lógica de seguridad y redirección (asume que rol 1 es Administrador)
         if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 1) {
@@ -65,7 +53,7 @@ class AdminController extends AppController{
         }
     }
 
-    private function renderAdminView($viewPath, $data = []) {
+    public function renderAdminView($viewPath, $data = []) {
         extract($data);
         $title = $data['title'] ?? 'Panel de Administración';
         $page_title = $data['page_title'] ?? 'Dashboard de Administración';
@@ -78,6 +66,267 @@ class AdminController extends AppController{
         }
 
         include_once __DIR__ . '/../views/layouts/admin_layout.php';
+    }
+
+    // Delegadores para rutas de pagos/beneficios (evitan 404 cuando el router apunta a AdminController)
+    public function adminPeriodos($id = null) {
+        // constructor ya verifica que el usuario es admin
+        $periodosModel = new PagosPeriodos();
+        // If user requested detalle via query param, show detalle
+        if (isset($_GET['view']) && $_GET['view'] === 'detalle' && isset($_GET['id'])) {
+            $id = intval($_GET['id']);
+            return $this->adminDetallePeriodo($id);
+        }
+
+        $activos = $periodosModel->getActivos();
+        $historial = $periodosModel->getHistorial();
+        $data = ['page_title' => 'Periodos de Pago', 'activos' => $activos, 'historial' => $historial];
+        $this->renderAdminView('pagos/periodos', $data);
+    }
+
+    // Mostrar detalle de un periodo (pagos asociados)
+    public function adminDetallePeriodo($id = null) {
+        // constructor ya verifica que el usuario es admin
+        if (!$id) {
+            if (isset($_GET['id'])) $id = intval($_GET['id']);
+            else {
+                $_SESSION['flash_message'] = 'Periodo no especificado';
+                header('Location: /admin/pagos/periodos');
+                exit;
+            }
+        }
+    $periodosModel = new PagosPeriodos();
+        $periodo = $periodosModel->getById($id);
+        if (!$periodo) {
+            $_SESSION['flash_message'] = 'Periodo no encontrado';
+            header('Location: /admin/pagos/periodos');
+            exit;
+        }
+
+    $pagoModel = new Pago();
+
+        // Paginación simple
+        $page = max(1, intval($_GET['page'] ?? 1));
+        $limit = 25;
+        $offset = ($page - 1) * $limit;
+
+        // Leer filtros opcionales desde GET
+        $filters = [];
+        $estado = trim($_GET['estado'] ?? '');
+        $desde = trim($_GET['desde'] ?? '');
+        $hasta = trim($_GET['hasta'] ?? '');
+        if ($estado !== '') $filters['estado'] = $estado;
+        if ($desde !== '') $filters['desde'] = $desde;
+        if ($hasta !== '') $filters['hasta'] = $hasta;
+
+        $total = $pagoModel->countPagosPorPeriodo($id); // total ignoring filters for now
+        $totalPages = ($total > 0) ? ceil($total / $limit) : 1;
+
+        // Obtener pagos aplicando filtros si existen
+        if (!empty($filters)) {
+            $pagos = $pagoModel->getPagosPorPeriodoFiltered($id, $filters, $limit, $offset);
+        } else {
+            $pagos = $pagoModel->getPagosPorPeriodo($id, $limit, $offset);
+        }
+        // Adjuntar evidencias para cada pago
+        foreach ($pagos as &$p) {
+            $p['evidencias'] = $pagoModel->getEvidencesByPago((int)($p['id_pago'] ?? 0));
+        }
+        unset($p);
+
+        $this->renderAdminView('pagos/detalle', ['periodo' => $periodo, 'pagos' => $pagos, 'pagination' => ['page' => $page, 'total' => $total, 'totalPages' => $totalPages, 'limit' => $limit]]);
+    }
+
+    public function adminCrearPeriodo($id = null) {
+        // Cargar tipos de beneficio para el select
+        require_once __DIR__ . '/../models/TipoBeneficio.php';
+        $tbModel = new TipoBeneficio();
+        $tipos = $tbModel->findAll();
+
+        $data = ['page_title' => 'Crear Periodo', 'tipos_beneficio' => $tipos];
+        $this->renderAdminView('pagos/crear', $data);
+    }
+
+    public function adminStorePeriodo($id = null) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ./index.php?route=admin/pagos/periodos');
+            return;
+        }
+        // Permiso ya verificado en constructor (rol 1)
+        require_once __DIR__ . '/../models/PagosPeriodos.php';
+        require_once __DIR__ . '/../models/Notificacion.php';
+        require_once __DIR__ . '/../models/Usuario.php';
+        $ppModel = new PagosPeriodos();
+        $notModel = new Notificacion();
+        $uModel = new Usuario();
+        // Validar id_tipo_beneficio
+        $id_tipo_beneficio = intval($_POST['id_tipo_beneficio'] ?? 0) ?: null;
+        require_once __DIR__ . '/../models/TipoBeneficio.php';
+        $tbModel = new TipoBeneficio();
+        if (empty($id_tipo_beneficio) || !$tbModel->findById($id_tipo_beneficio)) {
+            $_SESSION['error_message'] = 'Tipo de beneficio inválido. Seleccione un tipo válido.';
+            header('Location: ./index.php?route=admin/pagos/crear');
+            return;
+        }
+
+        $nombre = trim($_POST['nombre_periodo'] ?? '');
+        $fecha_inicio = $_POST['fecha_inicio'] ?? null;
+        $fecha_limite = $_POST['fecha_limite'] ?? null;
+        $monto = $_POST['monto'] ?? null;
+        $instrucciones = $_POST['instrucciones_pago'] ?? null;
+
+        $data = [
+            'nombre_periodo' => $nombre,
+            'fecha_inicio' => $fecha_inicio,
+            'fecha_limite' => $fecha_limite,
+            'monto' => $monto,
+            'id_tipo_beneficio' => $id_tipo_beneficio,
+            'instrucciones_pago' => $instrucciones,
+            'creado_por' => $_SESSION['id_usuario'] ?? null
+        ];
+
+        $id_periodo = $ppModel->createPeriodo($data);
+        if ($id_periodo) {
+            // Notificar a jefes de familia
+            $msg = "Se abrió el periodo $nombre. Fecha límite: $fecha_limite.";
+            $jefes = $uModel->getAllFiltered(['id_rol' => 3]);
+            foreach ($jefes as $jf) {
+                $notModel->crearNotificacion($jf['id_usuario'], $_SESSION['id_usuario'] ?? null, 'periodo_abierto', $msg, $id_periodo);
+            }
+            $_SESSION['success_message'] = 'Periodo creado correctamente.';
+        } else {
+            $_SESSION['error_message'] = 'Ocurrió un error al crear el periodo.';
+        }
+
+        header('Location: ./index.php?route=admin/pagos/periodos');
+        return;
+    }
+
+    // Editar periodo
+    public function adminEditarPeriodo($id = null) {
+        $id_periodo = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT) ?: null;
+        if (!$id_periodo) {
+            $_SESSION['error_message'] = 'Periodo no especificado.';
+            header('Location: ./index.php?route=admin/pagos/periodos');
+            return;
+        }
+        require_once __DIR__ . '/../models/PagosPeriodos.php';
+        require_once __DIR__ . '/../models/TipoBeneficio.php';
+        $ppModel = new PagosPeriodos();
+        $tbModel = new TipoBeneficio();
+        $periodo = $ppModel->getById($id_periodo);
+        if (!$periodo) {
+            $_SESSION['error_message'] = 'Periodo no encontrado.';
+            header('Location: ./index.php?route=admin/pagos/periodos');
+            return;
+        }
+        $tipos = $tbModel->findAll();
+        $this->renderAdminView('pagos/editar', ['page_title' => 'Editar Periodo', 'periodo' => $periodo, 'tipos_beneficio' => $tipos]);
+    }
+
+    // Actualizar periodo
+    public function adminUpdatePeriodo($id = null) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ./index.php?route=admin/pagos/periodos');
+            return;
+        }
+        $id_periodo = intval($_POST['id_periodo'] ?? 0);
+        if (!$id_periodo) {
+            $_SESSION['error_message'] = 'Periodo inválido.';
+            header('Location: ./index.php?route=admin/pagos/periodos');
+            return;
+        }
+        require_once __DIR__ . '/../models/PagosPeriodos.php';
+        require_once __DIR__ . '/../models/TipoBeneficio.php';
+        $ppModel = new PagosPeriodos();
+        $tbModel = new TipoBeneficio();
+
+        $id_tipo_beneficio = intval($_POST['id_tipo_beneficio'] ?? 0) ?: null;
+        if (empty($id_tipo_beneficio) || !$tbModel->findById($id_tipo_beneficio)) {
+            $_SESSION['error_message'] = 'Tipo de beneficio inválido.';
+            header('Location: ./index.php?route=admin/pagos/editar&id=' . $id_periodo);
+            return;
+        }
+
+        $data = [
+            'nombre_periodo' => trim($_POST['nombre_periodo'] ?? ''),
+            'fecha_inicio' => $_POST['fecha_inicio'] ?? null,
+            'fecha_limite' => $_POST['fecha_limite'] ?? null,
+            'monto' => $_POST['monto'] ?? null,
+            'id_tipo_beneficio' => $id_tipo_beneficio,
+            'instrucciones_pago' => $_POST['instrucciones_pago'] ?? null
+        ];
+        $ok = $ppModel->update($id_periodo, $data);
+        if ($ok) {
+            $_SESSION['success_message'] = 'Periodo actualizado correctamente.';
+        } else {
+            $_SESSION['error_message'] = 'Error al actualizar periodo.';
+        }
+        header('Location: ./index.php?route=admin/pagos/periodos');
+        return;
+    }
+
+    // Exportar pagos de un periodo a CSV
+    public function adminExportPagosPeriodo($id = null) {
+        $id_periodo = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT) ?: null;
+        if (!$id_periodo) {
+            $_SESSION['error_message'] = 'Periodo no especificado para export.';
+            header('Location: ./index.php?route=admin/pagos/periodos');
+            return;
+        }
+        require_once __DIR__ . '/../models/Pago.php';
+        require_once __DIR__ . '/../models/PagosPeriodos.php';
+        $pModel = new Pago();
+        $ppModel = new PagosPeriodos();
+        // Leer filtros desde GET
+        $filters = [];
+        $estado = trim($_GET['estado'] ?? '');
+        $desde = trim($_GET['desde'] ?? '');
+        $hasta = trim($_GET['hasta'] ?? '');
+        if ($estado !== '') $filters['estado'] = $estado;
+        if ($desde !== '') $filters['desde'] = $desde;
+        if ($hasta !== '') $filters['hasta'] = $hasta;
+
+        if (!empty($filters)) {
+            $pagos = $pModel->getPagosPorPeriodoFiltered($id_periodo, $filters, null, null);
+        } else {
+            $pagos = $pModel->getPagosPorPeriodo($id_periodo);
+        }
+        $periodo = $ppModel->getById($id_periodo);
+        $filename = 'pagos_periodo_' . ($periodo['id_periodo'] ?? $id_periodo) . '.csv';
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=' . $filename);
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['ID Pago','Fecha Envío','Usuario','Cédula','Nombre','Monto','Método','Referencia','Vivienda','Vereda','Estado']);
+        foreach ($pagos as $p) {
+            $usuario = $p['id_usuario'] ?? '';
+            $cedula = $p['cedula'] ?? '';
+            $nombre = trim(($p['nombres'] ?? '') . ' ' . ($p['apellidos'] ?? ''));
+            $numero = $p['numero_vivienda'] ?? '';
+            $vereda = $p['vereda'] ?? '';
+            fputcsv($out, [ $p['id_pago'] ?? '', $p['fecha_envio'] ?? '', $usuario, $cedula, $nombre, $p['monto'] ?? '', $p['metodo_pago'] ?? '', $p['referencia_pago'] ?? '', $numero, $vereda, $p['estado_actual'] ?? '' ]);
+        }
+        fclose($out);
+        exit();
+    }
+
+    public function adminClosePeriodo($id = null) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ./index.php?route=admin/pagos/periodos');
+            return;
+        }
+
+        require_once __DIR__ . '/../models/PagosPeriodos.php';
+        $ppModel = new PagosPeriodos();
+        $id_periodo = intval($_POST['id_periodo'] ?? 0);
+        if ($id_periodo > 0 && $ppModel->closePeriodo($id_periodo)) {
+            $_SESSION['success_message'] = 'Periodo cerrado.';
+        } else {
+            $_SESSION['error_message'] = 'No se pudo cerrar el periodo.';
+        }
+        header('Location: ./index.php?route=admin/pagos/periodos');
+        return;
     }
 
     public function dashboard() {

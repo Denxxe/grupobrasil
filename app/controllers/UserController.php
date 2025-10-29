@@ -176,6 +176,31 @@ class UserController extends AppController {
         return $this->loadView('user/dashboard', $data); 
     }
 
+    // Delegadores para rutas de pagos (usuario/jefe de familia)
+    public function userIndexPeriodos($id = null) {
+        require_once __DIR__ . '/PagoController.php';
+        $pc = new PagoController();
+        return $pc->userIndexPeriodos($id);
+    }
+
+    public function userDetallePeriodo($id = null) {
+        require_once __DIR__ . '/PagoController.php';
+        $pc = new PagoController();
+        return $pc->userDetallePeriodo($id);
+    }
+
+    public function userSubmitPago($id = null) {
+        require_once __DIR__ . '/PagoController.php';
+        $pc = new PagoController();
+        return $pc->userSubmitPago($id);
+    }
+
+    public function userHistorial($id = null) {
+        require_once __DIR__ . '/PagoController.php';
+        $pc = new PagoController();
+        return $pc->userHistorial($id);
+    }
+
     public function setupProfile() {
         if (!isset($_SESSION['id_usuario'])) {
             $this->redirect('login');

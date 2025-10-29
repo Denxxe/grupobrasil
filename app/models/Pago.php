@@ -166,6 +166,11 @@ class Pago extends ModelBase {
     }
 
     public function getPagosPorVereda(int $id_calle) {
+        // Ahora soporta paginación opcional (si se pasan $limit y $offset)
+        $args = func_get_args();
+        $limit = $args[1] ?? null;
+        $offset = $args[2] ?? null;
+
         $sql = "SELECT p.*, per.cedula, per.nombres, per.apellidos, v.numero AS numero_vivienda, c.nombre AS vereda
                 FROM pagos p
                 LEFT JOIN usuario u ON p.id_usuario = u.id_usuario
@@ -174,8 +179,24 @@ class Pago extends ModelBase {
                 LEFT JOIN vivienda v ON p.id_vivienda = v.id_vivienda
                 LEFT JOIN calle c ON v.id_calle = c.id_calle
                 WHERE v.id_calle = ? ORDER BY p.fecha_envio DESC";
+
+        if ($limit !== null && $offset !== null) {
+            $sql .= " LIMIT ? OFFSET ?";
+        } elseif ($limit !== null) {
+            $sql .= " LIMIT ?";
+        }
+
         $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('i', $id_calle);
+        if ($stmt === false) return [];
+
+        if ($limit !== null && $offset !== null) {
+            $stmt->bind_param('iii', $id_calle, $limit, $offset);
+        } elseif ($limit !== null) {
+            $stmt->bind_param('ii', $id_calle, $limit);
+        } else {
+            $stmt->bind_param('i', $id_calle);
+        }
+
         $stmt->execute();
         $res = $stmt->get_result();
         $data = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
@@ -183,10 +204,238 @@ class Pago extends ModelBase {
         return $data;
     }
 
+    public function countPagosPorVereda(int $id_calle): int {
+        $sql = "SELECT COUNT(*) as total FROM pagos p LEFT JOIN vivienda v ON p.id_vivienda = v.id_vivienda WHERE v.id_calle = ?";
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) return 0;
+        $stmt->bind_param('i', $id_calle);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $total = 0;
+        if ($res && $row = $res->fetch_assoc()) $total = intval($row['total']);
+        $stmt->close();
+        return $total;
+    }
+
+    /**
+     * Obtiene pagos para múltiples veredas (id_calle IN (...)) con paginación.
+     * @param array $callesIds
+     */
+    public function getPagosPorCalles(array $callesIds, array $filters = [], ?int $limit = null, ?int $offset = null) {
+        if (empty($callesIds)) return [];
+        // Preparar placeholders
+        $placeholders = implode(',', array_fill(0, count($callesIds), '?'));
+        $sql = "SELECT p.*, per.cedula, per.nombres, per.apellidos, v.numero AS numero_vivienda, c.nombre AS vereda
+                FROM pagos p
+                LEFT JOIN usuario u ON p.id_usuario = u.id_usuario
+                LEFT JOIN habitante h ON u.id_persona = h.id_persona
+                LEFT JOIN persona per ON h.id_persona = per.id_persona
+                LEFT JOIN vivienda v ON p.id_vivienda = v.id_vivienda
+                LEFT JOIN calle c ON v.id_calle = c.id_calle
+                WHERE v.id_calle IN ($placeholders)";
+
+        // Aplicar filtros opcionales
+        $params = $callesIds;
+        $types = str_repeat('i', count($callesIds));
+        if (!empty($filters['estado'])) {
+            $sql .= " AND p.estado_actual = ?";
+            $types .= 's';
+            $params[] = $filters['estado'];
+        }
+        if (!empty($filters['desde'])) {
+            $sql .= " AND p.fecha_envio >= ?";
+            $types .= 's';
+            $params[] = $filters['desde'] . ' 00:00:00';
+        }
+        if (!empty($filters['hasta'])) {
+            $sql .= " AND p.fecha_envio <= ?";
+            $types .= 's';
+            $params[] = $filters['hasta'] . ' 23:59:59';
+        }
+
+        $sql .= " ORDER BY p.fecha_envio DESC";
+
+        // Añadir cláusula LIMIT/OFFSET al SQL si se solicitó paginación
+        if ($limit !== null && $offset !== null) {
+            $sql .= " LIMIT ? OFFSET ?";
+            $types .= 'ii';
+            $params[] = $limit;
+            $params[] = $offset;
+        } elseif ($limit !== null) {
+            $sql .= " LIMIT ?";
+            $types .= 'i';
+            $params[] = $limit;
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) return [];
+
+        // bind params dynamically
+        // $types and $params already built above
+        $bind_names = array_merge([$types], $params);
+        $refs = [];
+        foreach ($bind_names as $key => $val) { $refs[$key] = &$bind_names[$key]; }
+        call_user_func_array([$stmt, 'bind_param'], $refs);
+
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $data = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $stmt->close();
+        return $data;
+    }
+
+    public function countPagosPorCalles(array $callesIds): int {
+        if (empty($callesIds)) return 0;
+        $placeholders = implode(',', array_fill(0, count($callesIds), '?'));
+        $sql = "SELECT COUNT(*) as total FROM pagos p LEFT JOIN vivienda v ON p.id_vivienda = v.id_vivienda WHERE v.id_calle IN ($placeholders)";
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) return 0;
+        $types = str_repeat('i', count($callesIds));
+        $bind_names = array_merge([$types], $callesIds);
+        $refs = [];
+        foreach ($bind_names as $key => $val) { $refs[$key] = &$bind_names[$key]; }
+        call_user_func_array([$stmt, 'bind_param'], $refs);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $total = 0;
+        if ($res && $row = $res->fetch_assoc()) $total = intval($row['total']);
+        $stmt->close();
+        return $total;
+    }
+
     public function getPagosPorHabitante(int $id_habitante) {
         $sql = "SELECT p.*, pp.nombre_periodo FROM pagos p LEFT JOIN pagos_periodos pp ON p.id_periodo = pp.id_periodo WHERE p.id_habitante = ? ORDER BY p.fecha_envio DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param('i', $id_habitante);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $data = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $stmt->close();
+        return $data;
+    }
+
+    /**
+     * Obtiene los pagos registrados para un periodo dado
+     * @param int $id_periodo
+     * @return array
+     */
+    public function getPagosPorPeriodo(int $id_periodo, ?int $limit = null, ?int $offset = null) {
+        $sql = "SELECT p.*, pp.nombre_periodo, per.cedula, per.nombres, per.apellidos, v.numero AS numero_vivienda, c.nombre AS vereda
+                FROM pagos p
+                LEFT JOIN pagos_periodos pp ON p.id_periodo = pp.id_periodo
+                LEFT JOIN usuario u ON p.id_usuario = u.id_usuario
+                LEFT JOIN habitante h ON u.id_persona = h.id_persona
+                LEFT JOIN persona per ON h.id_persona = per.id_persona
+                LEFT JOIN vivienda v ON p.id_vivienda = v.id_vivienda
+                LEFT JOIN calle c ON v.id_calle = c.id_calle
+                WHERE p.id_periodo = ? ORDER BY p.fecha_envio DESC";
+
+        // Añadir LIMIT/OFFSET si se especifica
+        if ($limit !== null && $offset !== null) {
+            $sql .= " LIMIT ? OFFSET ?";
+        } elseif ($limit !== null) {
+            $sql .= " LIMIT ?";
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) return [];
+
+        if ($limit !== null && $offset !== null) {
+            $stmt->bind_param('iii', $id_periodo, $limit, $offset);
+        } elseif ($limit !== null) {
+            $stmt->bind_param('ii', $id_periodo, $limit);
+        } else {
+            $stmt->bind_param('i', $id_periodo);
+        }
+
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $data = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $stmt->close();
+        return $data;
+    }
+
+    /**
+     * Obtiene los pagos registrados para un periodo dado con filtros opcionales.
+     * Filtros aceptados: 'estado' => string, 'desde' => 'YYYY-MM-DD', 'hasta' => 'YYYY-MM-DD'
+     */
+    public function getPagosPorPeriodoFiltered(int $id_periodo, array $filters = [], ?int $limit = null, ?int $offset = null) {
+        $sql = "SELECT p.*, pp.nombre_periodo, per.cedula, per.nombres, per.apellidos, v.numero AS numero_vivienda, c.nombre AS vereda
+                FROM pagos p
+                LEFT JOIN pagos_periodos pp ON p.id_periodo = pp.id_periodo
+                LEFT JOIN usuario u ON p.id_usuario = u.id_usuario
+                LEFT JOIN habitante h ON u.id_persona = h.id_persona
+                LEFT JOIN persona per ON h.id_persona = per.id_persona
+                LEFT JOIN vivienda v ON p.id_vivienda = v.id_vivienda
+                LEFT JOIN calle c ON v.id_calle = c.id_calle
+                WHERE p.id_periodo = ?";
+
+        $params = [$id_periodo];
+        $types = 'i';
+
+        if (!empty($filters['estado'])) {
+            $sql .= " AND p.estado_actual = ?";
+            $types .= 's';
+            $params[] = $filters['estado'];
+        }
+        if (!empty($filters['desde'])) {
+            $sql .= " AND p.fecha_envio >= ?";
+            $types .= 's';
+            $params[] = $filters['desde'] . ' 00:00:00';
+        }
+        if (!empty($filters['hasta'])) {
+            $sql .= " AND p.fecha_envio <= ?";
+            $types .= 's';
+            $params[] = $filters['hasta'] . ' 23:59:59';
+        }
+
+        $sql .= " ORDER BY p.fecha_envio DESC";
+
+        if ($limit !== null && $offset !== null) {
+            $sql .= " LIMIT ? OFFSET ?";
+            $types .= 'ii';
+            $params[] = $limit;
+            $params[] = $offset;
+        } elseif ($limit !== null) {
+            $sql .= " LIMIT ?";
+            $types .= 'i';
+            $params[] = $limit;
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) return [];
+
+        // bind dynamically
+        $bind_names = array_merge([$types], $params);
+        $refs = [];
+        foreach ($bind_names as $key => $val) { $refs[$key] = &$bind_names[$key]; }
+        call_user_func_array([$stmt, 'bind_param'], $refs);
+
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $data = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $stmt->close();
+        return $data;
+    }
+
+    public function countPagosPorPeriodo(int $id_periodo): int {
+        $sql = "SELECT COUNT(*) as total FROM pagos WHERE id_periodo = ?";
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) return 0;
+        $stmt->bind_param('i', $id_periodo);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $total = 0;
+        if ($res && $row = $res->fetch_assoc()) $total = intval($row['total']);
+        $stmt->close();
+        return $total;
+    }
+
+    public function getEvidencesByPago(int $id_pago) {
+        $sql = "SELECT id_evidencia, ruta, mime, tamano, creado_por, fecha_creacion FROM pagos_evidencias WHERE id_pago = ? ORDER BY fecha_creacion DESC";
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) return [];
+        $stmt->bind_param('i', $id_pago);
         $stmt->execute();
         $res = $stmt->get_result();
         $data = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];

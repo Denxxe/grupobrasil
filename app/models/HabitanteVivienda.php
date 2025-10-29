@@ -35,4 +35,21 @@ class HabitanteVivienda extends ModelBase {
 
         return true;
     }
+
+    /**
+     * Comprueba si un habitante es jefe de familia (es_jefe_familia = 1)
+     * @param int $id_habitante
+     * @return bool
+     */
+    public function isJefeFamilia(int $id_habitante): bool {
+        $sql = "SELECT es_jefe_familia FROM {$this->table} WHERE id_habitante = ? AND es_jefe_familia = 1 LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) return false;
+        $stmt->bind_param('i', $id_habitante);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $ok = ($res && $res->num_rows > 0);
+        $stmt->close();
+        return $ok;
+    }
 }

@@ -101,6 +101,11 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
                     </a>
                 </li>
                 <li>
+                    <a href="./index.php?route=subadmin/pagos/lista" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                        <i class="fas fa-hand-holding-dollar mr-3 sidebar-icon"></i> <span class="sidebar-text">Pagos / Beneficios</span>
+                    </a>
+                </li>
+                <li>
                     <a href="./index.php?route=subadmin/reports" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
                         <i class="fas fa-chart-line mr-3 sidebar-icon"></i> <span class="sidebar-text">Reportes</span>
                     </a>

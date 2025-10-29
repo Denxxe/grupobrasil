@@ -14,21 +14,21 @@ class PagosPeriodos extends ModelBase {
     }
 
     public function getActivos() {
-        $sql = "SELECT * FROM {$this->table} WHERE estado = 'activo' ORDER BY fecha_inicio DESC";
+        $sql = "SELECT pp.*, tb.nombre AS nombre_beneficio FROM {$this->table} pp LEFT JOIN tipos_beneficio tb ON pp.id_tipo_beneficio = tb.id_tipo_beneficio WHERE pp.estado = 'activo' ORDER BY pp.fecha_inicio DESC";
         $result = $this->conn->query($sql);
         if ($result) return $result->fetch_all(MYSQLI_ASSOC);
         return [];
     }
 
     public function getHistorial() {
-        $sql = "SELECT * FROM {$this->table} WHERE estado <> 'activo' ORDER BY fecha_limite DESC";
+        $sql = "SELECT pp.*, tb.nombre AS nombre_beneficio FROM {$this->table} pp LEFT JOIN tipos_beneficio tb ON pp.id_tipo_beneficio = tb.id_tipo_beneficio WHERE pp.estado <> 'activo' ORDER BY pp.fecha_limite DESC";
         $result = $this->conn->query($sql);
         if ($result) return $result->fetch_all(MYSQLI_ASSOC);
         return [];
     }
 
     public function getById(int $id) {
-        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE id_periodo = ? LIMIT 1");
+        $stmt = $this->conn->prepare("SELECT pp.*, tb.nombre AS nombre_beneficio FROM {$this->table} pp LEFT JOIN tipos_beneficio tb ON pp.id_tipo_beneficio = tb.id_tipo_beneficio WHERE pp.id_periodo = ? LIMIT 1");
         $stmt->bind_param('i', $id);
         $stmt->execute();
         $res = $stmt->get_result();

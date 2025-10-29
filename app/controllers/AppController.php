@@ -5,11 +5,12 @@ class AppController {
     protected $db; 
 
     public function __construct() {
+        // Inicializar mensajes de sesión como cadenas vacías (se usan para toasts/alerts en layouts)
         if (!isset($_SESSION['success_message'])) {
-            $_SESSION['success_message'] = [];
+            $_SESSION['success_message'] = '';
         }
         if (!isset($_SESSION['error_message'])) {
-            $_SESSION['error_message'] = [];
+            $_SESSION['error_message'] = '';
         }
     }
 
@@ -22,9 +23,12 @@ class AppController {
         // 1. Definir la ruta del contenido
         $content_view_path = __DIR__ . '/../views/' . $viewName . '.php';
         
-        // 2. INYECTAR la ruta de la vista del contenido en $data
-        // Esto asegura que $content_view_path esté disponible cuando se llama a extract()
-        $data['content_view_path'] = $content_view_path; 
+    // 2. INYECTAR la ruta de la vista del contenido en $data
+    // Esto asegura que $content_view_path esté disponible cuando se llama a extract()
+    $data['content_view_path'] = $content_view_path;
+    // Algunos layouts (admin_layout.php) esperan la variable $content_view en lugar de content_view_path
+    // Para compatibilidad, exponemos ambas variables al layout.
+    $data['content_view'] = $content_view_path;
 
         $page_title = $data['page_title'] ?? 'Grupo Brasil';
 

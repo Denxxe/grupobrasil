@@ -3,12 +3,13 @@ require_once __DIR__ . '/../models/PagosPeriodos.php';
 require_once __DIR__ . '/../models/Pago.php';
 require_once __DIR__ . '/../models/Notificacion.php';
 
-class PagoController {
+class PagoController extends AppController {
     protected $periodoModel;
     protected $pagoModel;
     protected $notificacionModel;
 
     public function __construct() {
+        parent::__construct();
         $this->periodoModel = new PagosPeriodos();
         $this->pagoModel = new Pago();
         $this->notificacionModel = new Notificacion();
@@ -16,18 +17,41 @@ class PagoController {
 
     // --- ADMIN: lista de periodos (activos + historial)
     public function adminPeriodos($id = null) {
+        // Permiso: solo rol 1 (Jefe del Consejo Comunal)
+        if (($_SESSION['id_rol'] ?? null) !== 1) {
+            $_SESSION['error_message'] = 'No tienes permisos para acceder a esta sección.';
+            header('Location: ./index.php?route=user/dashboard');
+            return null;
+        }
         $activos = $this->periodoModel->getActivos();
         $historial = $this->periodoModel->getHistorial();
-        return ['view' => 'admin/pagos/periodos', 'data' => ['page_title' => 'Periodos de Pago', 'activos' => $activos, 'historial' => $historial]];
+
+        // Renderizar usando loadView (AppController) — loadView expone content_view para compatibilidad con admin_layout
+        $data = ['page_title' => 'Periodos de Pago', 'activos' => $activos, 'historial' => $historial];
+        $this->loadView('admin/pagos/periodos', $data);
+        return null;
     }
 
     public function adminCrearPeriodo($id = null) {
-        return ['view' => 'admin/pagos/crear', 'data' => ['page_title' => 'Crear Periodo']];
+        if (($_SESSION['id_rol'] ?? null) !== 1) {
+            $_SESSION['error_message'] = 'No tienes permisos para acceder a esta sección.';
+            header('Location: ./index.php?route=user/dashboard');
+            return null;
+        }
+
+        $data = ['page_title' => 'Crear Periodo'];
+        $this->loadView('admin/pagos/crear', $data);
+        return null;
     }
 
     public function adminStorePeriodo($id = null) {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ./index.php?route=admin/pagos/periodos');
+            return null;
+        }
+        if (($_SESSION['id_rol'] ?? null) !== 1) {
+            $_SESSION['error_message'] = 'No tienes permisos para realizar esta acción.';
+            header('Location: ./index.php?route=user/dashboard');
             return null;
         }
         $nombre = trim($_POST['nombre_periodo'] ?? '');
@@ -85,7 +109,9 @@ class PagoController {
     // --- USER: ver periodos y detalle + submit
     public function userIndexPeriodos($id = null) {
         $activos = $this->periodoModel->getActivos();
-        return ['view' => 'user/pagos/index', 'data' => ['page_title' => 'Pagos Disponibles', 'activos' => $activos]];
+        $data = ['page_title' => 'Pagos Disponibles', 'activos' => $activos];
+        $this->loadView('user/pagos/index', $data);
+        return null;
     }
 
     public function userDetallePeriodo($id = null) {
@@ -96,7 +122,44 @@ class PagoController {
             return null;
         }
         $periodo = $this->periodoModel->getById($id_periodo);
-        return ['view' => 'user/pagos/detalle', 'data' => ['page_title' => 'Detalle Periodo', 'periodo' => $periodo]];
+        $data = ['page_title' => 'Detalle Periodo', 'periodo' => $periodo];
+        $this->loadView('user/pagos/detalle', $data);
+        return null;
+    }
+
+    // Historial de pagos del jefe de familia (mis pagos)
+    public function userHistorial($id = null) {
+        $userId = $_SESSION['id_usuario'] ?? null;
+        if (!$userId) {
+            $this->redirect('login');
+            return null;
+        }
+
+        require_once __DIR__ . '/../models/Usuario.php';
+        $uModel = new Usuario();
+        $usuario = $uModel->getById($userId);
+
+        if (empty($usuario['id_persona'])) {
+            $this->loadView('user/pagos/historial', ['page_title' => 'Mi Historial de Pagos', 'pagos' => []]);
+            return null;
+        }
+
+        require_once __DIR__ . '/../models/Habitante.php';
+        $hModel = new Habitante();
+        $hab = $hModel->findByPersonaId($usuario['id_persona']);
+        if (!$hab) {
+            $this->loadView('user/pagos/historial', ['page_title' => 'Mi Historial de Pagos', 'pagos' => []]);
+            return null;
+        }
+
+        $pagos = $this->pagoModel->getPagosPorHabitante($hab['id_habitante']);
+        // Adjuntar evidencias a cada pago
+        foreach ($pagos as &$p) {
+            $p['evidencias'] = $this->pagoModel->getEvidencesByPago((int)($p['id_pago'] ?? 0));
+        }
+        unset($p);
+        $this->loadView('user/pagos/historial', ['page_title' => 'Mi Historial de Pagos', 'pagos' => $pagos]);
+        return null;
     }
 
     public function userSubmitPago($id = null) {
@@ -129,6 +192,22 @@ class PagoController {
             return null;
         }
 
+        // Verificar que el habitante sea jefe de familia (habitante_vivienda.es_jefe_familia = 1)
+        require_once __DIR__ . '/../models/HabitanteVivienda.php';
+        $hvModel = new HabitanteVivienda();
+        $esJefe = $hvModel->isJefeFamilia($id_habitante);
+        if (!$esJefe) {
+            echo json_encode(['ok' => false, 'message' => 'Solo Jefes de Familia pueden enviar pagos.']);
+            return null;
+        }
+
+        // Verificar que el periodo exista y esté activo
+        $periodoInfo = $this->periodoModel->getById($id_periodo);
+        if (!$periodoInfo || ($periodoInfo['estado'] ?? '') !== 'activo') {
+            echo json_encode(['ok' => false, 'message' => 'El periodo especificado no está activo o no existe.']);
+            return null;
+        }
+
         $data = [
             'id_usuario' => $userId,
             'id_tipo_beneficio' => $_POST['id_tipo_beneficio'] ?? null,
@@ -148,21 +227,57 @@ class PagoController {
             return null;
         }
 
-        // Procesar archivos
+        // Procesar archivos con validación de tipo y tamaño
+        $allowed_mimes = ['image/jpeg', 'image/png', 'application/pdf'];
+        $max_size = 5 * 1024 * 1024; // 5 MB por archivo
         $upload_base = __DIR__ . '/../../public/uploads/pagos/' . $id_periodo . '/' . $id_pago . '/';
         if (!is_dir($upload_base)) mkdir($upload_base, 0777, true);
         $saved = [];
+
         if (!empty($_FILES['captura'])) {
-            $files = $_FILES['captura'];
-            for ($i = 0; $i < count($files['name']); $i++) {
-                if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
-                $orig = basename($files['name'][$i]);
+            $filesField = $_FILES['captura'];
+
+            // Normalizar estructura para un solo archivo o múltiples
+            $fileCount = 0;
+            if (is_array($filesField['name'])) {
+                $fileCount = count($filesField['name']);
+            } else {
+                $fileCount = 1;
+                // Convertir a estructura de array para procesar de forma homogénea
+                $filesField = [
+                    'name' => [$filesField['name']],
+                    'type' => [$filesField['type']],
+                    'tmp_name' => [$filesField['tmp_name']],
+                    'error' => [$filesField['error']],
+                    'size' => [$filesField['size']],
+                ];
+            }
+
+            for ($i = 0; $i < $fileCount; $i++) {
+                if ($filesField['error'][$i] !== UPLOAD_ERR_OK) continue;
+
+                $mime = $filesField['type'][$i] ?? mime_content_type($filesField['tmp_name'][$i]);
+                $size = intval($filesField['size'][$i] ?? 0);
+
+                if (!in_array($mime, $allowed_mimes, true)) {
+                    // Borrar archivos temporales si aplica
+                    echo json_encode(['ok' => false, 'message' => 'Tipo de archivo no permitido. Tipos permitidos: jpg, png, pdf']);
+                    return null;
+                }
+
+                if ($size > $max_size) {
+                    echo json_encode(['ok' => false, 'message' => 'Archivo demasiado grande. Máximo 5 MB por archivo.']);
+                    return null;
+                }
+
+                $orig = basename($filesField['name'][$i]);
                 $ext = pathinfo($orig, PATHINFO_EXTENSION);
                 $name = time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
                 $target = $upload_base . $name;
-                if (move_uploaded_file($files['tmp_name'][$i], $target)) {
+
+                if (move_uploaded_file($filesField['tmp_name'][$i], $target)) {
                     $rel = 'uploads/pagos/' . $id_periodo . '/' . $id_pago . '/' . $name;
-                    $this->pagoModel->addEvidence($id_pago, $rel, $files['type'][$i], $files['size'][$i], $userId);
+                    $this->pagoModel->addEvidence($id_pago, $rel, $mime, $size, $userId);
                     $saved[] = $rel;
                 }
             }
@@ -178,11 +293,18 @@ class PagoController {
                 require_once __DIR__ . '/../models/LiderCalle.php';
                 $lcModel = new LiderCalle();
                 $lideres = $lcModel->getLeadersByCalle($v['id_calle']);
+                // Construir mensaje incluyendo el periodo si está disponible
+                $periodoInfo = $this->periodoModel->getById($id_periodo);
+                $periodoNombre = $periodoInfo['nombre_periodo'] ?? null;
                 $msg = "Pago enviado por {$usuario['nombre_completo']} (referencia: {$referencia})";
+                if ($periodoNombre) $msg .= " — Periodo: {$periodoNombre}";
+
                 require_once __DIR__ . '/../models/Usuario.php';
                 $uModel = new Usuario();
                 require_once __DIR__ . '/../models/Habitante.php';
                 $hModel2 = new Habitante();
+
+                $notified = 0;
                 foreach ($lideres as $ld) {
                     // ld expected to have id_habitante
                     $habL = $hModel2->getById($ld['id_habitante']);
@@ -190,7 +312,16 @@ class PagoController {
                         $userDest = $uModel->findByPersonId($habL['id_persona']);
                         if ($userDest) {
                             $this->notificacionModel->crearNotificacion($userDest['id_usuario'], $_SESSION['id_usuario'] ?? null, 'pago_enviado', $msg, $id_pago);
+                            $notified++;
                         }
+                    }
+                }
+
+                // Si no se notificó a ningún líder (no hay líderes asignados), notificar a administradores por defecto
+                if ($notified === 0) {
+                    $admins = $uModel->getAllFiltered(['id_rol' => 1]);
+                    foreach ($admins as $adm) {
+                        $this->notificacionModel->crearNotificacion($adm['id_usuario'], $_SESSION['id_usuario'] ?? null, 'pago_enviado', $msg, $id_pago);
                     }
                 }
             }
@@ -202,8 +333,13 @@ class PagoController {
 
     // --- LIDER: lista de pagos por vereda asignada
     public function liderListaPagos($id = null) {
-        // Asumir que hay un helper que retorna el habitante actual
+        // Validar que el usuario esté autenticado
         $userId = $_SESSION['id_usuario'] ?? null;
+        if (!$userId) {
+            // No autenticado: redirigir al login
+            $this->redirect('login');
+            return null;
+        }
         require_once __DIR__ . '/../models/Usuario.php';
         $uModel = new Usuario();
         $usuario = $uModel->getById($userId);
@@ -212,16 +348,46 @@ class PagoController {
         require_once __DIR__ . '/../models/Habitante.php';
         $hModel = new Habitante();
         $hab = $hModel->findByPersonaId($usuario['id_persona'] ?? null);
-        if (!$hab) return ['view' => 'subadmin/pagos/lista', 'data' => ['page_title' => 'Pagos', 'pagos' => []]];
+        if (!$hab) {
+            $this->loadView('subadmin/pagos/lista', ['page_title' => 'Pagos', 'pagos' => []]);
+            return null;
+        }
         require_once __DIR__ . '/../models/LiderCalle.php';
         $lcModel = new LiderCalle();
         $callesIds = $lcModel->getCallesIdsByHabitanteId($hab['id_habitante']);
-        $pagos = [];
-        foreach ($callesIds as $cId) {
-            $p = $this->pagoModel->getPagosPorVereda($cId);
-            $pagos = array_merge($pagos, $p);
+        if (empty($callesIds)) {
+            $this->loadView('subadmin/pagos/lista', ['page_title' => 'Pagos por Vereda', 'pagos' => []]);
+            return null;
         }
-        return ['view' => 'subadmin/pagos/lista', 'data' => ['page_title' => 'Pagos por Vereda', 'pagos' => $pagos]];
+
+    // Leer filtros desde GET (estado, desde, hasta)
+    $filters = [];
+    $estado = trim($_GET['estado'] ?? '');
+    $desde = trim($_GET['desde'] ?? '');
+    $hasta = trim($_GET['hasta'] ?? '');
+    if ($estado !== '') $filters['estado'] = $estado;
+    if ($desde !== '') $filters['desde'] = $desde;
+    if ($hasta !== '') $filters['hasta'] = $hasta;
+
+    // Paginación
+    $page = max(1, intval($_GET['page'] ?? 1));
+    $limit = 25;
+    $offset = ($page - 1) * $limit;
+
+    // Conteo (nota: countPagosPorCalles no soporta filtros en esta versión)
+    $total = $this->pagoModel->countPagosPorCalles($callesIds);
+    $totalPages = ($total > 0) ? ceil($total / $limit) : 1;
+
+    $pagos = $this->pagoModel->getPagosPorCalles($callesIds, $filters, $limit, $offset);
+
+        // Adjuntar evidencias a cada pago para que el líder pueda revisarlas
+        foreach ($pagos as &$pp) {
+            $pp['evidencias'] = $this->pagoModel->getEvidencesByPago((int)($pp['id_pago'] ?? 0));
+        }
+        unset($pp);
+
+        $this->loadView('subadmin/pagos/lista', ['page_title' => 'Pagos por Vereda', 'pagos' => $pagos, 'pagination' => ['page' => $page, 'total' => $total, 'totalPages' => $totalPages, 'limit' => $limit]]);
+        return null;
     }
 
     // Verificar (aprobar/rechazar)
@@ -238,9 +404,47 @@ class PagoController {
             echo json_encode(['ok' => false, 'message' => 'Datos inválidos']);
             return null;
         }
+        // Permiso: verificar que el usuario sea líder asignado a la vereda del pago
+        require_once __DIR__ . '/../models/Pago.php';
+        $pago = $this->pagoModel->find($id_pago);
+        if (!$pago) { echo json_encode(['ok' => false, 'message' => 'Pago no encontrado']); return null; }
+
+        $id_vivienda = $pago['id_vivienda'] ?? null;
+        if (!$id_vivienda) { echo json_encode(['ok' => false, 'message' => 'Pago no tiene vivienda asociada']); return null; }
+
+        require_once __DIR__ . '/../models/Vivienda.php';
+        $vModel = new Vivienda();
+        $v = $vModel->getById($id_vivienda);
+        if (!$v || empty($v['id_calle'])) { echo json_encode(['ok' => false, 'message' => 'No se pudo determinar la vereda del pago']); return null; }
+
+        // obtener habitante del usuario actual
+        require_once __DIR__ . '/../models/Usuario.php';
+        $uModel = new Usuario();
+        $usuario = $uModel->getById($userId);
+        require_once __DIR__ . '/../models/Habitante.php';
+        $hModel = new Habitante();
+        $hab = $hModel->findByPersonaId($usuario['id_persona'] ?? null);
+        if (!$hab) { echo json_encode(['ok' => false, 'message' => 'No eres líder asignado']); return null; }
+
+        require_once __DIR__ . '/../models/LiderCalle.php';
+        $lcModel = new LiderCalle();
+        $callesIds = $lcModel->getCallesIdsByHabitanteId($hab['id_habitante']);
+        if (!in_array((int)$v['id_calle'], $callesIds, true)) {
+            echo json_encode(['ok' => false, 'message' => 'No tienes permisos para verificar pagos en esta vereda']);
+            return null;
+        }
+
         $nuevo_estado = $accion === 'aprobar' ? 'cancelado' : 'rechazado';
         $ok = $this->pagoModel->verifyPago($id_pago, $nuevo_estado, $userId, $comentario);
         if ($ok) {
+            // Notificar al usuario que registró el pago sobre el nuevo estado
+            $destUserId = $pago['id_usuario'] ?? null;
+            if ($destUserId) {
+                $estadoLabel = $nuevo_estado === 'cancelado' ? 'Aprobado' : 'Rechazado';
+                $msg = "Tu pago (ID: {$id_pago}) ha sido {$estadoLabel}.";
+                if (!empty($comentario)) $msg .= " Comentario: {$comentario}";
+                $this->notificacionModel->crearNotificacion($destUserId, $userId, 'pago_verificacion', $msg, $id_pago);
+            }
             echo json_encode(['ok' => true, 'message' => 'Estado actualizado']);
         } else {
             echo json_encode(['ok' => false, 'message' => 'Error al actualizar estado']);

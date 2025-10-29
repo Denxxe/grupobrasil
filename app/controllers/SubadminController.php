@@ -70,6 +70,19 @@ class SubadminController extends AppController {
         return $this->liderCalleModel->getCallesIdsByHabitanteId($habitanteId);
     }
 
+    // Delegadores para rutas de pagos (líder)
+    public function liderListaPagos($id = null) {
+        require_once __DIR__ . '/PagoController.php';
+        $pc = new PagoController();
+        return $pc->liderListaPagos($id);
+    }
+
+    public function liderVerifyPago($id = null) {
+        require_once __DIR__ . '/PagoController.php';
+        $pc = new PagoController();
+        return $pc->liderVerifyPago($id);
+    }
+
     public function dashboard() {
         $habitanteId = $this->getCurrentHabitanteId();
         $veredasAsignadas = $this->getAssignedVeredas();

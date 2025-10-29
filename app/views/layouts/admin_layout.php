@@ -34,6 +34,8 @@ if ($current_route === 'admin/users/edit') {
     $is_jefes_familia_active = true;
 }
 $is_any_user_management_active = $is_personas_active || $is_jefes_familia_active || $is_lideres_active;
+// Pagos/Beneficios
+$is_pagos_active = strpos($current_route, 'admin/pagos') === 0 || strpos($current_route, 'admin/reportes/pagos') === 0;
 
 ?>
 <!DOCTYPE html>
@@ -163,6 +165,12 @@ $is_any_user_management_active = $is_personas_active || $is_jefes_familia_active
 <a href="./index.php?route=admin/notifications" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
 <i class="fas fa-bell sidebar-icon mr-3"></i> 
 <span class="sidebar-text">Notificaciones</span>
+</a>
+</li>
+<li>
+<a href="./index.php?route=admin/pagos/periodos" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 ">
+<i class="fas fa-hand-holding-dollar sidebar-icon mr-3"></i>
+<span class="sidebar-text">Pagos / Beneficios</span>
 </a>
 </li>
 <li>

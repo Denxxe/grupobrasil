@@ -341,6 +341,14 @@ if (!isset($_SESSION['id_usuario'])) {
                         $actionName = 'adminStorePeriodo';
                     } elseif ($subSegment === 'close' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                         $actionName = 'adminClosePeriodo';
+                    } elseif ($subSegment === 'editar') {
+                        $actionName = 'adminEditarPeriodo';
+                    } elseif ($subSegment === 'detalle') {
+                        $actionName = 'adminDetallePeriodo';
+                    } elseif ($subSegment === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $actionName = 'adminUpdatePeriodo';
+                    } elseif ($subSegment === 'export') {
+                        $actionName = 'adminExportPagosPeriodo';
                     } else {
                         $actionName = 'adminPeriodos';
                     }
@@ -578,6 +586,8 @@ if (!isset($_SESSION['id_usuario'])) {
                         $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
                     } elseif ($subSegment === 'submit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                         $actionName = 'userSubmitPago';
+                    } elseif ($subSegment === 'historial') {
+                        $actionName = 'userHistorial';
                     } else {
                         $actionName = 'userIndexPeriodos';
                     }
