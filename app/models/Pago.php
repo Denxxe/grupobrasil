@@ -185,7 +185,6 @@ class Pago extends ModelBase {
         } elseif ($limit !== null) {
             $sql .= " LIMIT ?";
         }
-
         $stmt = $this->conn->prepare($sql);
         if ($stmt === false) return [];
 
@@ -267,8 +266,17 @@ class Pago extends ModelBase {
             $params[] = $limit;
         }
 
+        // Depuración: registrar SQL, cantidad de placeholders y parámetros antes de preparar
+        $placeholderCount = preg_match_all('/\?/', $sql, $matches);
+        error_log("[Pago::getPagosPorCalles] SQL: " . $sql);
+        error_log("[Pago::getPagosPorCalles] placeholders: " . $placeholderCount . ", types: " . $types . ", params_count: " . count($params));
+        error_log("[Pago::getPagosPorCalles] params: " . json_encode($params));
+
         $stmt = $this->conn->prepare($sql);
-        if ($stmt === false) return [];
+        if ($stmt === false) {
+            error_log("[Pago::getPagosPorCalles] prepare() failed: " . $this->conn->error);
+            return [];
+        }
 
         // bind params dynamically
         // $types and $params already built above

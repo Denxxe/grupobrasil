@@ -8,8 +8,8 @@
 
     <div class="mb-3 d-flex justify-content-between align-items-center">
         <div>
-            <a href="/index.php?route=admin/pagos/periodos" class="btn btn-secondary">Volver</a>
-            <a id="exportCsvBtn" href="/index.php?route=admin/pagos/export&id=<?= intval($periodo['id_periodo']) ?>" class="btn btn-success">Exportar CSV</a>
+            <a href="./index.php?route=admin/pagos/periodos" class="btn btn-secondary">&larr; Volver</a>
+            <a id="exportCsvBtn" href="./index.php?route=admin/pagos/export&id=<?= intval($periodo['id_periodo']) ?>" class="btn btn-success ms-2">Exportar CSV</a>
         </div>
         <form id="filtersForm" method="get" class="form-inline">
             <input type="hidden" name="route" value="admin/pagos/detalle">

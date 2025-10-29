@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 28-10-2025 a las 09:12:32
+-- Tiempo de generación: 29-10-2025 a las 13:02:18
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -110,14 +110,6 @@ CREATE TABLE `comentarios` (
   `fecha_comentario` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Fecha y hora de publicación',
   `activo` tinyint(1) NOT NULL DEFAULT 1 COMMENT '0=inactivo, 1=activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `comentarios`
---
-
-INSERT INTO `comentarios` (`id_comentario`, `id_noticia`, `id_usuario`, `contenido`, `fecha_comentario`, `activo`) VALUES
-(6, 2, 5, 'pitipua', '2025-10-27 05:37:36', 1),
-(7, 2, 3, 'hablame', '2025-10-27 05:38:16', 1);
 
 -- --------------------------------------------------------
 
@@ -344,6 +336,13 @@ CREATE TABLE `notificaciones` (
   `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Volcado de datos para la tabla `notificaciones`
+--
+
+INSERT INTO `notificaciones` (`id_notificacion`, `id_usuario_destino`, `id_usuario_origen`, `tipo`, `mensaje`, `id_referencia`, `leido`, `fecha_creacion`) VALUES
+(1, 3, 2, 'periodo_abierto', 'Se abrió el periodo Pago de Bombonas. Fecha límite: 2025-10-30.', 1, 0, '2025-10-29 05:24:01');
+
 -- --------------------------------------------------------
 
 --
@@ -440,6 +439,13 @@ CREATE TABLE `pagos_periodos` (
   `fecha_registro` datetime NOT NULL DEFAULT current_timestamp(),
   `estado` enum('activo','cerrado','archivado') NOT NULL DEFAULT 'activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `pagos_periodos`
+--
+
+INSERT INTO `pagos_periodos` (`id_periodo`, `nombre_periodo`, `id_tipo_beneficio`, `monto`, `instrucciones_pago`, `creado_por`, `fecha_inicio`, `fecha_limite`, `fecha_registro`, `estado`) VALUES
+(1, 'Pago de Bombonas', 2, 200.00, '0102\r\n04125432434\r\n123123132', 2, '2025-10-28', '2025-10-30', '2025-10-29 01:24:01', 'activo');
 
 -- --------------------------------------------------------
 
@@ -899,7 +905,7 @@ ALTER TABLE `noticia_visibilidad`
 -- AUTO_INCREMENT de la tabla `notificaciones`
 --
 ALTER TABLE `notificaciones`
-  MODIFY `id_notificacion` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id_notificacion` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `pago`
@@ -929,7 +935,7 @@ ALTER TABLE `pagos_evidencias`
 -- AUTO_INCREMENT de la tabla `pagos_periodos`
 --
 ALTER TABLE `pagos_periodos`
-  MODIFY `id_periodo` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id_periodo` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `participacion_evento`
