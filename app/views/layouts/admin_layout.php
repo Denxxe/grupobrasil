@@ -87,8 +87,7 @@ $is_pagos_active = strpos($current_route, 'admin/pagos') === 0 || strpos($curren
 <ul class="space-y-1">
 <li>
 <a href="./index.php?route=admin/dashboard" 
-   class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 
-   <?php echo $current_route === 'admin/dashboard' ? 'bg-white bg-opacity-15 font-medium' : ''; ?>">
+    class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200<?php echo $current_route === 'admin/dashboard' ? ' active-link' : ''; ?>">
 <i class="fas fa-tachometer-alt sidebar-icon mr-3"></i> 
 <span class="sidebar-text">Dashboard</span>
 </a>
@@ -97,8 +96,7 @@ $is_pagos_active = strpos($current_route, 'admin/pagos') === 0 || strpos($curren
 <!-- Menú desplegable mejorado con mejor UX -->
 <li>
 <button type="button" id="usersDropdownToggle" 
-        class="flex items-center justify-between w-full px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 
-        <?php echo $is_any_user_management_active ? 'bg-white bg-opacity-15 font-medium' : ''; ?>">
+    class="flex items-center justify-between w-full px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200<?php echo $is_any_user_management_active ? ' active-link' : ''; ?>">
 <span class="flex items-center">
 <i class="fas fa-users sidebar-icon mr-3"></i> 
 <span class="sidebar-text">Gestión Comunitaria</span>
@@ -110,24 +108,21 @@ $is_pagos_active = strpos($current_route, 'admin/pagos') === 0 || strpos($curren
     <?php echo $is_any_user_management_active ? 'max-h-40' : 'max-h-0'; ?>">
 <li>
 <a href="./index.php?route=admin/users/personas" 
-   class="flex items-center px-3 py-2 text-white text-opacity-80 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 text-sm
-   <?php echo $is_personas_active ? 'bg-white bg-opacity-10 font-medium text-opacity-100' : ''; ?>">
+    class="flex items-center px-3 py-2 text-white text-opacity-80 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 text-sm<?php echo $is_personas_active ? ' active-link' : ''; ?>">
 <i class="fas fa-user-friends sidebar-icon mr-3 text-sm"></i> 
 <span class="sidebar-text">Habitantes</span>
 </a>
 </li>
 <li>
     <a href="./index.php?route=admin/users/jefes-familia" 
-        class="flex items-center px-3 py-2 text-white text-opacity-80 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 text-sm
-        <?php echo $is_jefes_familia_active ? 'bg-white bg-opacity-10 font-medium text-opacity-100' : ''; ?>">
+        class="flex items-center px-3 py-2 text-white text-opacity-80 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 text-sm<?php echo $is_jefes_familia_active ? ' active-link' : ''; ?>">
         <i class="fas fa-user-tie sidebar-icon mr-3 text-sm"></i> 
         <span class="sidebar-text">Jefes de Familias</span>
     </a>
 </li>
 <li>
     <a href="./index.php?route=admin/users/lideres" 
-        class="flex items-center px-3 py-2 text-white text-opacity-80 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 text-sm
-        <?php echo $is_lideres_active ? 'bg-white bg-opacity-10 font-medium text-opacity-100' : ''; ?>">
+        class="flex items-center px-3 py-2 text-white text-opacity-80 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 text-sm<?php echo $is_lideres_active ? ' active-link' : ''; ?>">
         <i class="fas fa-user-shield sidebar-icon mr-3 text-sm"></i> 
         <span class="sidebar-text">Líderes</span>
     </a>
@@ -136,65 +131,59 @@ $is_pagos_active = strpos($current_route, 'admin/pagos') === 0 || strpos($curren
 </li>
 
 <li>
-<a href="./index.php?route=admin/viviendas" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
+<a href="./index.php?route=admin/viviendas" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200<?php echo strpos($current_route, 'admin/viviendas') === 0 ? ' active-link' : ''; ?>">
 <i class="fas fa-house sidebar-icon mr-3"></i> 
 <span class="sidebar-text">Viviendas</span>
 </a>
 </li>
 
 <li>
-<a href="./index.php?route=admin/carga-familiar" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
+<a href="./index.php?route=admin/carga-familiar" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200<?php echo $current_route === 'admin/carga-familiar' ? ' active-link' : ''; ?>">
 <i class="fas fa-user-friends sidebar-icon mr-3"></i> 
 <span class="sidebar-text">Mi Carga Familiar</span>
 </a>
 </li>
 
 <li>
-<a href="./index.php?route=admin/news" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
+<a href="./index.php?route=admin/news" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200<?php echo strpos($current_route, 'admin/news') === 0 ? ' active-link' : ''; ?>">
 <i class="fas fa-newspaper sidebar-icon mr-3"></i> 
 <span class="sidebar-text">Noticias</span>
 </a>
 </li>
 <li>
-<a href="./index.php?route=admin/comments" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
+<a href="./index.php?route=admin/comments" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200<?php echo $current_route === 'admin/comments' ? ' active-link' : ''; ?>">
 <i class="fas fa-comments sidebar-icon mr-3"></i> 
 <span class="sidebar-text">Comentarios</span>
 </a>
 </li>
 <li>
-<a href="./index.php?route=admin/notifications" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
+<a href="./index.php?route=admin/notifications" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200<?php echo $current_route === 'admin/notifications' ? ' active-link' : ''; ?>">
 <i class="fas fa-bell sidebar-icon mr-3"></i> 
 <span class="sidebar-text">Notificaciones</span>
 </a>
 </li>
 <li>
-<a href="./index.php?route=admin/pagos/periodos" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 ">
+<a href="./index.php?route=admin/pagos/periodos" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200<?php echo $is_pagos_active ? ' active-link' : ''; ?>">
 <i class="fas fa-hand-holding-dollar sidebar-icon mr-3"></i>
 <span class="sidebar-text">Pagos / Beneficios</span>
 </a>
 </li>
 <li>
-<a href="./index.php?route=admin/reports" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
+<a href="./index.php?route=admin/reports" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200<?php echo $current_route === 'admin/reports' ? ' active-link' : ''; ?>">
 <i class="fas fa-chart-line sidebar-icon mr-3"></i> 
 <span class="sidebar-text">Reportes</span>
 </a>
 </li>
 <li>
-<a href="./index.php?route=eventos" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
+<a href="./index.php?route=eventos" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200<?php echo $current_route === 'eventos' ? ' active-link' : ''; ?>">
 <i class="fas fa-calendar-alt sidebar-icon mr-3"></i>
 <span class="sidebar-text">Eventos</span>
 </a>
 </li>
 <li>
-<a href="./index.php?route=admin/indicadores" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
+<a href="./index.php?route=admin/indicadores" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200<?php echo $current_route === 'admin/indicadores' ? ' active-link' : ''; ?>">
 <i class="fas fa-chart-pie sidebar-icon mr-3"></i>
 <span class="sidebar-text">Indicadores</span>
-</a>
-</li>
-<li>
-<a href="./index.php?route=admin/settings" class="flex items-center px-3 py-2.5 text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
-<i class="fas fa-cog sidebar-icon mr-3"></i> 
-<span class="sidebar-text">Configuración</span>
 </a>
 </li>
 </ul>

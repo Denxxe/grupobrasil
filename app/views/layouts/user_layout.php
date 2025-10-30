@@ -51,6 +51,7 @@ $page_title = $page_title ?? 'Mi Perfil';
       data-success-message="<?php echo htmlspecialchars($success_message); ?>"
       data-error-message="<?php echo htmlspecialchars($error_message); ?>">
 
+    <?php $current_route = $_GET['route'] ?? ''; ?>
     <aside id="sidebar" class="sidebar bg-vinotinto-700 text-gray-100 flex flex-col p-4 rounded-r-lg shadow-lg">
         <div class="flex items-center justify-center p-4 border-b border-vinotinto-800 overflow-hidden">
             <h1 class="text-2xl font-bold text-accentgold sidebar-text"><?php echo $_SESSION['nombre_completo'] ?></h1>
@@ -58,61 +59,43 @@ $page_title = $page_title ?? 'Mi Perfil';
         <nav class="flex-grow mt-4">
             <ul class="space-y-2">
                 <li>
-                    <a href="./index.php?route=user/dashboard" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=user/dashboard" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200<?php echo $current_route === 'user/dashboard' ? ' active-link' : ''; ?>">
                         <i class="fas fa-home mr-3 sidebar-icon"></i> <span class="sidebar-text">Inicio</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=user/profile" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
-                        <i class="fas fa-user-circle mr-3 sidebar-icon"></i> <span class="sidebar-text">Mi Perfil</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="./index.php?route=noticias" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=noticias" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200<?php echo $current_route === 'noticias' ? ' active-link' : ''; ?>">
                         <i class="fas fa-newspaper mr-3 sidebar-icon"></i> <span class="sidebar-text">Noticias</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=eventos" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=eventos" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200<?php echo $current_route === 'eventos' ? ' active-link' : ''; ?>">
                         <i class="fas fa-calendar-alt mr-3 sidebar-icon"></i> <span class="sidebar-text">Eventos</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=user/notifications" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=user/notifications" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200<?php echo $current_route === 'user/notifications' ? ' active-link' : ''; ?>">
                         <i class="fas fa-bell mr-3 sidebar-icon"></i> <span class="sidebar-text">Mis Notificaciones</span>
                     </a>
                 </li>
                 <?php if (isset($_SESSION['id_rol']) && $_SESSION['id_rol'] == 3): ?>
                 <li>
-                    <a href="./index.php?route=user/carga_familiar" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=user/carga_familiar" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200<?php echo $current_route === 'user/carga_familiar' ? ' active-link' : ''; ?>">
                         <i class="fas fa-users mr-3 sidebar-icon"></i> <span class="sidebar-text">Mi Carga Familiar</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=user/pagos" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=user/pagos" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200<?php echo $current_route === 'user/pagos' ? ' active-link' : ''; ?>">
                         <i class="fas fa-hand-holding-dollar mr-3 sidebar-icon"></i> <span class="sidebar-text">Pagos / Beneficios</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=user/vivienda_details" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=user/vivienda_details" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200<?php echo $current_route === 'user/vivienda_details' ? ' active-link' : ''; ?>">
                         <i class="fas fa-house-user mr-3 sidebar-icon"></i> <span class="sidebar-text">Detalles de Vivienda</span>
                     </a>
                 </li>
                 <?php endif; ?>
-                <li>
-                    <a href="./index.php?route=eventos/metrics" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
-                        <i class="fas fa-chart-pie mr-3 sidebar-icon"></i> <span class="sidebar-text">Indicadores</span>
-                    </a>
-                </li>
-                <?php 
-                if (isset($_SESSION['available_roles']) && count($_SESSION['available_roles']) > 1): 
-                ?>
-                <li class="border-t border-vinotinto-600 pt-2 mt-2">
-                    <a href="./index.php?route=login/switchRole" class="flex items-center px-4 py-2 text-accentgold hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
-                        <i class="fas fa-exchange-alt mr-3 sidebar-icon"></i> <span class="sidebar-text">Cambiar Rol</span>
-                    </a>
-                </li>
-                <?php endif; ?>
+              
             </ul>
         </nav>
         <div class="mt-auto p-4 border-t border-vinotinto-800">

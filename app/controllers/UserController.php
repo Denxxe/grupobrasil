@@ -72,54 +72,108 @@ class UserController extends AppController {
 
     // Agregar miembro a la carga (POST)
     public function addMember() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { $this->redirect('user/carga-familiar'); }
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') { $this->redirect('user/carga_familiar'); }
         $idUsuario = $_SESSION['id_usuario'] ?? 0;
         $idHabitanteJefe = $this->getCurrentHabitanteId();
-        if (!$idHabitanteJefe) { $this->setErrorMessage('No se pudo determinar tu registro como habitante.'); $this->redirect('user/carga-familiar'); }
-
-        // Posibles flujos: agregar por id_habitante existente o crear persona+habitante
+    if (!$idHabitanteJefe) { $this->setErrorMessage('No se pudo determinar tu registro como habitante.'); $this->redirect('user/carga_familiar'); }
+        // ÚNICO FLUJO: agregar por id_habitante existente (no permitimos crear nuevos desde aquí)
         $existingHabitanteId = (int)($_POST['existing_habitante_id'] ?? 0);
         $parentesco = trim($_POST['parentesco'] ?? null);
 
-        if ($existingHabitanteId > 0) {
-            $newId = $this->cargaFamiliarModel->addMemberToJefe($idHabitanteJefe, $existingHabitanteId, $parentesco);
-            if ($newId) { $this->setSuccessMessage('Miembro agregado.'); } else { $this->setErrorMessage('Error al agregar miembro.'); }
-            $this->redirect('user/carga-familiar');
+        // Validaciones servidor para parentesco
+        if ($parentesco !== null && $parentesco !== '') {
+            if (mb_strlen($parentesco) > 20) {
+                $this->setErrorMessage('El parentesco no puede tener más de 20 caracteres.');
+                $this->redirect('user/carga_familiar');
+            }
+            if (preg_match('/\d/', $parentesco)) {
+                $this->setErrorMessage('El parentesco no puede contener números.');
+                $this->redirect('user/carga_familiar');
+            }
         }
 
-        // Crear persona y habitante
-        $cedula = trim($_POST['cedula'] ?? '');
-        $nombres = trim($_POST['nombres'] ?? '');
-        $apellidos = trim($_POST['apellidos'] ?? '');
-        if (empty($nombres) || empty($apellidos)) { $this->setErrorMessage('Nombres y apellidos son obligatorios.'); $this->redirect('user/carga-familiar'); }
+        if ($existingHabitanteId <= 0) {
+            $this->setErrorMessage('Selecciona un habitante existente para agregar a la carga familiar.');
+            $this->redirect('user/carga_familiar');
+        }
 
-        $personaData = ['cedula' => $cedula ?: null, 'nombres' => $nombres, 'apellidos' => $apellidos, 'activo' => 1];
-        $idPersona = $this->personaModel->create($personaData);
-        if (!$idPersona) { $this->setErrorMessage('Error al crear persona.'); $this->redirect('user/carga-familiar'); }
+        // Verificar que el habitante no pertenezca ya a otra carga
+        if ($this->cargaFamiliarModel->isHabitanteInAnyCarga($existingHabitanteId)) {
+            $this->setErrorMessage('La persona seleccionada ya pertenece a otra carga familiar.');
+            $this->redirect('user/carga_familiar');
+        }
 
-        $habitanteData = ['id_persona' => $idPersona, 'fecha_ingreso' => date('Y-m-d'), 'condicion' => 'Miembro', 'activo' => 1];
-        $idHabitante = $this->habitanteModel->create($habitanteData);
-        if (!$idHabitante) { $this->setErrorMessage('Error al crear habitante.'); $this->redirect('user/carga-familiar'); }
+        $newId = $this->cargaFamiliarModel->addMemberToJefe($idHabitanteJefe, $existingHabitanteId, $parentesco);
+        if ($newId) { $this->setSuccessMessage('Miembro agregado.'); } else { $this->setErrorMessage('Error al agregar miembro.'); }
+    $this->redirect('user/carga_familiar');
+    }
 
-        $newId = $this->cargaFamiliarModel->addMemberToJefe($idHabitanteJefe, $idHabitante, $parentesco);
-        if ($newId) $this->setSuccessMessage('Miembro agregado.'); else $this->setErrorMessage('Error al agregar miembro.');
-        $this->redirect('user/carga-familiar');
+    /**
+     * Endpoint AJAX para buscar habitantes por cédula o nombre
+     * Devuelve JSON
+     */
+    public function searchHabitante() {
+        $q = trim($_GET['q'] ?? '');
+        header('Content-Type: application/json; charset=utf-8');
+        if (strlen($q) < 2) {
+            echo json_encode(['success' => false, 'message' => 'Consulta muy corta', 'data' => []]);
+            exit();
+        }
+
+        $results = $this->habitanteModel->searchByQuery($q, 20);
+        echo json_encode(['success' => true, 'data' => $results]);
+        exit();
     }
 
     // Eliminar miembro (POST)
     public function deleteMember() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { $this->redirect('user/carga-familiar'); }
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') { $this->redirect('user/carga_familiar'); }
         $id_comun = (int)($_POST['id_carga'] ?? 0);
         $idUsuario = $_SESSION['id_usuario'] ?? 0;
         $idHabitanteJefe = $this->getCurrentHabitanteId();
-        if (!$idHabitanteJefe) { $this->setErrorMessage('No autorizado'); $this->redirect('user/carga-familiar'); }
+    if (!$idHabitanteJefe) { $this->setErrorMessage('No autorizado'); $this->redirect('user/carga_familiar'); }
 
-        // Verificar que el registro pertenezca al jefe (simple comprobación buscando registro)
+        // Verificar que el registro exista
         $reg = $this->cargaFamiliarModel->getById($id_comun);
-        if (!$reg || (int)$reg['id_jefe'] !== (int)$idHabitanteJefe) { $this->setErrorMessage('No tienes permiso para eliminar este miembro.'); $this->redirect('user/carga-familiar'); }
+        if (!$reg) { $this->setErrorMessage('Registro no encontrado.'); $this->redirect('user/carga_familiar'); }
+
+        // Permisos: el dueño (jefe) puede eliminar; además Admin (rol 1) puede eliminar cualquiera;
+        // Líder (rol 2) puede eliminar si el miembro pertenece a una calle bajo su responsabilidad.
+        $currentRole = $_SESSION['id_rol'] ?? null;
+
+        $allowed = false;
+        if ((int)$reg['id_jefe'] === (int)$idHabitanteJefe) {
+            $allowed = true;
+        } elseif ($currentRole == 1) {
+            // Admin puede eliminar cualquiera
+            $allowed = true;
+        } elseif ($currentRole == 2) {
+            // Verificar alcance del líder
+            require_once __DIR__ . '/../models/LiderCalle.php';
+            $liderCalle = new LiderCalle();
+
+            // Obtener calles asignadas al líder (a partir del id_usuario)
+            $callesIds = $liderCalle->getCallesIdsPorUsuario($idUsuario);
+            if (!empty($callesIds)) {
+                // Obtener la persona del miembro
+                $memberHabitante = $this->habitanteModel->getById((int)$reg['id_habitante']);
+                if ($memberHabitante && !empty($memberHabitante['id_persona'])) {
+                    $memberPersona = $this->personaModel->getById((int)$memberHabitante['id_persona']);
+                    $memberCalle = $memberPersona['id_calle'] ?? null;
+                    if ($memberCalle && in_array((int)$memberCalle, $callesIds, true)) {
+                        $allowed = true;
+                    }
+                }
+            }
+        }
+
+        if (!$allowed) {
+            $this->setErrorMessage('No tienes permiso para eliminar este miembro.');
+            $this->redirect('user/carga_familiar');
+        }
 
         if ($this->cargaFamiliarModel->delete($id_comun)) $this->setSuccessMessage('Miembro eliminado.'); else $this->setErrorMessage('Error al eliminar miembro.');
-        $this->redirect('user/carga-familiar');
+        $this->redirect('user/carga_familiar');
     }
 
     // Mostrar/editar detalles de la vivienda del usuario
@@ -149,24 +203,88 @@ class UserController extends AppController {
             }
         }
 
-        $data = ['page_title' => 'Detalles de mi Vivienda', 'vivienda' => $vivienda, 'detalle' => $detalle];
+        // Obtener residentes (antes estaba en la vista)
+        $residents = [];
+        if ($vivienda) {
+            $residents = $this->habitanteModel->getByViviendaId((int)$vivienda['id_vivienda']);
+        }
+
+        $data = ['page_title' => 'Detalles de mi Vivienda', 'vivienda' => $vivienda, 'detalle' => $detalle, 'residents' => $residents];
         return $this->loadView('user/vivienda/details', $data);
     }
 
     public function updateViviendaDetails() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { $this->redirect('user/vivienda'); }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { $this->redirect('user/vivienda_details'); }
         $idVivienda = (int)($_POST['id_vivienda'] ?? 0);
-        if ($idVivienda <= 0) { $this->setErrorMessage('Vivienda inválida'); $this->redirect('user/vivienda'); }
+        if ($idVivienda <= 0) { $this->setErrorMessage('Vivienda inválida'); $this->redirect('user/vivienda_details'); }
 
-        $data = [
-            'habitaciones' => (int)($_POST['habitaciones'] ?? 0),
-            'banos' => (int)($_POST['banos'] ?? 0),
-            'servicios' => trim($_POST['servicios'] ?? '')
+        // Normalizar servicios: convertir a array, trim y unir sin duplicados
+        $rawServicios = trim($_POST['servicios'] ?? '');
+        $parts = array_filter(array_map('trim', explode(',', $rawServicios)), function($v){ return $v !== ''; });
+        // eliminar duplicados y normalizar espacios
+        $parts = array_values(array_unique($parts));
+        $normalizedServicios = implode(',', $parts);
+
+        // Validaciones servidor: habitaciones y banos deben ser enteros 0-99
+        $habitaciones = (int)($_POST['habitaciones'] ?? 0);
+        $banos = (int)($_POST['banos'] ?? 0);
+        if ($habitaciones < 0 || $habitaciones > 99 || $banos < 0 || $banos > 99) {
+            $this->setErrorMessage('Habitaciones y baños deben ser números entre 0 y 99.');
+            $this->redirect('user/vivienda_details');
+        }
+
+        // Validación servicios: longitud máxima 70 y no pueden contener dígitos
+        if (strlen($normalizedServicios) > 70) {
+            $this->setErrorMessage('El campo servicios no puede superar los 70 caracteres.');
+            $this->redirect('user/vivienda_details');
+        }
+        if (preg_match('/\d/', $normalizedServicios)) {
+            $this->setErrorMessage('El campo servicios no puede contener números.');
+            $this->redirect('user/vivienda_details');
+        }
+
+        $newData = [
+            'habitaciones' => $habitaciones,
+            'banos' => $banos,
+            'servicios' => $normalizedServicios
         ];
 
-        $ok = $this->viviendaDetalleModel->createOrUpdateByVivienda($idVivienda, $data);
-        if ($ok) $this->setSuccessMessage('Detalles actualizados.'); else $this->setErrorMessage('Error al guardar detalles.');
-        $this->redirect('user/vivienda');
+        // Obtener valores antiguos para auditoría
+        $old = $this->viviendaDetalleModel->getByViviendaId($idVivienda);
+
+        $ok = $this->viviendaDetalleModel->createOrUpdateByVivienda($idVivienda, $newData);
+
+        if ($ok) {
+            // Registrar auditoría si hay cambios
+            $changes = [];
+            if (!$old) {
+                $changes['created'] = $newData;
+            } else {
+                foreach ($newData as $k => $v) {
+                    $oldVal = isset($old[$k]) ? $old[$k] : null;
+                    if ((string)$oldVal !== (string)$v) {
+                        $changes[$k] = ['old' => $oldVal, 'new' => $v];
+                    }
+                }
+            }
+
+            if (!empty($changes)) {
+                require_once __DIR__ . '/../models/ViviendaDetalleAudit.php';
+                $auditModel = new ViviendaDetalleAudit();
+                $auditData = [
+                    'id_vivienda' => $idVivienda,
+                    'id_usuario' => $_SESSION['id_usuario'] ?? null,
+                    'cambios' => json_encode($changes, JSON_UNESCAPED_UNICODE)
+                ];
+                $auditModel->createAudit($auditData);
+            }
+
+            $this->setSuccessMessage('Detalles actualizados.');
+        } else {
+            $this->setErrorMessage('Error al guardar detalles.');
+        }
+
+        $this->redirect('user/vivienda_details');
     }
 
     public function dashboard() {

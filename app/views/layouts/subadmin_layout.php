@@ -59,6 +59,7 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
       data-success-message="<?php echo htmlspecialchars($success_message); ?>"
       data-error-message="<?php echo htmlspecialchars($error_message); ?>">
 
+    <?php $current_route = $_GET['route'] ?? ''; ?>
     <aside id="sidebar" class="sidebar bg-vinotinto-700 text-gray-100 flex flex-col p-4 rounded-r-lg shadow-lg">
         <div class="flex items-center justify-center p-4 border-b border-vinotinto-800 overflow-hidden">
             <h1 class="text-2xl font-bold text-accentgold sidebar-text"> <?php echo $_SESSION['nombre_completo'] ?></h1>
@@ -66,57 +67,57 @@ $content_view = $content_view ?? ''; // Fallback por si acaso, aunque el control
         <nav class="flex-grow mt-4">
             <ul class="space-y-2">
                 <li>
-                    <a href="./index.php?route=subadmin/dashboard" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=subadmin/dashboard" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200 <?php echo $current_route === 'subadmin/dashboard' ? 'active-link' : ''; ?>">
                         <i class="fas fa-tachometer-alt mr-3 sidebar-icon"></i> <span class="sidebar-text">Dashboard</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=subadmin/habitantes" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=subadmin/habitantes" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200 <?php echo $current_route === 'subadmin/habitantes' ? 'active-link' : ''; ?>">
                         <i class="fas fa-users mr-3 sidebar-icon"></i> <span class="sidebar-text">Habitantes</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=subadmin/familias" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=subadmin/familias" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200 <?php echo $current_route === 'subadmin/familias' ? 'active-link' : ''; ?>">
                         <i class="fas fa-user-friends mr-3 sidebar-icon"></i> <span class="sidebar-text">Familias</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=subadmin/viviendas" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=subadmin/viviendas" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200 <?php echo $current_route === 'subadmin/viviendas' ? 'active-link' : ''; ?>">
                         <i class="fas fa-home mr-3 sidebar-icon"></i> <span class="sidebar-text">Viviendas</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=noticias" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=noticias" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200 <?php echo $current_route === 'noticias' ? 'active-link' : ''; ?>">
                         <i class="fas fa-newspaper mr-3 sidebar-icon"></i> <span class="sidebar-text">Noticias</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=subadmin/comments" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=subadmin/comments" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200 <?php echo $current_route === 'subadmin/comments' ? 'active-link' : ''; ?>">
                         <i class="fas fa-comments mr-3 sidebar-icon"></i> <span class="sidebar-text">Comentarios</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=subadmin/notifications" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=subadmin/notifications" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200 <?php echo $current_route === 'subadmin/notifications' ? 'active-link' : ''; ?>">
                         <i class="fas fa-bell mr-3 sidebar-icon"></i> <span class="sidebar-text">Notificaciones</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=subadmin/pagos/lista" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=subadmin/pagos/lista" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200 <?php echo $current_route === 'subadmin/pagos/lista' ? 'active-link' : ''; ?>">
                         <i class="fas fa-hand-holding-dollar mr-3 sidebar-icon"></i> <span class="sidebar-text">Pagos / Beneficios</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=subadmin/reports" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=subadmin/reports" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200 <?php echo $current_route === 'subadmin/reports' ? 'active-link' : ''; ?>">
                         <i class="fas fa-chart-line mr-3 sidebar-icon"></i> <span class="sidebar-text">Reportes</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=eventos" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=eventos" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200 <?php echo $current_route === 'eventos' ? 'active-link' : ''; ?>">
                         <i class="fas fa-calendar-alt mr-3 sidebar-icon"></i> <span class="sidebar-text">Eventos</span>
                     </a>
                 </li>
                 <li>
-                    <a href="./index.php?route=eventos/metrics" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200">
+                    <a href="./index.php?route=eventos/metrics" class="flex items-center px-4 py-2 text-vinotinto-100 hover:bg-vinotinto-600 hover:text-white rounded-md transition duration-200 <?php echo $current_route === 'eventos/metrics' ? 'active-link' : ''; ?>">
                         <i class="fas fa-chart-pie mr-3 sidebar-icon"></i> <span class="sidebar-text">Indicadores</span>
                     </a>
                 </li>

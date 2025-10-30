@@ -2,36 +2,30 @@
 // Este es el contenido de la vista admin/dashboard.php
 // Variables esperadas: $stats (array), $activity_log (array), $page_title (string)
 
-// Asumiendo una estructura mínima para $stats si no viene del controlador
 $stats = $stats ?? [
     'total_usuarios' => 0,
     'nuevos_usuarios_semana' => 0,
     'total_pagos_hoy' => 0,
-    'variacion_pagos_ayer' => 0, // En porcentaje, ej: 15.5 o -5.2
+    'variacion_pagos_ayer' => 0, 
 ];
 
-// Asumiendo una estructura mínima para $activity_log
 $activity_log = $activity_log ?? [
     ['icon' => 'fas fa-check-circle', 'color' => 'text-green-500', 'message' => 'El sistema está en línea.', 'time' => 'hace 1 min'],
 ];
 
-// Colores de la paleta (Tailwind customizado: vinotinto, crema)
 $vinotinto = 'bg-[#800000]';
 $vinotinto_text = 'text-[#800000]';
 $accent_cream = 'bg-[#E0A800]';
 $accent_cream_text = 'text-[#E0A800]';
 
-// Función para formatear el valor de pagos
 $formatCurrency = fn($value) => '$' . number_format($value, 0, ',', '.');
 ?>
 
 <div class="p-4 sm:p-6 lg:p-8">
     <h1 class="text-3xl font-bold text-gray-900 mb-6">Tablero Principal</h1>
 
-    <!-- 1. Tarjetas de Métricas Clave (Stats Cards) -->
     <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        
-        <!-- Total de Usuarios -->
+     
         <div class="bg-white p-6 rounded-xl shadow-xl border-l-4 border-red-700 hover:shadow-2xl transition duration-300 transform hover:scale-[1.02]">
             <div class="flex justify-between items-center">
                 <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Usuarios Totales</h3>

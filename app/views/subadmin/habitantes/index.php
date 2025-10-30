@@ -32,7 +32,28 @@
     <!-- Tabla de Habitantes -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Listado de Habitantes</h6>
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Listado de Habitantes</h6>
+                <span class="badge badge-info"><?= count($habitantes) ?> registros</span>
+            </div>
+            <div class="mt-3">
+                <form method="GET" action="./index.php" class="form-row row g-2">
+                    <input type="hidden" name="route" value="subadmin/habitantes">
+                    <div class="col-md-6">
+                        <input type="search" name="search" class="form-control" placeholder="Buscar (Cédula, Nombre)" value="<?= htmlspecialchars($current_search ?? '') ?>">
+                    </div>
+                    <div class="col-md-3">
+                        <select name="activo" class="form-select">
+                            <option value="all" <?= (isset($current_activo) && $current_activo === 'all') ? 'selected' : '' ?>>Todos</option>
+                            <option value="1" <?= (isset($current_activo) && $current_activo === '1') ? 'selected' : '' ?>>Activos</option>
+                            <option value="0" <?= (isset($current_activo) && $current_activo === '0') ? 'selected' : '' ?>>Inactivos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary w-100" type="submit"><i class="fas fa-search"></i> Buscar</button>
+                    </div>
+                </form>
+            </div>
         </div>
         <div class="card-body">
             <div class="table-responsive">

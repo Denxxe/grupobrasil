@@ -54,11 +54,10 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Usuario</th>
                                 <th>Cédula</th>
                                 <th>Nombre Completo</th>
                                 <th>Email</th>
-                                <th>Calles</th>
+                                <th>Veredas</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
@@ -67,7 +66,6 @@
                             <?php foreach ($usuarios as $usuario): ?>
                                 <tr>
                                     <td><?= htmlspecialchars($usuario['id_usuario'] ?? '') ?></td>
-                                    <td><?= htmlspecialchars($usuario['nombre_usuario'] ?? 'N/A') ?></td>
                                     <td><?= htmlspecialchars($usuario['cedula'] ?? '') ?></td>
                                     <td><?= htmlspecialchars($usuario['nombre_completo'] ?? '') ?></td>
                                     <td><?= htmlspecialchars($usuario['email'] ?? 'N/A') ?></td>
@@ -82,9 +80,9 @@
                                     </td>
                                     <td>
                                         <?php if (($usuario['activo'] ?? 0) == 1): ?>
-                                            <span class="badge badge-success">Activo</span>
+                                            <span class="badge badge-success text-dark">Activo</span>
                                         <?php else: ?>
-                                            <span class="badge badge-danger">Inactivo</span>
+                                            <span class="badge badge-danger text-dark">Inactivo</span>
                                         <?php endif; ?>
                                     </td>
                                     <td>

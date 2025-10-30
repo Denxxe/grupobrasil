@@ -119,6 +119,27 @@ class CargaFamiliar extends ModelBase {
         return $this->create($data);
     }
 
+    /**
+     * Comprueba si un habitante ya está asignado a una carga familiar activa
+     *
+     * @param int $habitanteId
+     * @return bool
+     */
+    public function isHabitanteInAnyCarga(int $habitanteId): bool {
+        $sql = "SELECT id_carga FROM {$this->table} WHERE id_habitante = ? AND activo = 1 LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) {
+            error_log("Error al preparar isHabitanteInAnyCarga: " . $this->conn->error);
+            return false;
+        }
+        $stmt->bind_param('i', $habitanteId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $exists = ($result && $result->num_rows > 0);
+        $stmt->close();
+        return $exists;
+    }
+
      /**
      * Cuenta la cantidad de miembros a cargo de un jefe
      *

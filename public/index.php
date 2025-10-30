@@ -596,6 +596,8 @@ if (!isset($_SESSION['id_usuario'])) {
                     $actionName = 'addMember';
                 } elseif ($actionSegment === 'deleteMember' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     $actionName = 'deleteMember';
+                } elseif ($actionSegment === 'searchHabitante' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+                    $actionName = 'searchHabitante';
                 }
                 elseif ($actionSegment === 'vivienda_details') {
                     $actionName = 'viviendaDetails';

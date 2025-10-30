@@ -15,7 +15,12 @@ class Calle extends ModelBase {
      * @return array
      */
     public function findAll(): array {
-        $sql = "SELECT * FROM " . $this->table . " WHERE activo = 1 ORDER BY nombre ASC";
+    // Orden numérico cuando el nombre contiene números (p.ej. "Vereda 2", "10")
+    // Usamos REGEXP_REPLACE para extraer dígitos y ordenar por su valor numérico, con fallback al nombre completo.
+    $sql = "SELECT * FROM " . $this->table . " WHERE activo = 1 
+        ORDER BY 
+          (CASE WHEN nombre RLIKE '[0-9]' THEN CAST(REGEXP_REPLACE(nombre, '[^0-9]', '') AS UNSIGNED) ELSE 0 END) ASC,
+          nombre ASC";
         
         $result = $this->conn->query($sql);
         

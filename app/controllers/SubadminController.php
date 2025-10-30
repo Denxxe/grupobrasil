@@ -172,7 +172,10 @@ class SubadminController extends AppController {
 
     public function habitantes() {
         $idUsuario = $_SESSION['id_usuario'] ?? 0;
-        
+        // Parámetros de filtros desde la URL
+        $search = $_GET['search'] ?? '';
+        $activo = $_GET['activo'] ?? 'all';
+
         // Obtener calles asignadas al líder
         $callesAsignadas = $this->liderCalleModel->getCallesConDetallesPorUsuario($idUsuario);
         $calleIds = $this->liderCalleModel->getCallesIdsPorUsuario($idUsuario);
@@ -183,7 +186,8 @@ class SubadminController extends AppController {
             $totalHabitantes = 0;
         } else {
             // Obtener habitantes filtrados por las calles del líder
-            $habitantes = $this->habitanteModel->getHabitantesPorCalles($calleIds);
+            $filters = ['search' => $search, 'activo' => $activo];
+            $habitantes = $this->habitanteModel->getHabitantesPorCalles($calleIds, $filters);
             $totalHabitantes = $this->habitanteModel->contarPorCalles($calleIds);
         }
         
@@ -196,7 +200,9 @@ class SubadminController extends AppController {
             'calles_asignadas' => $callesAsignadas,
             'veredasAsignadas' => $calleIds,  // Para compatibilidad con la vista
             'todasVeredas' => $todasVeredas,  // Para compatibilidad con la vista
-            'total_habitantes' => $totalHabitantes
+            'total_habitantes' => $totalHabitantes,
+            'current_search' => $search,
+            'current_activo' => $activo
         ];
         
         $this->loadView('subadmin/habitantes/index', $data);

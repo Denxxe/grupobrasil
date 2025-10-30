@@ -567,9 +567,10 @@ class AdminController extends AppController{
      * Si es jefe de familia, la familia se mantiene pero sin jefe
      */
     public function deleteHabitante() {
-        $personId = $_GET['person_id'] ?? null;
+        // Usar filter_input para sanitizar
+        $personId = filter_input(INPUT_GET, 'person_id', FILTER_VALIDATE_INT);
 
-        if (empty($personId) || !is_numeric($personId)) {
+        if ($personId === null || $personId === false) {
             $_SESSION['error_message'] = "ID de persona inválido.";
             header('Location: ./index.php?route=admin/users/personas');
             return;
@@ -577,46 +578,114 @@ class AdminController extends AppController{
 
         error_log("[v0] deleteHabitante called for person ID: $personId");
 
-        // Obtener datos de la persona para el mensaje
-        $persona = $this->personaModel->getById($personId);
-        if (!$persona) {
-            $_SESSION['error_message'] = "Habitante no encontrado.";
+        try {
+            // Obtener datos de la persona para el mensaje
+            $persona = $this->personaModel->getById($personId);
+            if (!$persona) {
+                $_SESSION['error_message'] = "Habitante no encontrado.";
+                header('Location: ./index.php?route=admin/users/personas');
+                return;
+            }
+
+            $nombreCompleto = $persona['nombres'] . ' ' . $persona['apellidos'];
+
+            // Verificar si existe un habitante para esta persona
+            $habitante = $this->habitanteModel->findByPersonaId($personId);
+
+            if ($habitante) {
+                $habitanteId = $habitante['id_habitante'];
+                error_log("[v0] Found habitante ID: $habitanteId for person ID: $personId");
+
+                // Usar el método de eliminación en cascada
+                $success = $this->habitanteModel->deleteHabitanteWithCascade($habitanteId);
+
+                if ($success) {
+                        // Verificar que no exista usuario asociado (a veces la eliminación previa pudo fallar)
+                        $existingUser = $this->usuarioModel->findByPersonId($personId);
+                        if ($existingUser) {
+                            // Intentar eliminar la cuenta de usuario explicitamente antes de borrar persona
+                            $uid = $existingUser['id_usuario'] ?? null;
+                            if ($uid) {
+                                $delUser = $this->usuarioModel->delete($uid);
+                                if (!$delUser) {
+                                    $dbErr = $this->usuarioModel->getConnection()->error ?? 'unknown';
+                                    error_log("[v0] Failed to delete usuario id=$uid before deleting persona id=$personId; DB error: " . $dbErr);
+                                    $_SESSION['error_message'] = "No se pudo eliminar la cuenta de usuario asociada. Revisa logs para más detalles.";
+                                    header('Location: ./index.php?route=admin/users/personas');
+                                    return;
+                                }
+                            }
+                        }
+
+                        // También eliminar la persona
+                        $personaDel = $this->personaModel->delete($personId);
+                        if ($personaDel) {
+                            $_SESSION['success_message'] = "El habitante '$nombreCompleto' y todos sus registros relacionados han sido eliminados exitosamente.";
+                        } else {
+                            // Log detallado para debugging local
+                            $dbErr = $this->personaModel->getConnection()->error ?? 'unknown';
+                            error_log("[v0] Persona delete returned false for personId=$personId; DB error: " . $dbErr);
+                            $_SESSION['error_message'] = "El habitante fue eliminado, pero ocurrió un error al eliminar la persona (ver logs).";
+                        }
+                } else {
+                    // Registrar errores DB para facilitar debugging remoto
+                    $dbErr = $this->habitanteModel->getConnection()->error ?? 'unknown';
+                    error_log("[v0] deleteHabitanteWithCascade failed for habitanteId=$habitanteId; DB error: " . $dbErr);
+                    $_SESSION['error_message'] = "Error al eliminar el habitante '$nombreCompleto'. (ver logs)";
+                }
+            } else {
+                // Si no hay habitante, intentar borrar primero la cuenta de usuario (si existe) y luego la persona
+                    error_log("[v0] No habitante found, attempting to delete associated usuario (if any) and persona");
+
+                    // Verificar existencia de usuario asociado a esta persona
+                    $existingUser = $this->usuarioModel->findByPersonId($personId);
+                    if ($existingUser) {
+                        $uid = $existingUser['id_usuario'] ?? null;
+                        if ($uid) {
+                            $delUser = $this->usuarioModel->delete($uid);
+                            if (!$delUser) {
+                                $dbErr = $this->usuarioModel->getConnection()->error ?? 'unknown';
+                                error_log("[v0] Failed to delete usuario id=$uid for persona id=$personId; DB error: " . $dbErr);
+                                $_SESSION['error_message'] = "No se pudo eliminar la cuenta de usuario asociada. Revisa logs para más detalles.";
+                                header('Location: ./index.php?route=admin/users/personas');
+                                return;
+                            }
+                        }
+                    }
+
+                    // Ahora eliminar la persona
+                    $success = $this->personaModel->delete($personId);
+
+                    if ($success) {
+                        $_SESSION['success_message'] = "La persona '$nombreCompleto' ha sido eliminada exitosamente.";
+                    } else {
+                        $dbErr = $this->personaModel->getConnection()->error ?? 'unknown';
+                        error_log("[v0] Failed to delete persona id=$personId after deleting usuario; DB error: " . $dbErr);
+                        // Escribir en archivo debug para facilitar seguimiento
+                        @file_put_contents(__DIR__ . '/../../storage/delete_debug.log', "[".date('Y-m-d H:i:s')."] Failed to delete persona id=$personId after deleting usuario; DB error: " . $dbErr . "\n", FILE_APPEND | LOCK_EX);
+                        $_SESSION['error_message'] = "Error al eliminar la persona '$nombreCompleto'. (ver logs)";
+                    }
+            }
+
+            header('Location: ./index.php?route=admin/users/personas');
+            return;
+        } catch (\Throwable $t) {
+            // Capturar cualquier excepción/fatal y redirigir con mensaje
+            error_log("[v0] Exception in deleteHabitante: " . $t->getMessage());
+            error_log($t->getTraceAsString());
+            $_SESSION['error_message'] = "Ocurrió un error al intentar eliminar (ver logs).";
+            // Additionally write a debug file inside project for easier access
+            $dbgPath = __DIR__ . '/../../storage/delete_debug.log';
+            @mkdir(dirname($dbgPath), 0755, true);
+            $dbgMsg = "[" . date('Y-m-d H:i:s') . "] Exception in deleteHabitante: " . $t->getMessage() . "\n";
+            $dbgMsg .= $t->getTraceAsString() . "\n";
+            // include DB errors if available
+            $dbgMsg .= "personaModel DB error: " . ($this->personaModel->getConnection()->error ?? 'n/a') . "\n";
+            $dbgMsg .= "habitanteModel DB error: " . ($this->habitanteModel->getConnection()->error ?? 'n/a') . "\n";
+            file_put_contents($dbgPath, $dbgMsg, FILE_APPEND | LOCK_EX);
             header('Location: ./index.php?route=admin/users/personas');
             return;
         }
-
-        $nombreCompleto = $persona['nombres'] . ' ' . $persona['apellidos'];
-
-        // Verificar si existe un habitante para esta persona
-        $habitante = $this->habitanteModel->findByPersonaId($personId);
-
-        if ($habitante) {
-            $habitanteId = $habitante['id_habitante'];
-            error_log("[v0] Found habitante ID: $habitanteId for person ID: $personId");
-
-            // Usar el método de eliminación en cascada
-            $success = $this->habitanteModel->deleteHabitanteWithCascade($habitanteId);
-
-            if ($success) {
-                // También eliminar la persona
-                $this->personaModel->delete($personId);
-                $_SESSION['success_message'] = "El habitante '$nombreCompleto' y todos sus registros relacionados han sido eliminados exitosamente.";
-            } else {
-                $_SESSION['error_message'] = "Error al eliminar el habitante '$nombreCompleto'.";
-            }
-        } else {
-            // Si no hay habitante, solo eliminar la persona
-            error_log("[v0] No habitante found, deleting only persona");
-            $success = $this->personaModel->delete($personId);
-
-            if ($success) {
-                $_SESSION['success_message'] = "La persona '$nombreCompleto' ha sido eliminada exitosamente.";
-            } else {
-                $_SESSION['error_message'] = "Error al eliminar la persona '$nombreCompleto'.";
-            }
-        }
-
-        header('Location: ./index.php?route=admin/users/personas');
     }
 
 
@@ -640,6 +709,18 @@ class AdminController extends AppController{
 
         // 3. Obtener datos del Modelo Usuario
         $usuarios = $this->usuarioModel->getAllFiltered($filters);
+
+        // Normalizar campos comunes y asegurar que exista 'activo'
+        if (is_array($usuarios)) {
+            foreach ($usuarios as &$u) {
+                // Algunas consultas/reportes pueden devolver 'usuario_activo' en lugar de 'activo'
+                if (!isset($u['activo']) && isset($u['usuario_activo'])) {
+                    $u['activo'] = (int)$u['usuario_activo'];
+                }
+                $u['activo'] = isset($u['activo']) ? (int)$u['activo'] : 0;
+            }
+            unset($u);
+        }
 
         // 4. Preparar los datos para la vista
         $data = [
@@ -674,6 +755,35 @@ class AdminController extends AppController{
 
         // 3. Obtener datos del Modelo Usuario
         $usuarios = $this->usuarioModel->getAllFiltered($filters);
+
+        // 3.1 Normalizar y enriquecer datos para la vista
+        if (is_array($usuarios)) {
+            foreach ($usuarios as &$u) {
+                // Normalizar 'activo' (algunas rutas/reportes usan alias diferente)
+                if (!isset($u['activo']) && isset($u['usuario_activo'])) {
+                    $u['activo'] = (int)$u['usuario_activo'];
+                }
+                $u['activo'] = isset($u['activo']) ? (int)$u['activo'] : 0;
+
+                // Enriquecer con las veredas asignadas (calles) usando el modelo LiderCalle
+                $u['calles_asignadas'] = '';
+                $u['total_calles_asignadas'] = 0;
+                if (!empty($u['id_usuario'])) {
+                    $callesDetalles = $this->liderCalleModel->getCallesConDetallesPorUsuario((int)$u['id_usuario']);
+                    if (!empty($callesDetalles)) {
+                        $parts = [];
+                        foreach ($callesDetalles as $c) {
+                            $nombre = $c['nombre'] ?? ($c['nombre_calle'] ?? '');
+                            $sector = $c['sector'] ?? '';
+                            $parts[] = trim($nombre . ($sector !== '' ? ' - ' . $sector : ''));
+                        }
+                        $u['calles_asignadas'] = implode(', ', $parts);
+                        $u['total_calles_asignadas'] = count($callesDetalles);
+                    }
+                }
+            }
+            unset($u);
+        }
 
         // 4. Preparar los datos para la vista
         $data = [

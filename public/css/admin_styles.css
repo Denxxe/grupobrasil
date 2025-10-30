@@ -291,3 +291,15 @@ a:hover {
 .fade-in {
   animation: fadeIn 0.3s ease;
 }
+
+/* Estado activo del link en la sidebar: fondo sutil y texto oscuro/contrastado */
+.sidebar nav ul li a.active-link {
+  background-color: rgba(255,255,255,0.08);
+  color: var(--accent-gold) !important;
+}
+.sidebar nav ul li a.active-link .sidebar-icon {
+  color: var(--accent-gold) !important;
+}
+.sidebar nav ul li a.active-link .sidebar-text {
+  color: var(--accent-gold) !important;
+}
