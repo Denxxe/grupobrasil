@@ -88,10 +88,6 @@
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <a href="./index.php?route=admin/users/edit&id=<?= $usuario['id_usuario'] ?? '' ?>" 
-                                           class="btn btn-sm btn-info" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
                                         <a href="./index.php?route=admin/users/create-user-role&person_id=<?= $usuario['id_persona'] ?? '' ?>" 
                                            class="btn btn-sm btn-secondary" title="Editar roles/veredas">
                                             <i class="fas fa-user-cog"></i>
