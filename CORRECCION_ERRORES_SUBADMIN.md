@@ -1,3 +1,6 @@
+
+- Cambio de esto
+
 # Corrección de Errores - Módulo Subadmin (Líder de Calle)
 
 ## 📋 Problemas Resueltos
