@@ -1,6 +1,19 @@
 <?php
 // app/views/admin/users/create.php
 // Variables disponibles: $page_title, $success_message, $error_message, $calles
+
+// Soporte AJAX local: si se solicita fetch_viviendas=1 devolvemos JSON con viviendas de la calle
+if (isset($_GET['fetch_viviendas']) && isset($_GET['id_calle'])) {
+    $id_calle = intval($_GET['id_calle']);
+    require_once __DIR__ . '/../../../models/Vivienda.php';
+    $vModel = new Vivienda();
+    // Reusar el método que devuelve viviendas por array de calles
+    $viviendas = $vModel->getViviendasPorCalles([$id_calle]);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($viviendas ?: []);
+    exit();
+}
+
 ?>
 
 <div class="container-fluid">
@@ -71,6 +84,13 @@
                                 endif; ?>
                             </select>
                         </div>
+                        <div id="vivienda_container" class="form-group" style="display:none;">
+                            <label for="id_vivienda">Vivienda (según vereda seleccionada)</label>
+                            <select class="form-control" id="id_vivienda" name="id_vivienda">
+                                <option value="">Seleccione una vivienda (opcional)</option>
+                            </select>
+                            <small class="form-text text-muted">Seleccione la vivienda asociada a la persona (si aplica).</small>
+                        </div>
                         
                         <hr class="mt-4 mb-4">
                         
@@ -121,7 +141,7 @@
                                             $calleId = htmlspecialchars($calle['id_calle'] ?? '');
                                             $calleNombre = htmlspecialchars($calle['nombre'] ?? 'Sin Nombre');
                                     ?>
-                                            <div class="col-md-6">
+                                            <div class="col-md-3">
                                                 <div class="form-check">
                                                     <input class="form-check-input" type="checkbox" 
                                                         name="calles_liderazgo[]" 
@@ -132,6 +152,8 @@
                                                     </label>
                                                 </div>
                                             </div>
+                                            
+
                                     <?php 
                                         endforeach; 
                                     endif; 
@@ -249,6 +271,48 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicialización al cargar la página 
     toggleUserFields(createAccountCheckbox.checked);
     toggleVeredaManagement();
+
+    // --- Cargar viviendas según la calle seleccionada (AJAX local a esta misma vista) ---
+    const calleSelect = document.getElementById('id_calle_residencia');
+    const viviendaContainer = document.getElementById('vivienda_container');
+    const viviendaSelect = document.getElementById('id_vivienda');
+
+    async function fetchViviendasByCalle(idCalle) {
+        if (!idCalle) {
+            viviendaSelect.innerHTML = '<option value="">Seleccione una vivienda (opcional)</option>';
+            viviendaContainer.style.display = 'none';
+            return;
+        }
+        try {
+            const url = './index.php?route=admin/users/create&fetch_viviendas=1&id_calle=' + encodeURIComponent(idCalle);
+            const res = await fetch(url, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('Error al obtener viviendas');
+            const data = await res.json();
+            viviendaSelect.innerHTML = '<option value="">Seleccione una vivienda (opcional)</option>';
+            if (Array.isArray(data) && data.length) {
+                data.forEach(v => {
+                    const opt = document.createElement('option');
+                    const id = v.id_vivienda ?? v.id_vivienda ?? v.id ?? v.id_vivienda;
+                    const num = v.numero ?? v.numero_vivienda ?? v.numero ?? (v.id_vivienda ? v.id_vivienda : '');
+                    const tipo = v.tipo ? ' - ' + v.tipo : '';
+                    opt.value = id;
+                    opt.textContent = num + tipo;
+                    viviendaSelect.appendChild(opt);
+                });
+                viviendaContainer.style.display = 'block';
+            } else {
+                viviendaContainer.style.display = 'none';
+            }
+        } catch (err) {
+            console.error(err);
+            viviendaContainer.style.display = 'none';
+        }
+    }
+
+    if (calleSelect) {
+        calleSelect.addEventListener('change', function() { fetchViviendasByCalle(this.value); });
+        if (calleSelect.value) fetchViviendasByCalle(calleSelect.value);
+    }
 
     // Limitar selección de veredas a máximo 2 en el formulario de creación
     const veredaCheckboxesCreate = veredaManagementDiv.querySelectorAll('input[type="checkbox"][name="calles_liderazgo[]"]');

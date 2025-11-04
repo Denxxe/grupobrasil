@@ -537,17 +537,22 @@ class AdminController extends AppController{
         }
 
         // Preparar datos para actualización
+        // Normalizar entradas: evitar pasar null a trim() (PHP 8+) y convertir
+        // fecha vacía a NULL para no romper las columnas DATE en la BD.
+        $fechaRaw = trim((string)($data['fecha_nacimiento'] ?? ''));
+        $fechaNacimiento = $fechaRaw === '' ? null : $fechaRaw;
+
         $personaData = [
-            'cedula' => trim($data['cedula'] ?? ''),
-            'nombres' => trim($data['nombres'] ?? ''),
-            'apellidos' => trim($data['apellidos'] ?? ''),
-            'telefono' => trim($data['telefono'] ?? null),
-            'id_calle' => (int)($data['id_calle'] ?? null),
-            'numero_casa' => trim($data['numero_casa'] ?? null),
-            'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
+            'cedula' => trim((string)($data['cedula'] ?? '')),
+            'nombres' => trim((string)($data['nombres'] ?? '')),
+            'apellidos' => trim((string)($data['apellidos'] ?? '')),
+            'telefono' => trim((string)($data['telefono'] ?? '')),
+            'id_calle' => (int)($data['id_calle'] ?? 0),
+            'numero_casa' => trim((string)($data['numero_casa'] ?? '')),
+            'fecha_nacimiento' => $fechaNacimiento,
             'sexo' => $data['sexo'] ?? null,
-            'direccion' => trim($data['direccion'] ?? null),
-            'correo' => trim($data['correo'] ?? null),
+            'direccion' => trim((string)($data['direccion'] ?? '')),
+            'correo' => trim((string)($data['correo'] ?? '')),
         ];
 
         $result = $this->personaModel->update($personId, $personaData);
@@ -904,20 +909,21 @@ class AdminController extends AppController{
         }
 
         // 3. CREAR LA PERSONA/HABITANTE
+        // Evitar pasar null a trim(): castear a string para compatibilidad con PHP 8+
         $personaData = [
-            'cedula' => trim($data['cedula'] ?? ''),
-            'nombres' => trim($data['nombres'] ?? ''),
-            'apellidos' => trim($data['apellidos'] ?? ''),
-            'telefono' => trim($data['telefono'] ?? null),
+            'cedula' => trim((string)($data['cedula'] ?? '')),
+            'nombres' => trim((string)($data['nombres'] ?? '')),
+            'apellidos' => trim((string)($data['apellidos'] ?? '')),
+            'telefono' => trim((string)($data['telefono'] ?? '')),
             'id_calle' => (int)($data['id_calle'] ?? null),
             'estado' => 'Residente',
             'activo' => 1,
             // Campos adicionales del formulario que no estaban mapeados:
-            'numero_casa' => trim($data['numero_casa'] ?? null),
+            'numero_casa' => trim((string)($data['numero_casa'] ?? '')),
             'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
             'sexo' => $data['sexo'] ?? null,
-            'direccion' => trim($data['direccion'] ?? null),
-            'correo' => trim($data['correo'] ?? null), // Se podría usar el email de usuario aquí, si aplica
+            'direccion' => trim((string)($data['direccion'] ?? '')),
+            'correo' => trim((string)($data['correo'] ?? '')), // Se podría usar el email de usuario aquí, si aplica
         ];
 
         $personaId = $this->personaModel->create($personaData);
