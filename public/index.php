@@ -34,6 +34,29 @@ if ($appEnv === 'development') {
     ini_set('log_errors', 1);
 }
 
+// DEBUG TEMPORAL: forzar display de errores y registrar manejadores para capturar 500 durante desarrollo local
+if (PHP_SAPI !== 'cli') {
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    ini_set('log_errors', 1);
+
+    set_exception_handler(function($e){
+        $msg = "Uncaught exception: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine() . "\n" . $e->getTraceAsString();
+        error_log($msg);
+        http_response_code(500);
+        echo "<pre>\n" . htmlspecialchars($msg) . "</pre>";
+        exit();
+    });
+
+    set_error_handler(function($errno, $errstr, $errfile, $errline){
+        $msg = "PHP Error [$errno]: $errstr in $errfile:$errline";
+        error_log($msg);
+        http_response_code(500);
+        echo "<pre>\n" . htmlspecialchars($msg) . "</pre>";
+        exit();
+    });
+}
+
 // --- Definición de Constantes de Ruta ---
 define('APP_ROOT', __DIR__ . '/../');
 define('CONFIG_PATH', APP_ROOT . 'config/');
@@ -107,7 +130,51 @@ if (!isset($_SESSION['id_usuario'])) {
     }
 } else { // 2. USUARIO AUTENTICADO
 
-    $userRole = $_SESSION['id_rol'];
+    // Protección: $_SESSION['id_rol'] puede no estar seteado aunque exista id_usuario (sesión parcial/rota).
+    // Intentamos reconstruir la información de sesión desde la base de datos si es posible.
+    $userRole = $_SESSION['id_rol'] ?? null;
+    if ($userRole === null) {
+        $id_usuario_session = $_SESSION['id_usuario'] ?? null;
+        if ($id_usuario_session !== null) {
+            try {
+                $usuarioModel = new Usuario();
+                $userData = $usuarioModel->getById((int)$id_usuario_session);
+                if ($userData && isset($userData['id_rol'])) {
+                    // Restaurar datos necesarios en sesión (similares al login)
+                    $_SESSION['id_rol'] = $userData['id_rol'];
+                    $_SESSION['id_rol_secundario'] = $userData['id_rol_secundario'] ?? null;
+                    $_SESSION['nombre_rol'] = $userData['nombre_rol'] ?? ($userData['nombre_rol'] ?? 'Usuario');
+                    $_SESSION['activo'] = $userData['activo'] ?? 1;
+                    $_SESSION['ci_usuario'] = $userData['cedula'] ?? $userData['ci_usuario'] ?? null;
+                    $_SESSION['nombre_completo'] = $userData['nombre_completo'] ?? trim(($userData['nombres'] ?? '') . ' ' . ($userData['apellidos'] ?? ''));
+                    $userRole = $_SESSION['id_rol'];
+                } else {
+                    // No se pudo reconstruir: limpiar sesión
+                    error_log("[v0] No se pudo reconstruir la sesión para id_usuario={$id_usuario_session}. Limpiando sesión.");
+                    session_unset();
+                    session_destroy();
+                    $_SESSION = [];
+                    header('Location: ./index.php?route=login');
+                    exit();
+                }
+            } catch (Exception $e) {
+                error_log("[v0] Error reconstruyendo sesión: " . $e->getMessage());
+                session_unset();
+                session_destroy();
+                $_SESSION = [];
+                header('Location: ./index.php?route=login');
+                exit();
+            }
+        } else {
+            // id_usuario no presente — estado inconsistente, forzar login
+            error_log("[v0] Sesión inconsistente sin id_usuario. Redirigiendo a login.");
+            session_unset();
+            session_destroy();
+            $_SESSION = [];
+            header('Location: ./index.php?route=login');
+            exit();
+        }
+    }
 
     // Redirección por defecto a dashboard si se accede a la raíz o a 'login' estando autenticado
     if ($route === 'login' || $route === '') {
@@ -524,6 +591,52 @@ if (!isset($_SESSION['id_usuario'])) {
                     }
                     exit();
                 }
+                // API: notificaciones (unread-count, latest, mark-read, mark-all-read)
+                if ($actionSegment === 'notifications') {
+                    header('Content-Type: application/json; charset=utf-8');
+                    $subAction = $id; // tercer segmento: unread-count, latest, mark-read, mark-all-read
+                    $id_usuario = $_SESSION['id_usuario'] ?? null;
+
+                    if (!$id_usuario) {
+                        echo json_encode(['success' => false, 'message' => 'No autenticado']);
+                        exit();
+                    }
+
+                    $notificacionModel = new Notificacion();
+
+                    switch ($subAction) {
+                        case 'unread-count':
+                            $count = $notificacionModel->getUnreadNotificationCount($id_usuario);
+                            echo json_encode(['success' => true, 'count' => (int)$count]);
+                            break;
+
+                        case 'latest':
+                            $limit = filter_input(INPUT_GET, 'limit', FILTER_SANITIZE_NUMBER_INT) ?: 5;
+                            $all = $notificacionModel->obtenerNotificacionesPorUsuario($id_usuario, false, ['column' => 'fecha_creacion', 'direction' => 'DESC']);
+                            $latest = array_slice($all, 0, $limit);
+                            echo json_encode(['success' => true, 'notifications' => $latest]);
+                            break;
+
+                        case 'mark-read':
+                            $nid = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+                            if (!$nid) { echo json_encode(['success' => false, 'message' => 'ID faltante']); exit(); }
+                            $n = $notificacionModel->find((int)$nid);
+                            if (!$n || $n['id_usuario_destino'] != $id_usuario) { echo json_encode(['success' => false, 'message' => 'Acceso denegado']); exit(); }
+                            $ok = $notificacionModel->marcarComoLeida((int)$nid);
+                            echo json_encode(['success' => (bool)$ok]);
+                            break;
+
+                        case 'mark-all-read':
+                            $ok = $notificacionModel->marcarTodasComoLeidas($id_usuario);
+                            echo json_encode(['success' => (bool)$ok]);
+                            break;
+
+                        default:
+                            echo json_encode(['success' => false, 'message' => 'Acción desconocida']);
+                            break;
+                    }
+                    exit();
+                }
                 break;
 
             case 'noticias':
@@ -559,6 +672,8 @@ if (!isset($_SESSION['id_usuario'])) {
                     $actionName = 'delete';
                 } elseif ($actionSegment === 'metrics') {
                     $actionName = 'metrics';
+                } elseif ($actionSegment === 'rsvp') {
+                    $actionName = 'rsvp';
                 } else {
                     $actionName = 'index';
                 }

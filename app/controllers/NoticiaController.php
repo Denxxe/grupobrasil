@@ -139,6 +139,43 @@ class NoticiaController extends AppController {
 
         if ($exito) {
             $this->setSuccessMessage("Comentario agregado exitosamente.");
+            // Crear notificación al autor de la noticia si no es el mismo que comenta
+            try {
+                $noticia = $this->noticiaModel->getNewsById($id_noticia, false);
+                if ($noticia && isset($noticia['id_usuario'])) {
+                    $autor = (int)$noticia['id_usuario'];
+                    if ($autor !== (int)$usuario_id) {
+                        $notModel = new Notificacion();
+                        $mensaje = 'Nuevo comentario en tu noticia: ' . ($noticia['titulo'] ?? 'Sin título');
+                        $notModel->crearNotificacion($autor, $usuario_id, 'comment', $mensaje, $id_noticia);
+                    }
+                }
+                // Si el que comenta es Líder (2) o Jefe Familiar (3), notificar también a Jefes del consejo comunal (rol 1)
+                $rolActual = $_SESSION['id_rol'] ?? null;
+                if ($rolActual && in_array($rolActual, [2,3])) {
+                    $usuarioModel = new Usuario();
+                    $admins = $usuarioModel->getAllFiltered(['id_rol' => 1]);
+                    foreach ($admins as $a) {
+                        if (!empty($a['id_usuario'])) {
+                            $notModel->crearNotificacion((int)$a['id_usuario'], (int)$usuario_id, 'comment', 'Se ha hecho un comentario en una noticia', $id_noticia);
+                        }
+                    }
+                }
+            } catch (\Throwable $e) { error_log('Error creando notificación de comentario: ' . $e->getMessage()); }
+                // Además, si el usuario que dio like es rol 2 o 3, notificar a administradores
+                $rolActual = $_SESSION['id_rol'] ?? null;
+                if ($rolActual && in_array($rolActual, [2,3])) {
+                    try {
+                        $usuarioModel = new Usuario();
+                        $admins = $usuarioModel->getAllFiltered(['id_rol' => 1]);
+                        $notModel2 = new Notificacion();
+                        foreach ($admins as $a) {
+                            if (!empty($a['id_usuario'])) {
+                                $notModel2->crearNotificacion((int)$a['id_usuario'], (int)$usuario_id, 'like', 'Se ha dado un Me Gusta en una noticia', $id_noticia);
+                            }
+                        }
+                    } catch (\Throwable $e) { error_log('Error notificando likes a admins: ' . $e->getMessage()); }
+                }
         } else {
             $this->setErrorMessage("No se pudo agregar el comentario.");
         }
@@ -179,6 +216,18 @@ class NoticiaController extends AppController {
             $exito = $this->likeModel->darLike($id_noticia, $usuario_id);
             if ($exito) {
                 $this->setSuccessMessage("Te ha gustado esta noticia.");
+                    // Notificar al autor de la noticia
+                    try {
+                        $noticia = $this->noticiaModel->getNewsById($id_noticia, false);
+                        if ($noticia && isset($noticia['id_usuario'])) {
+                            $autor = (int)$noticia['id_usuario'];
+                            if ($autor !== (int)$usuario_id) {
+                                $notModel = new Notificacion();
+                                $mensaje = 'Tu noticia recibió un Me Gusta de ' . ($_SESSION['nombre_usuario'] ?? 'alguien');
+                                $notModel->crearNotificacion($autor, $usuario_id, 'like', $mensaje, $id_noticia);
+                            }
+                        }
+                    } catch (\Throwable $e) { error_log('Error creando notificación de like: ' . $e->getMessage()); }
             } else {
                 $this->setErrorMessage("Error al dar 'Me Gusta'.");
             }

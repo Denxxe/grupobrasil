@@ -178,8 +178,10 @@ class Noticia extends ModelBase {
         if (function_exists('iconv')) {
             $slug = iconv('UTF-8', 'ASCII//TRANSLIT', $slug);
         }
-        $slug = preg_replace('/[^a-zA-Z0-9\s-_]/', '', $slug);
-        $slug = preg_replace('/[\s-_]+/', '-', $slug);
+    // Normalizar: eliminar caracteres no deseados y convertir espacios/guiones en uno solo.
+    // Usamos propiedades Unicode para permitir letras acentuadas y otros alfabetos de forma segura.
+    $slug = preg_replace('/[^\p{L}\p{N}\s_-]+/u', '', $slug);
+    $slug = preg_replace('/[\s_-]+/', '-', $slug);
         $slug = strtolower(trim($slug, " -_"));
 
         if (empty($slug)) {

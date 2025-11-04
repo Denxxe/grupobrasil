@@ -90,4 +90,26 @@ if (file_exists($localCss) && file_exists($localJs)) {
   </div>
 </div>
 
+      <!-- Modal para ver evento y confirmar asistencia (RSVP) -->
+      <div class="modal fade" id="viewEventModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="viewEventTitle">Evento</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+              <p id="viewEventDesc"></p>
+              <p><strong>Fecha / Hora:</strong> <span id="viewEventWhen"></span></p>
+              <p><strong>Ubicación:</strong> <span id="viewEventLocation"></span></p>
+              <input type="hidden" id="viewEventId" value="" />
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+              <button id="rsvpBtn" type="button" class="btn btn-primary">Voy a asistir</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
 <script src="./js/events.js?v=2"></script>

@@ -1743,6 +1743,18 @@ public function storeNews() {
     $new_news_id = $this->noticiaModel->createNews($data); // Usamos $data directamente
 
     if ($new_news_id) {
+        // Crear notificaciones para usuarios (excepto el creador)
+        $creator_id = $id_usuario;
+        $allUsers = $this->usuarioModel->getAllFiltered([], ['column' => 'p.nombres', 'direction' => 'ASC']);
+        if ($allUsers && is_array($allUsers)) {
+            foreach ($allUsers as $u) {
+                if (isset($u['id_usuario']) && (int)$u['id_usuario'] !== (int)$creator_id) {
+                    $mensaje = 'Nueva noticia publicada: ' . ($data['titulo'] ?? 'Sin título');
+                    $this->notificacionModel->crearNotificacion((int)$u['id_usuario'], (int)$creator_id, 'news', $mensaje, (int)$new_news_id);
+                }
+            }
+        }
+
         $_SESSION['success_message'] = "Noticia creada exitosamente con ID: " . $new_news_id;
         header('Location: ./index.php?route=admin/news');
         exit();
@@ -2105,7 +2117,8 @@ public function deleteNews($id) {
             header('Location: ./index.php?route=admin/notifications');
             exit();
         }
-        $result = $this->notificacionModel->update($id, ['leida' => 1]);
+    // Usamos la columna correcta 'leido' (masculino) presente en la tabla de notificaciones
+    $result = $this->notificacionModel->update($id, ['leido' => 1]);
         if ($result) {
             $_SESSION['success_message'] = "Notificación marcada como leída.";
         } else {
@@ -2343,6 +2356,37 @@ public function viviendasStore() {
     $id = $this->viviendaModel->createVivienda($data);
     
     if ($id) {
+        // Crear notificaciones: avisar a admins y líderes de la vereda (si se especificó)
+        try {
+            $notModel = new Notificacion();
+            $usuarioModel = new Usuario();
+            // Notificar a administradores
+            $admins = $usuarioModel->getAllFiltered(['id_rol' => 1]);
+            foreach ($admins as $a) {
+                if (!empty($a['id_usuario']) && (int)$a['id_usuario'] !== (int)($_SESSION['id_usuario'] ?? 0)) {
+                    $notModel->crearNotificacion((int)$a['id_usuario'], null, 'vivienda', 'Se registró una nueva vivienda', (int)$id);
+                }
+            }
+            // Notificar líderes de la vereda
+            if (!empty($data['id_calle'])) {
+                $liderModel = new LiderCalle();
+                $leaders = $liderModel->getLeadersByCalle((int)$data['id_calle']);
+                foreach ($leaders as $l) {
+                    if (!empty($l['id_habitante'])) {
+                        // resolver id_usuario desde habitante -> persona -> usuario
+                        $habitanteModel = new Habitante();
+                        $h = $habitanteModel->getById((int)$l['id_habitante']);
+                        if ($h && !empty($h['id_persona'])) {
+                            $userForHabitante = $usuarioModel->findByPersonId((int)$h['id_persona']);
+                            if ($userForHabitante && !empty($userForHabitante['id_usuario']) && (int)$userForHabitante['id_usuario'] !== (int)($_SESSION['id_usuario'] ?? 0)) {
+                                $notModel->crearNotificacion((int)$userForHabitante['id_usuario'], null, 'vivienda', 'Se registró una nueva vivienda en tu vereda', (int)$id);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) { error_log('Error creando notificaciones vivienda: ' . $e->getMessage()); }
+
         echo json_encode(['message' => 'Vivienda creada exitosamente', 'id_vivienda' => $id]);
     } else {
         http_response_code(500);

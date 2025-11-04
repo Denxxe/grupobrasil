@@ -164,8 +164,35 @@ document.querySelectorAll('.open-modal').forEach(button => {
                                     // Remover tarjeta del DOM
                                     const card = btn.closest('.comment-card');
                                     if (card) card.remove();
+
+                                    // Mostrar toast de éxito si existe el contenedor
+                                    try {
+                                        const successToastEl = document.getElementById('successToast');
+                                        const successToastBody = document.getElementById('successToastBody');
+                                        if (successToastEl && successToastBody) {
+                                            successToastBody.innerHTML = data.message || 'Operación realizada correctamente.';
+                                            successToastEl.classList.remove('d-none');
+                                            const t = new bootstrap.Toast(successToastEl);
+                                            t.show();
+                                        } else {
+                                            // Fallback: alert si no hay toasts
+                                            // alert(data.message || 'Operación realizada.');
+                                        }
+                                    } catch (e) { console.error('Error mostrando toast:', e); }
                                 } else {
-                                    alert(data.message || 'Error al procesar la acción');
+                                    // Mostrar toast de error o alert
+                                    try {
+                                        const errorToastEl = document.getElementById('errorToast');
+                                        const errorToastBody = document.getElementById('errorToastBody');
+                                        if (errorToastEl && errorToastBody) {
+                                            errorToastBody.innerHTML = data.message || 'Error al procesar la acción';
+                                            errorToastEl.classList.remove('d-none');
+                                            const t = new bootstrap.Toast(errorToastEl);
+                                            t.show();
+                                        } else {
+                                            alert(data.message || 'Error al procesar la acción');
+                                        }
+                                    } catch (e) { console.error('Error mostrando toast de error:', e); alert(data.message || 'Error al procesar la acción'); }
                                 }
                             } catch (err) {
                                 console.error('Error en AJAX:', err);

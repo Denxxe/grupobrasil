@@ -15,15 +15,52 @@ class Event extends ModelBase {
         return $this->getAll();
     }
 
-    public function getEventById(int $id) {
+    public function getEventById($id) {
         return $this->find($id);
+    }
+
+    /**
+     * Toggle attendance for a user on an event. If the user is already marked, it removes the record; otherwise it inserts.
+     * @param int $id_evento
+     * @param int $id_usuario
+     * @return array ['success' => bool, 'attending' => bool]
+     */
+    public function toggleAttendance($id_evento, $id_usuario) {
+        // verificar si existe
+        $sql = "SELECT id_asistencia FROM evento_asistentes WHERE id_evento = ? AND id_usuario = ? LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt === false) { error_log('toggleAttendance prepare error: ' . $this->conn->error); return ['success'=>false,'attending'=>false]; }
+        $stmt->bind_param('ii', $id_evento, $id_usuario);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $exists = ($res && $res->num_rows > 0);
+        $stmt->close();
+
+        if ($exists) {
+            // eliminar asistencia
+            $sql = "DELETE FROM evento_asistentes WHERE id_evento = ? AND id_usuario = ?";
+            $stmt = $this->conn->prepare($sql);
+            if ($stmt === false) return ['success'=>false,'attending'=>true];
+            $stmt->bind_param('ii', $id_evento, $id_usuario);
+            $ok = $stmt->execute();
+            $stmt->close();
+            return ['success' => (bool)$ok, 'attending' => false];
+        } else {
+            $sql = "INSERT INTO evento_asistentes (id_evento, id_usuario, fecha_confirmacion) VALUES (?, ?, NOW())";
+            $stmt = $this->conn->prepare($sql);
+            if ($stmt === false) return ['success'=>false,'attending'=>false];
+            $stmt->bind_param('ii', $id_evento, $id_usuario);
+            $ok = $stmt->execute();
+            $stmt->close();
+            return ['success' => (bool)$ok, 'attending' => (bool)$ok];
+        }
     }
 
     /**
      * Devuelve eventos en un rango (start/end) en formato listo para FullCalendar
      * start/end son strings en formato YYYY-MM-DD o YYYY-MM-DDTHH:MM:SS
      */
-    public function getEventsBetween(?string $start = null, ?string $end = null) {
+    public function getEventsBetween($start = null, $end = null) {
         $sql = "SELECT id_evento, titulo, descripcion, ubicacion, fecha, hora_inicio, hora_fin, categoria_edad, alcance, id_calle, creado_por FROM " . $this->table;
         $params = [];
         $where = [];
@@ -97,16 +134,16 @@ class Event extends ModelBase {
         return $this->create($data);
     }
 
-    public function updateEvent(int $id, array $data) {
+    public function updateEvent($id, array $data) {
         return $this->update($id, $data);
     }
 
-    public function deleteEvent(int $id) {
+    public function deleteEvent($id) {
         return $this->delete($id);
     }
 
     // Métricas/indicadores
-    public function countEventsByMonth(int $year) {
+    public function countEventsByMonth($year) {
         $sql = "SELECT MONTH(fecha) as mes, COUNT(*) as total FROM " . $this->table . " WHERE YEAR(fecha) = ? GROUP BY MONTH(fecha)";
         $stmt = $this->conn->prepare($sql);
         if ($stmt === false) return [];

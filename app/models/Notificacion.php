@@ -12,12 +12,18 @@ class Notificacion extends ModelBase {
     }
 
     public function crearNotificacion(
-        int $id_usuario_destino,
-        ?int $id_usuario_origen, // Nullable int
-        string $tipo,
-        string $mensaje,
-        ?int $id_referencia = null // Nullable int con valor por defecto null
+        $id_usuario_destino,
+        $id_usuario_origen,
+        $tipo,
+        $mensaje,
+        $id_referencia = null
     ) {
+        // Evitar notificar al mismo usuario que origina la acción
+        if ($id_usuario_origen !== null && $id_usuario_destino !== null && (int)$id_usuario_origen === (int)$id_usuario_destino) {
+            // No creamos notificaciones dirigidas al propio originador
+            return false;
+        }
+
         $data = [
             'id_usuario_destino' => $id_usuario_destino,
             'id_usuario_origen' => $id_usuario_origen,
@@ -38,16 +44,21 @@ class Notificacion extends ModelBase {
     }
 
     public function obtenerNotificacionesPorUsuario(
-        int $id_usuario_destino,
-        bool $unreadOnly = true,
-        array $order = ['column' => 'fecha_creacion', 'direction' => 'DESC']
+        $id_usuario_destino,
+        $unreadOnly = true,
+        $order = ['column' => 'fecha_creacion', 'direction' => 'DESC']
     ) {
-        // [CORRECCIÓN APLICADA] Nombre de columna y tabla de usuario
-        $sql = "SELECT n.*, 
-                       u_origen.username AS origen_nombre
-                FROM " . $this->table . " n
-                LEFT JOIN usuario u_origen ON n.id_usuario_origen = u_origen.id_usuario
-                WHERE n.id_usuario_destino = ?";
+        // Enriquecer la consulta con datos de persona y rol del origen
+    $sql = "SELECT n.*, 
+               -- Evitamos depender de un campo de usuario que puede no existir en todas las instalaciones
+               p_origen.nombres AS origen_nombres,
+               p_origen.apellidos AS origen_apellidos,
+               r_origen.nombre AS origen_rol
+        FROM " . $this->table . " n
+        LEFT JOIN usuario u_origen ON n.id_usuario_origen = u_origen.id_usuario
+        LEFT JOIN persona p_origen ON u_origen.id_persona = p_origen.id_persona
+        LEFT JOIN rol r_origen ON u_origen.id_rol = r_origen.id_rol
+        WHERE n.id_usuario_destino = ?";
         
         $params = [$id_usuario_destino];
         $types = "i";
@@ -103,13 +114,13 @@ class Notificacion extends ModelBase {
         return $notificaciones;
     }
 
-    public function marcarComoLeida(int $id_notificacion): bool {
+    public function marcarComoLeida($id_notificacion) {
         $data = ['leido' => 1]; // 1 = leído
         // Usamos el método update de ModelBase
         return $this->update($id_notificacion, $data);
     }
 
-    public function marcarTodasComoLeidas(int $id_usuario_destino): bool {
+    public function marcarTodasComoLeidas($id_usuario_destino) {
         $sql = "UPDATE " . $this->table . " SET leido = 1 WHERE id_usuario_destino = ? AND leido = 0";
         $stmt = $this->conn->prepare($sql);
     
@@ -131,12 +142,12 @@ class Notificacion extends ModelBase {
         }
     }
 
-    public function eliminarNotificacion(int $id_notificacion): bool {
+    public function eliminarNotificacion($id_notificacion) {
         // Usamos el método delete de ModelBase
         return $this->delete($id_notificacion);
     }
 
-    public function getUnreadNotificationCount(int $id_usuario_destino): int {
+    public function getUnreadNotificationCount($id_usuario_destino) {
         $sql = "SELECT COUNT(*) AS total_unread FROM " . $this->table . " WHERE id_usuario_destino = ? AND leido = 0";
         
         $stmt = $this->conn->prepare($sql);
@@ -162,17 +173,19 @@ class Notificacion extends ModelBase {
         return 0;
     }
 
-    public function getAllNotifications(
-        array $order = ['column' => 'fecha_creacion', 'direction' => 'DESC']
-    ) {
+    public function getAllNotifications($order = ['column' => 'fecha_creacion', 'direction' => 'DESC']) {
         // [CORRECCIÓN DE SINTAXIS] Eliminada la coma final antes de FROM.
         // [CORRECCIÓN APLICADA] Usando 'usuario' y 'username' para los JOINS.
-        $sql = "SELECT n.*, 
-                       u_origen.username AS origen_nombre, 
-                       u_destino.username AS destino_nombre
-                FROM " . $this->table . " n
-                LEFT JOIN usuario u_origen ON n.id_usuario_origen = u_origen.id_usuario
-                LEFT JOIN usuario u_destino ON n.id_usuario_destino = u_destino.id_usuario";
+    $sql = "SELECT n.*, 
+               -- Usamos los campos de persona como fuente de nombre para evitar dependencias en columnas de usuario que pueden variar
+               p_origen.nombres AS origen_nombres, p_origen.apellidos AS origen_apellidos, r_origen.nombre AS origen_rol,
+               p_destino.nombres AS destino_nombres, p_destino.apellidos AS destino_apellidos
+        FROM " . $this->table . " n
+        LEFT JOIN usuario u_origen ON n.id_usuario_origen = u_origen.id_usuario
+        LEFT JOIN persona p_origen ON u_origen.id_persona = p_origen.id_persona
+        LEFT JOIN rol r_origen ON u_origen.id_rol = r_origen.id_rol
+        LEFT JOIN usuario u_destino ON n.id_usuario_destino = u_destino.id_usuario
+        LEFT JOIN persona p_destino ON u_destino.id_persona = p_destino.id_persona";
         
         $params = [];
         $types = "";

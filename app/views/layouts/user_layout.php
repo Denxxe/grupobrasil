@@ -2,8 +2,11 @@
 // grupobrasil/app/views/layouts/user_layout.php
 
 // ... (El código de setup de variables y unset de sesión permanece igual) ...
-$success_message = '';
-$error_message = '';
+// Capturamos mensajes flash de sesión (si los hubiera) y luego los limpiamos para evitar duplicados
+$success_message = $_SESSION['success_message'] ?? '';
+$error_message = $_SESSION['error_message'] ?? '';
+unset($_SESSION['success_message']);
+unset($_SESSION['error_message']);
 
 
 $title = $title ?? 'User Dashboard';
@@ -122,7 +125,33 @@ $page_title = $page_title ?? 'Mi Perfil';
             </div>
         </header>
 
-        <h2 class="text-3xl font-semibold text-gray-800 mb-6 hidden lg:block flex-shrink-0"><?php echo htmlspecialchars($page_title); ?></h2>
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-3xl font-semibold text-gray-800 hidden lg:block flex-shrink-0"><?php echo htmlspecialchars($page_title); ?></h2>
+
+            <?php
+            $notifRoute = 'user/notifications';
+            if (isset($_SESSION['id_rol'])) {
+                if ($_SESSION['id_rol'] == 1) $notifRoute = 'admin/notifications';
+                elseif ($_SESSION['id_rol'] == 2) $notifRoute = 'subadmin/notifications';
+            }
+            ?>
+
+            <div id="notifWrapper" class="relative">
+                <button id="notifBell" class="relative btn btn-sm btn-light me-2" title="Notificaciones" type="button">
+                    <i class="fas fa-bell fa-lg"></i>
+                    <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none;">0</span>
+                </button>
+
+                <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-96 bg-white shadow-lg rounded z-50" style="min-width:280px;">
+                    <div class="p-2 border-bottom d-flex justify-content-between align-items-center">
+                        <strong>Notificaciones</strong>
+                        <button id="notifMarkAll" class="btn btn-sm btn-outline-primary">Marcar todas leídas</button>
+                    </div>
+                    <div id="notifList" class="max-h-72 overflow-auto p-2"></div>
+                    <div class="p-2 text-center border-top"><a href="./index.php?route=<?php echo $notifRoute; ?>">Ver todas</a></div>
+                </div>
+            </div>
+        </div>
 
         <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
             <div id="successToast" class="toast align-items-center text-bg-success border-0 d-none" role="alert" aria-live="assertive" aria-atomic="true">
@@ -155,5 +184,6 @@ $page_title = $page_title ?? 'Mi Perfil';
     <script src="./js/admin_dashboard.js?v=<?php echo time(); ?>"></script>
     <script src="./js/toast_initializer.js?v=<?php echo time(); ?>"></script>
     <script src="./js/user_dashboard.js?v=<?php echo time(); ?>"></script>
+    <script src="./js/notifications.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

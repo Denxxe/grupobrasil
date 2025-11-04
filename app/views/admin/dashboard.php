@@ -123,7 +123,7 @@ $formatCurrency = fn($value) => '$' . number_format($value, 0, ',', '.');
                     <h3 class="text-xl font-semibold text-gray-800">Gestión de Beneficios</h3>
                 </div>
                 <p class="text-gray-600 mb-4">Revisa, administra y autoriza los pagos de beneficios a la comunidad.</p>
-                <a href="./index.php?route=admin/payments" class="inline-block <?php echo $vinotinto; ?> hover:bg-red-800 text-white px-5 py-2 rounded-lg font-medium transition duration-300 shadow-md">
+                <a href="./index.php?route=admin/pagos/periodos" class="inline-block <?php echo $vinotinto; ?> hover:bg-red-800 text-white px-5 py-2 rounded-lg font-medium transition duration-300 shadow-md">
                     Ver Pagos
                 </a>
             </div>

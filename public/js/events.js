@@ -37,12 +37,57 @@ document.addEventListener('DOMContentLoaded', function() {
         // abrir el modal en modo edición redirigiendo a edit page (simple) or we could load via AJAX
         window.location.href = './index.php?route=eventos/edit/' + event.id;
       } else {
-        var details = 'Título: ' + event.title + '\n';
-        if (event.extendedProps && event.extendedProps.descripcion) details += '\n' + event.extendedProps.descripcion;
-        alert(details);
+        // Mostrar modal con info y opción RSVP
+        var modalEl = document.getElementById('viewEventModal');
+        if (!modalEl) {
+          var details = 'Título: ' + event.title + '\n';
+          if (event.extendedProps && event.extendedProps.descripcion) details += '\n' + event.extendedProps.descripcion;
+          alert(details);
+          return;
+        }
+        // rellenar campos
+        document.getElementById('viewEventTitle').innerText = event.title;
+        document.getElementById('viewEventDesc').innerText = event.extendedProps.descripcion || '';
+        document.getElementById('viewEventWhen').innerText = (new Date(event.start)).toLocaleString();
+        document.getElementById('viewEventLocation').innerText = event.extendedProps.ubicacion || '';
+        document.getElementById('viewEventId').value = event.id;
+        // mostrar modal
+        var viewModal = new bootstrap.Modal(modalEl);
+        viewModal.show();
       }
     }
   });
+
+    // RSVP handler for view modal
+    var rsvpBtn = document.getElementById('rsvpBtn');
+    if (rsvpBtn) {
+      rsvpBtn.addEventListener('click', function() {
+        var id = document.getElementById('viewEventId').value;
+        if (!id) return alert('Evento inválido');
+        var form = new FormData();
+        form.append('id_evento', id);
+        // añadir CSRF
+        if (window.CSRF_TOKEN) form.append('csrf_token', window.CSRF_TOKEN);
+
+        fetch('./index.php?route=eventos/rsvp', {
+          method: 'POST',
+          body: form,
+          credentials: 'same-origin',
+          headers: {
+            'Accept': 'application/json'
+          }
+        }).then(function(res){ return res.json(); }).then(function(json){
+          if (json && json.success) {
+            alert(json.attending ? 'Confirmaste asistencia.' : 'Se removió tu asistencia.');
+            var modalEl = document.getElementById('viewEventModal');
+            var m = bootstrap.Modal.getInstance(modalEl);
+            if (m) m.hide();
+          } else {
+            alert((json && json.message) ? json.message : 'Error procesando RSVP');
+          }
+        }).catch(function(err){ console.error('Error RSVP', err); alert('Error interno al confirmar asistencia.'); });
+      });
+    }
 
   window.EVENT_CALENDAR.render();
 

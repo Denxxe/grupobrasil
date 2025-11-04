@@ -3,6 +3,9 @@
 
 require_once __DIR__ . '/AppController.php';
 require_once __DIR__ . '/../models/Event.php';
+require_once __DIR__ . '/../models/Usuario.php';
+require_once __DIR__ . '/../models/Notificacion.php';
+require_once __DIR__ . '/../models/LiderCalle.php';
 require_once __DIR__ . '/../helpers/AuthHelper.php';
 // AdminController se usa para renderizar vistas dentro del layout admin cuando el usuario es admin
 require_once __DIR__ . '/AdminController.php';
@@ -47,6 +50,37 @@ class EventosController extends AppController {
         $events = $this->eventModel->getEventsBetween($start, $end);
         echo json_encode($events);
         exit();
+    }
+
+    // RSVP / Confirmar asistencia (POST AJAX)
+    public function rsvp($id = null) {
+        // requiere usuario autenticado
+        $usuario_id = $_SESSION['id_usuario'] ?? null;
+        if (!$usuario_id) {
+            header('Content-Type: application/json'); http_response_code(401); echo json_encode(['success'=>false,'message'=>'No autenticado']); exit();
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Content-Type: application/json'); http_response_code(405); echo json_encode(['success'=>false,'message'=>'Método no permitido']); exit();
+        }
+
+        $id_evento = (int)($_POST['id_evento'] ?? 0);
+        if ($id_evento <= 0) { header('Content-Type: application/json'); http_response_code(400); echo json_encode(['success'=>false,'message'=>'ID de evento inválido']); exit(); }
+
+        $res = $this->eventModel->toggleAttendance($id_evento, $usuario_id);
+        if (!$res['success']) { header('Content-Type: application/json'); http_response_code(500); echo json_encode(['success'=>false,'message'=>'Error interno']); exit(); }
+
+        // Notificar al creador del evento si alguien confirma
+        try {
+            $event = $this->eventModel->getEventById($id_evento);
+            if ($event && !empty($event['creado_por']) && (int)$event['creado_por'] !== (int)$usuario_id && $res['attending']) {
+                $not = new Notificacion();
+                $msg = ($_SESSION['nombre_completo'] ?? 'Alguien') . ' dijo que asistirá al evento: ' . ($event['titulo'] ?? 'Evento');
+                $not->crearNotificacion((int)$event['creado_por'], (int)$usuario_id, 'event_rsvp', $msg, $id_evento);
+            }
+        } catch (\Throwable $e) { error_log('Error notificando RSVP: ' . $e->getMessage()); }
+
+        header('Content-Type: application/json'); echo json_encode(['success'=>true,'attending'=>$res['attending']]); exit();
     }
 
     // Mostrar formulario crear / procesar POST
@@ -107,6 +141,18 @@ class EventosController extends AppController {
                 $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
                 if ($isAjax) { header('Content-Type: application/json'); echo json_encode(['success'=>true,'id'=>$newId]); exit(); }
                 $this->setSuccessMessage('Evento creado.');
+                // Notificar a los usuarios sobre el nuevo evento (excepto el creador)
+                try {
+                    $usuarioModel = new Usuario();
+                    $notModel = new Notificacion();
+                    $allUsers = $usuarioModel->getAllFiltered([], ['column' => 'p.nombres', 'direction' => 'ASC']);
+                    foreach ($allUsers as $u) {
+                        if (isset($u['id_usuario']) && (int)$u['id_usuario'] !== (int)$data['creado_por']) {
+                            $msg = 'Nuevo evento: ' . ($data['titulo'] ?? 'Sin título');
+                            $notModel->crearNotificacion((int)$u['id_usuario'], (int)$data['creado_por'], 'event', $msg, (int)$newId);
+                        }
+                    }
+                } catch (\Throwable $e) { error_log('Error creando notificaciones de evento: ' . $e->getMessage()); }
             } else {
                 $this->setErrorMessage('No se pudo crear el evento.');
             }

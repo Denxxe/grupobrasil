@@ -33,17 +33,6 @@ error_log("[v0] requires_setup: " . ($_SESSION['requires_setup'] ?? 'no definido
 
     <!-- Opciones en Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Perfil -->
-        <a href="./index.php?route=user/view_profile" 
-           class="bg-white shadow-md rounded-lg p-6 flex flex-col items-center hover:shadow-lg transition">
-            <svg class="w-12 h-12 text-indigo-600 mb-4" xmlns="http://www.w3.org/2000/svg" 
-                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                      d="M5.121 17.804A9 9 0 1118.364 4.56M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <h3 class="text-lg font-semibold text-gray-800">Mi Perfil</h3>
-            <p class="text-sm text-gray-600 text-center mt-2">Consulta y actualiza tus datos personales.</p>
-        </a>
 
         <!-- Noticias -->
         <a href="./index.php?route=noticias" 

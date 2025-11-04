@@ -21,55 +21,51 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <table class="table table-hover" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th></th>
+                            <th>Origen</th>
+                            <th>Rol</th>
                             <th>Tipo</th>
                             <th>Mensaje</th>
-                            <th>Usuario Origen</th>
-                            <th>Referencia ID</th>
-                            <th>Estado</th>
                             <th>Fecha</th>
+                            <th>Estado</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (!empty($notificaciones)): ?>
-                            <?php foreach ($notificaciones as $notificacion): ?>
-                                <!-- Usamos table-warning para resaltar las no leídas -->
-                                <tr class="<?php echo $notificacion['leido'] == 0 ? 'table-warning' : ''; ?>">
-                                    <td><?php echo htmlspecialchars($notificacion['id_notificacion']); ?></td>
-                                    <td><?php echo htmlspecialchars($notificacion['tipo']); ?></td>
-                                    <td><?php echo htmlspecialchars($notificacion['mensaje']); ?></td>
-                                    
-                                    <!-- El usuario destino es implícito (el Subadmin actual) -->
-                                    <td><?php echo htmlspecialchars($notificacion['origen_nombre'] ?? 'N/A') . ' ' . htmlspecialchars($notificacion['origen_apellido'] ?? ''); ?></td>
-                                    
-                                    <td><?php echo htmlspecialchars($notificacion['id_referencia'] ?? 'N/A'); ?></td>
-                                    <td>
-                                        <?php echo $notificacion['leido'] == 1 ? '<span class="badge badge-success">Leída</span>' : '<span class="badge badge-danger">No Leída</span>'; ?>
-                                    </td>
-                                    <td><?php echo htmlspecialchars($notificacion['fecha_creacion']); ?></td>
-                                    <td>
-                                        <?php if ($notificacion['leido'] == 0): ?>
-                                            <!-- Enlace para marcar como leída, apunta a la ruta del subadmin -->
-                                            <a href="./index.php?route=subadmin/notifications/mark-read&id=<?php echo $notificacion['id_notificacion']; ?>" class="btn btn-sm btn-success" title="Marcar como Leída">
-                                                <i class="fas fa-check"></i>
-                                            </a>
-                                        <?php endif; ?>
-                                        <!-- Enlace para eliminar, apunta a la ruta del subadmin -->
-                                        <a href="./index.php?route=subadmin/notifications/delete&id=<?php echo $notificacion['id_notificacion']; ?>" class="btn btn-sm btn-danger" title="Eliminar" onclick="return confirm('¿Estás seguro de que quieres eliminar esta notificación?');">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="8" class="text-center">No tienes notificaciones para mostrar.</td>
+                        <?php foreach ($notificaciones as $notificacion): 
+                            $is_leida = (int)($notificacion['leido'] ?? 0) === 1;
+                        ?>
+                            <tr class="<?= $is_leida ? '' : 'table-warning' ?>">
+                                <td><?= htmlspecialchars($notificacion['id_notificacion'] ?? '') ?></td>
+                                <td><?= htmlspecialchars(($notificacion['origen_nombres'] ?? '') . ' ' . ($notificacion['origen_apellidos'] ?? '')) ?></td>
+                                <td>
+                                    <?php
+                                        $rawRole = $notificacion['origen_rol'] ?? '';
+                                        $roleMap = [
+                                            'Administrador' => 'Jefe de la Comunidad',
+                                            'Sub Administrador' => 'Líder de Vereda',
+                                            'Sub-administrador' => 'Líder de Vereda',
+                                            'Miembro' => 'Jefe Familiar'
+                                        ];
+                                        $displayRole = $roleMap[$rawRole] ?? $rawRole;
+                                        echo htmlspecialchars($displayRole ?: '-');
+                                    ?>
+                                </td>
+                                <td><span class="badge bg-primary text-white"><?= htmlspecialchars($notificacion['tipo'] ?? '') ?></span></td>
+                                <td><?= htmlspecialchars($notificacion['mensaje'] ?? '') ?></td>
+                                <td><?= htmlspecialchars($notificacion['fecha_creacion'] ?? '') ?></td>
+                                <td><?= $is_leida ? '<span class="badge bg-success">Leída</span>' : '<span class="badge bg-danger">No Leída</span>' ?></td>
+                                <td>
+                                    <?php if (!$is_leida): ?>
+                                        <a href="./index.php?route=subadmin/notifications/mark-read&id=<?php echo $notificacion['id_notificacion']; ?>" class="btn btn-sm btn-success me-1" title="Marcar como Leída"><i class="fas fa-check"></i></a>
+                                    <?php endif; ?>
+                                    <a href="./index.php?route=subadmin/notifications/delete&id=<?php echo $notificacion['id_notificacion']; ?>" class="btn btn-sm btn-danger" title="Eliminar" onclick="return confirm('¿Eliminar notificación?');"><i class="fas fa-trash"></i></a>
+                                </td>
                             </tr>
-                        <?php endif; ?>
+                        <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>

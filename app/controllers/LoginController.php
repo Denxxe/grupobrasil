@@ -40,8 +40,10 @@ class LoginController {
                 // Prevención de fijación de sesión: regenerar id tras autenticación
                 session_regenerate_id(true);
                 $_SESSION['id_usuario'] = $user['id_usuario'];
-                $_SESSION['ci_usuario'] = $user['ci_usuario'];
-                $_SESSION['nombre_completo'] = $user['nombre'] . ' ' . $user['apellido'];
+                // Algunas consultas devuelven 'cedula' y otras 'ci_usuario'. Usamos la que esté disponible.
+                $_SESSION['ci_usuario'] = $user['cedula'] ?? $user['ci_usuario'] ?? null;
+                // Preferimos el alias 'nombre_completo' si existe, sino concatenamos 'nombres' y 'apellidos'. Evitamos claves inexistentes 'nombre'/'apellido'.
+                $_SESSION['nombre_completo'] = $user['nombre_completo'] ?? trim(($user['nombres'] ?? '') . ' ' . ($user['apellidos'] ?? ''));
                 $_SESSION['id_rol'] = $user['id_rol'];
                 $_SESSION['id_rol_secundario'] = $user['id_rol_secundario'] ?? null;
                 $_SESSION['nombre_rol'] = $user['nombre_rol'] ?? 'Usuario';

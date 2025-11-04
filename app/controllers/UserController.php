@@ -104,7 +104,53 @@ class UserController extends AppController {
         }
 
         $newId = $this->cargaFamiliarModel->addMemberToJefe($idHabitanteJefe, $existingHabitanteId, $parentesco);
-        if ($newId) { $this->setSuccessMessage('Miembro agregado.'); } else { $this->setErrorMessage('Error al agregar miembro.'); }
+        if ($newId) {
+            $this->setSuccessMessage('Miembro agregado.');
+            // Notificar a admin(s) y líderes de la calle del jefe
+            try {
+                $notModel = new Notificacion();
+                $usuarioModel = $this->usuarioModel;
+                // Notificar a administradores (rol 1)
+                $admins = $usuarioModel->getAllFiltered(['id_rol' => 1]);
+                foreach ($admins as $a) {
+                    if (isset($a['id_usuario']) && (int)$a['id_usuario'] !== (int)$idUsuario) {
+                        $mensaje = 'Se registró un nuevo miembro en una carga familiar.';
+                        $notModel->crearNotificacion((int)$a['id_usuario'], (int)$idUsuario, 'carga_familiar', $mensaje, (int)$newId);
+                    }
+                }
+
+                // Obtener calle del jefe (persona)
+                $usuario = $this->usuarioModel->getById($idUsuario);
+                if ($usuario && !empty($usuario['id_persona'])) {
+                    $persona = $this->personaModel->getById((int)$usuario['id_persona']);
+                    if ($persona && !empty($persona['id_calle'])) {
+                        $idCalle = (int)$persona['id_calle'];
+                        $liderModel = new LiderCalle();
+                        $leaders = $liderModel->getLeadersByCalle($idCalle);
+                        foreach ($leaders as $l) {
+                            // Cada fila contiene id_habitante; necesitamos buscar id_usuario asociado
+                            if (!empty($l['id_habitante'])) {
+                                $habit = $this->habitanteModel->getById((int)$l['id_habitante']);
+                                if ($habit && !empty($habit['id_persona'])) {
+                                    // Buscar usuario por persona
+                                    $user = $this->usuarioModel->buscarPorCI($habit['cedula'] ?? '');
+                                    // fallback: usar join queries
+                                    if (!$user) {
+                                        // intentar encontrar usuario con id_persona
+                                        $possible = $this->usuarioModel->getById((int)$habit['id_persona']);
+                                        $user = $possible ?: null;
+                                    }
+                                    if ($user && !empty($user['id_usuario'])) {
+                                        $mensaje = 'Se registró un nuevo miembro en la carga familiar de tu vereda.';
+                                        $notModel->crearNotificacion((int)$user['id_usuario'], (int)$idUsuario, 'carga_familiar', $mensaje, (int)$newId);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) { error_log('Error creando notificaciones carga familiar: ' . $e->getMessage()); }
+        } else { $this->setErrorMessage('Error al agregar miembro.'); }
     $this->redirect('user/carga_familiar');
     }
 
@@ -270,13 +316,13 @@ class UserController extends AppController {
 
             if (!empty($changes)) {
                 require_once __DIR__ . '/../models/ViviendaDetalleAudit.php';
-                $auditModel = new ViviendaDetalleAudit();
+                $auditModel = new ViviendaDetalle();
                 $auditData = [
                     'id_vivienda' => $idVivienda,
                     'id_usuario' => $_SESSION['id_usuario'] ?? null,
                     'cambios' => json_encode($changes, JSON_UNESCAPED_UNICODE)
                 ];
-                $auditModel->createAudit($auditData);
+                $auditModel->create($auditData);
             }
 
             $this->setSuccessMessage('Detalles actualizados.');
