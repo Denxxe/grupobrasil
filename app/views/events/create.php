@@ -57,6 +57,11 @@ $editing = isset($event) && !empty($event);
       <input type="number" name="id_calle" class="form-control" value="<?= $editing ? htmlspecialchars($event['id_calle']) : '' ?>" />
     </div>
 
+    <div class="form-group mb-2">
+      <label>Descripción</label>
+      <input type="text" name="descripcion" class="form-control" value="<?= $editing ? htmlspecialchars($event['descripcion']) : '' ?>" />
+    </div>
+
     <div class="mt-4">
       <button class="btn btn-primary" type="submit"><?= $editing ? 'Actualizar' : 'Crear' ?></button>
       <a href="./index.php?route=eventos" class="btn btn-secondary">Cancelar</a>
